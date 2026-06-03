@@ -569,12 +569,75 @@ export default function App() {
         })
       });
 
-      if (!response.ok) {
-        throw new Error(`Serveren svarede med fejlkode ${response.status}`);
+      if (!response.ok || !response.body) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Serveren svarede med fejlkode ${response.status}`);
       }
 
-      const data = await response.json();
-      const refinedText = data.refinedText;
+      // Live-update helper: skriv den streamede tekst ind i det rigtige output-felt
+      const applyLiveText = (value: string) => {
+        setOutput(prev => {
+          if (!prev) return null;
+          const u: BrandSurfaceOutput = {
+            ...prev,
+            english: prev.english ? { ...prev.english } : prev.english,
+            production: prev.production ? { ...prev.production } : prev.production,
+            directUsable: prev.directUsable ? { ...prev.directUsable } : prev.directUsable,
+          };
+          if (targetKey === 'shortCaseText') u.shortCaseText = value;
+          else if (targetKey === 'longCaseText') u.longCaseText = value;
+          else if (targetKey === 'linkedinPost') u.linkedinPost = value;
+          else if (isEnglishObj && u.english) {
+            if (targetKey === 'englishShortCaseText') u.english.shortCaseText = value;
+            if (targetKey === 'englishLongCaseText') u.english.longCaseText = value;
+            if (targetKey === 'englishLinkedinPost') u.english.linkedinPost = value;
+          } else if (isProductionObj && u.production) {
+            if (targetKey === 'creativeHeroVisual') u.production.heroVisual = value;
+            if (targetKey === 'creativeSomeFormat') u.production.someFormat = value;
+            if (targetKey === 'creativeNewsletterSection') u.production.newsletterSection = value;
+          }
+          if (targetKey === 'shortCaseText' && u.directUsable) u.directUsable.bestShortText = value;
+          return u;
+        });
+      };
+
+      // Consume the Server-Sent Events stream from /api/refine
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let acc = '';
+      let streamErr: string | null = null;
+
+      while (true) {
+        const { value, done: rdDone } = await reader.read();
+        if (rdDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const part of parts) {
+          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
+          const isErrEvent = part.includes('event: error');
+          if (!dataLine) continue;
+          const payload = dataLine.slice(6);
+          if (payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (isErrEvent && evt.error) {
+              streamErr = evt.error;
+            } else if (typeof evt.delta === 'string') {
+              acc += evt.delta;
+              applyLiveText(acc);
+            } else if (evt.done && typeof evt.refinedText === 'string') {
+              acc = evt.refinedText;
+            }
+          } catch {
+            /* ignorér ukomplette/uventede linjer */
+          }
+        }
+      }
+
+      if (streamErr) throw new Error(streamErr);
+      const refinedText = (acc || textToRefine).trim();
 
       // Store history for UNDO ability
       setRefinementHistory(prev => [...prev, { key: targetKey, original: textToRefine }]);
@@ -680,7 +743,7 @@ export default function App() {
     });
   };
 
-  // Generate actual image via express API using top-tier Imagen model
+  // Generate actual image via express API using the configured image provider (default: Flux/fal.ai)
   const handleGenerateImage = async (key: 'hero' | 'detail' | 'abstract', promptText: string) => {
     setGeneratedImages(prev => ({
       ...prev,
@@ -2168,7 +2231,7 @@ export default function App() {
                           className="space-y-4 font-sans"
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">8. AI-billedprompts (Imagen Generator Integreret)</span>
+                            <span className="text-[10px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">8. AI-billedprompts (AI Billedmotor integreret)</span>
                             <span className="text-[9px] text-slate-500 font-mono">Skal altid være på engelsk</span>
                           </div>
 
@@ -2215,7 +2278,7 @@ export default function App() {
                                 {generatedImages.hero.loading ? (
                                   <div className="bg-slate-950 border border-slate-850 rounded-lg p-8 flex flex-col items-center justify-center space-y-3 min-h-[140px] animate-pulse">
                                     <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                                    <span className="text-[10px] text-slate-400 font-mono">Genererer med Imagen...</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Genererer billede...</span>
                                   </div>
                                 ) : generatedImages.hero.error ? (
                                   <div className="bg-red-950/40 border border-red-900/40 text-red-400 rounded-lg p-3 text-[11px] space-y-2">
@@ -2324,7 +2387,7 @@ export default function App() {
                                 {generatedImages.detail.loading ? (
                                   <div className="bg-slate-950 border border-slate-850 rounded-lg p-8 flex flex-col items-center justify-center space-y-3 min-h-[140px] animate-pulse">
                                     <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                                    <span className="text-[10px] text-slate-400 font-mono">Genererer med Imagen...</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Genererer billede...</span>
                                   </div>
                                 ) : generatedImages.detail.error ? (
                                   <div className="bg-red-950/40 border border-red-900/40 text-red-400 rounded-lg p-3 text-[11px] space-y-2">
@@ -2433,7 +2496,7 @@ export default function App() {
                                 {generatedImages.abstract.loading ? (
                                   <div className="bg-slate-950 border border-slate-850 rounded-lg p-8 flex flex-col items-center justify-center space-y-3 min-h-[140px] animate-pulse">
                                     <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                                    <span className="text-[10px] text-slate-400 font-mono">Genererer med Imagen...</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Genererer billede...</span>
                                   </div>
                                 ) : generatedImages.abstract.error ? (
                                   <div className="bg-red-950/40 border border-red-900/40 text-red-400 rounded-lg p-3 text-[11px] space-y-2">
