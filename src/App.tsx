@@ -56,6 +56,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult } from './types';
 import { buildMarkdown, downloadTextFile, slugify } from './lib/exportMarkdown';
+import { downloadHtmlFile } from './lib/exportHtml';
 import { downloadDocx } from './lib/exportDocx';
 import { ImageGenCard } from './components/ImageGenCard';
 import { DirectUsableBar } from './components/DirectUsableBar';
@@ -411,6 +412,11 @@ export default function App() {
   const handleCopyAllMarkdown = () => {
     if (!output) return;
     handleCopyToClipboard(buildMarkdown(output, brief), 'export_all_md');
+  };
+
+  const handleExportHtml = () => {
+    if (!output) return;
+    downloadHtmlFile(output, brief);
   };
 
   const handleExportDocx = async () => {
@@ -1925,6 +1931,18 @@ export default function App() {
                               ? <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                               : <Copy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
                             <span>Kopiér alt (Markdown)</span>
+                          </button>
+
+                          <div className="px-2.5 py-1 bg-slate-900/40 rounded border-y border-slate-900/60 my-1">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest block">HTML</span>
+                          </div>
+
+                          <button
+                            onClick={handleExportHtml}
+                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-slate-250 hover:text-white hover:bg-slate-900 rounded transition-colors flex items-center space-x-2"
+                          >
+                            <Globe className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                            <span>Download som HTML (.html)</span>
                           </button>
 
                           <div className="px-2.5 py-1 bg-slate-900/40 rounded border-y border-slate-900/60 my-1">
