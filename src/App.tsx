@@ -50,11 +50,14 @@ import {
   Sun,
   Moon,
   Download,
-  Loader2
+  Loader2,
+  Clock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult } from './types';
 import { buildMarkdown, downloadTextFile, slugify } from './lib/exportMarkdown';
+import { saveSession, loadSession } from './lib/session';
+import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
 
 const PRESETS: PresetBrief[] = [
   {
@@ -117,6 +120,8 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState<string>('case'); // Tab keys matching commands
   const [output, setOutput] = useState<BrandSurfaceOutput | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory());
+  const [historyOpen, setHistoryOpen] = useState<boolean>(false);
   
   // Loading states
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -178,8 +183,19 @@ export default function App() {
     return PRESETS;
   });
 
-  // Set default preset on first load for a great out-of-the-box experience
+  // On mount: restore the saved working session, or fall back to the default preset
   useEffect(() => {
+    const saved = loadSession();
+    if (saved && (saved.output || saved.brief?.client)) {
+      if (saved.brief) setBrief(saved.brief);
+      if (saved.output) setOutput(saved.output);
+      if (saved.revisions) setRevisions(saved.revisions);
+      if (saved.activeCompareIndex) setActiveCompareIndex(saved.activeCompareIndex);
+      if (saved.generatedImages) setGeneratedImages(prev => ({ ...prev, ...(saved.generatedImages as any) }));
+      if (saved.cviFileName !== undefined) setCviFileName(saved.cviFileName ?? null);
+      if (saved.activeTab) setActiveTab(saved.activeTab);
+      return;
+    }
     if (customPresets && customPresets.length > 0) {
       handleLoadPreset(customPresets[0]);
     } else {
@@ -198,6 +214,12 @@ export default function App() {
       });
     }
   }, []);
+
+  // Auto-save the working session so nothing is lost on refresh
+  useEffect(() => {
+    if (!output && !brief.client) return; // undgå at overskrive med tom start-tilstand
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab]);
 
   // Handler to clear all presets
   const handleClearPresets = () => {
@@ -251,7 +273,7 @@ export default function App() {
       })
       .catch(err => {
         console.error("CVI error:", err);
-        setErrorMsg(`Scanning mislykkedes: ${err.message || 'Den parrede Gemini-model kunne ikke afkode filen.'}`);
+        setErrorMsg(`Scanning mislykkedes: ${err.message || 'AI-modellen kunne ikke afkode filen.'}`);
         setCviFileName(null);
       })
       .finally(() => {
@@ -386,6 +408,29 @@ export default function App() {
     handleCopyToClipboard(buildMarkdown(output, brief), 'export_all_md');
   };
 
+  // Reload a previous generation from the local history
+  const handleLoadHistory = (item: HistoryItem) => {
+    setBrief(item.brief);
+    setOutput(item.output);
+    setRevisions({
+      shortCaseText: [item.output.shortCaseText],
+      longCaseText: [item.output.longCaseText],
+      linkedinPost: [item.output.linkedinPost],
+      creativeNewsletterSection: item.output.production?.newsletterSection
+        ? [item.output.production.newsletterSection]
+        : []
+    });
+    setActiveCompareIndex({ shortCaseText: null, longCaseText: null, linkedinPost: null, creativeNewsletterSection: null });
+    setRefinementHistory([]);
+    setCviFileName(item.brief.cviManual ? 'Aktive CVI retningslinjer' : null);
+    setActiveTab('case');
+    setErrorMsg(null);
+  };
+
+  const handleClearHistory = () => {
+    setHistory(clearHistory());
+  };
+
   // Run the whole generator
   const handleGenerateAll = async () => {
     if (!brief.client || !brief.project || !brief.description) {
@@ -433,6 +478,7 @@ export default function App() {
 
       const data: BrandSurfaceOutput = await response.json();
       setOutput(data);
+      setHistory(prev => pushHistory(prev, brief, data));
       if (data) {
         setRevisions({
           shortCaseText: [data.shortCaseText],
@@ -1740,6 +1786,48 @@ export default function App() {
                           </button>
                         );
                       })}
+                    </div>
+
+                    {/* Project history (saved locally) */}
+                    <div className="relative mb-2 sm:mb-0 mr-2">
+                      <button
+                        type="button"
+                        onClick={() => setHistoryOpen(o => !o)}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 text-[11px] font-bold font-mono rounded-lg transition-all active:scale-95"
+                        title="Tidligere genereringer (gemt lokalt i din browser)"
+                      >
+                        <Clock className="w-3.5 h-3.5 text-amber-500" />
+                        <span>HISTORIK ({history.length})</span>
+                        <ChevronDown className="w-3 h-3" />
+                      </button>
+                      {historyOpen && (
+                        <div className="absolute right-0 top-full mt-1.5 bg-slate-950 border border-slate-800 rounded-lg shadow-2xl z-30 w-72 p-1 text-left font-mono max-h-80 overflow-y-auto">
+                          <div className="flex items-center justify-between px-2.5 py-1 bg-slate-900/40 rounded border-b border-slate-900/60 mb-1">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Tidligere genereringer</span>
+                            {history.length > 0 && (
+                              <button
+                                onClick={handleClearHistory}
+                                className="text-[9px] text-red-400 hover:text-red-300 flex items-center space-x-1"
+                                title="Ryd historik"
+                              >
+                                <Trash2 className="w-3 h-3" /><span>Ryd</span>
+                              </button>
+                            )}
+                          </div>
+                          {history.length === 0 ? (
+                            <div className="px-2.5 py-3 text-[10px] text-slate-500">Ingen gemte genereringer endnu.</div>
+                          ) : history.map(item => (
+                            <button
+                              key={item.id}
+                              onClick={() => { handleLoadHistory(item); setHistoryOpen(false); }}
+                              className="w-full text-left px-2.5 py-2 text-[10px] text-slate-250 hover:text-white hover:bg-slate-900 rounded transition-colors border-t border-slate-900/60 first:border-t-0"
+                            >
+                              <div className="font-bold text-slate-200 truncate">{item.client} — {item.project}</div>
+                              <div className="text-[9px] text-slate-500">{new Date(item.ts).toLocaleString('da-DK')}</div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* PDF Export Action Button & Template Selection Aligned Right */}
