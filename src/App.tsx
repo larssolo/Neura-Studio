@@ -54,6 +54,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult } from './types';
+import { buildMarkdown, downloadTextFile, slugify } from './lib/exportMarkdown';
 
 const PRESETS: PresetBrief[] = [
   {
@@ -371,6 +372,18 @@ export default function App() {
         setPrintMode('all');
       }, 1000);
     }, 150);
+  };
+
+  // Export the full content package as Markdown (download or clipboard)
+  const handleExportMarkdown = () => {
+    if (!output) return;
+    const md = buildMarkdown(output, brief);
+    downloadTextFile(`${slugify(brief.client || 'brand-surface')}-case.md`, md);
+  };
+
+  const handleCopyAllMarkdown = () => {
+    if (!output) return;
+    handleCopyToClipboard(buildMarkdown(output, brief), 'export_all_md');
   };
 
   // Run the whole generator
@@ -1779,6 +1792,28 @@ export default function App() {
                           >
                             <BookOpen className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
                             <span>Kun Case-tekster</span>
+                          </button>
+
+                          <div className="px-2.5 py-1 bg-slate-900/40 rounded border-y border-slate-900/60 my-1">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest block">Markdown</span>
+                          </div>
+
+                          <button
+                            onClick={handleExportMarkdown}
+                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-slate-250 hover:text-white hover:bg-slate-900 rounded transition-colors flex items-center space-x-2"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Download som Markdown (.md)</span>
+                          </button>
+
+                          <button
+                            onClick={handleCopyAllMarkdown}
+                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-slate-250 hover:text-white hover:bg-slate-900 rounded transition-colors flex items-center space-x-2 border-t border-slate-900"
+                          >
+                            {copiedKey === 'export_all_md'
+                              ? <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              : <Copy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
+                            <span>Kopiér alt (Markdown)</span>
                           </button>
                         </div>
                       </div>
