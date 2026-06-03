@@ -1858,7 +1858,7 @@ export default function App() {
                   
                   {/* TAB SWITCHERS BAR */}
                   <div className="bg-slate-950/90 border-b border-slate-800 px-2 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 sm:pb-0">
-                    <div className="flex flex-wrap gap-1 flex-1">
+                    <div className="flex gap-1 flex-1 overflow-x-auto sm:flex-wrap sm:overflow-x-visible">
                       {[
                         { id: 'case', label: 'Case-tekst', icon: FileText },
                         { id: 'linkedin', label: 'LinkedIn Opslag', icon: Linkedin },
@@ -1879,7 +1879,7 @@ export default function App() {
                             onClick={() => {
                               setActiveTab(tab.id);
                             }}
-                            className={`flex items-center space-x-1.5 px-3 py-2.5 text-xs font-semibold rounded-t-lg transition-all border-t-2 cursor-pointer ${
+                            className={`flex items-center space-x-1.5 px-3 py-2.5 text-xs font-semibold rounded-t-lg transition-all border-t-2 cursor-pointer shrink-0 whitespace-nowrap ${
                               active 
                                 ? 'bg-slate-900 border-brand-orange-500 text-white shadow-md' 
                                 : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
