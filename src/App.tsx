@@ -56,6 +56,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult } from './types';
 import { buildMarkdown, downloadTextFile, slugify } from './lib/exportMarkdown';
+import { downloadDocx } from './lib/exportDocx';
 import { saveSession, loadSession } from './lib/session';
 import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
 
@@ -408,6 +409,15 @@ export default function App() {
   const handleCopyAllMarkdown = () => {
     if (!output) return;
     handleCopyToClipboard(buildMarkdown(output, brief), 'export_all_md');
+  };
+
+  const handleExportDocx = async () => {
+    if (!output) return;
+    try {
+      await downloadDocx(`${slugify(brief.client || 'brand-surface')}-case.docx`, output, brief);
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Kunne ikke generere Word-dokument.');
+    }
   };
 
   // Reload a previous generation from the local history
@@ -1996,6 +2006,18 @@ export default function App() {
                               ? <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                               : <Copy className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
                             <span>Kopiér alt (Markdown)</span>
+                          </button>
+
+                          <div className="px-2.5 py-1 bg-slate-900/40 rounded border-y border-slate-900/60 my-1">
+                            <span className="text-[8px] text-slate-500 font-bold uppercase tracking-widest block">Word</span>
+                          </div>
+
+                          <button
+                            onClick={handleExportDocx}
+                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-slate-250 hover:text-white hover:bg-slate-900 rounded transition-colors flex items-center space-x-2"
+                          >
+                            <Download className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                            <span>Download som Word (.docx)</span>
                           </button>
                         </div>
                       </div>
