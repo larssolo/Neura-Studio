@@ -57,6 +57,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult } from './types';
 import { buildMarkdown, downloadTextFile, slugify } from './lib/exportMarkdown';
 import { downloadDocx } from './lib/exportDocx';
+import { ImageGenCard } from './components/ImageGenCard';
 import { saveSession, loadSession } from './lib/session';
 import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
 
@@ -2504,331 +2505,49 @@ export default function App() {
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             
                             {/* Prompt 1: Hero */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4 shadow-xl">
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wide">1. Hero Image Prompt</span>
-                                  <button
-                                    onClick={() => handleCopyToClipboard(output.imagePrompts.hero, 'prompt_hero')}
-                                    className="text-slate-500 hover:text-white transition-colors"
-                                  >
-                                    {copiedKey === 'prompt_hero' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                  </button>
-                                </div>
-                                <p className="text-slate-300 text-[11px] leading-relaxed italic border-l border-slate-700 pl-2">
-                                  "{output.imagePrompts.hero}"
-                                </p>
-                              </div>
-
-                              {/* Interactive Generation Section */}
-                              <div className="mt-2 pt-3 border-t border-slate-800/80 space-y-3">
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="text-slate-400 font-mono">Billedformat:</span>
-                                  <div className="flex bg-slate-950 p-0.5 rounded border border-slate-800 space-x-1">
-                                    {['16:9', '1:1', '4:3', '9:16'].map((r) => (
-                                      <button
-                                        key={r}
-                                        onClick={() => handleAspectChange('hero', r)}
-                                        className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded transition-colors ${
-                                          generatedImages.hero.aspectRatio === r
-                                            ? 'bg-orange-500 text-white shadow-sm'
-                                            : 'text-slate-400 hover:text-slate-200'
-                                        }`}
-                                      >
-                                        {r}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {generatedImages.hero.loading ? (
-                                  <div className="bg-slate-950 border border-slate-850 rounded-lg p-8 flex flex-col items-center justify-center space-y-3 min-h-[140px] animate-pulse">
-                                    <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                                    <span className="text-[10px] text-slate-400 font-mono">Genererer billede...</span>
-                                  </div>
-                                ) : generatedImages.hero.error ? (
-                                  <div className="bg-red-950/40 border border-red-900/40 text-red-400 rounded-lg p-3 text-[11px] space-y-2">
-                                    <div className="flex items-start space-x-1.5">
-                                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                                      <span className="leading-tight">{generatedImages.hero.error}</span>
-                                    </div>
-                                    <button
-                                      onClick={() => handleGenerateImage('hero', output.imagePrompts.hero)}
-                                      className="w-full py-1 text-[10px] bg-red-900/60 hover:bg-red-900/80 border border-red-700/50 rounded font-medium text-white transition-all"
-                                    >
-                                      Prøv igen
-                                    </button>
-                                  </div>
-                                ) : generatedImages.hero.url ? (
-                                  <div className="space-y-2">
-                                    <div className="relative group rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
-                                      <img
-                                        src={generatedImages.hero.url}
-                                        alt="AI generated hero concept"
-                                        referrerPolicy="no-referrer"
-                                        className="w-full h-auto object-cover max-h-[180px] rounded-lg transition-transform duration-300 group-hover:scale-105"
-                                      />
-                                      <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                                        <a
-                                          href={generatedImages.hero.url}
-                                          download={`${brief.client.replace(/\s+/g, '_')}_hero_${generatedImages.hero.aspectRatio.replace(':', 'x')}.jpg`}
-                                          className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-orange-500 hover:scale-110 transition-all shadow-md"
-                                          title="Download i fuld opløsning"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                        </a>
-                                        <button
-                                          onClick={() => handleGenerateImage('hero', output.imagePrompts.hero)}
-                                          className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-orange-500 hover:scale-110 transition-all shadow-md"
-                                          title="Generer nyt billede"
-                                        >
-                                          <RotateCcw className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[10px] text-zinc-400 px-1">
-                                      <span className="font-mono bg-slate-950 px-1.5 py-0.5 rounded text-zinc-500">Format: {generatedImages.hero.aspectRatio}</span>
-                                      <a
-                                        href={generatedImages.hero.url}
-                                        download={`${brief.client.replace(/\s+/g, '_')}_hero.jpg`}
-                                        className="text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1"
-                                      >
-                                        <Download className="w-3 h-3" />
-                                        <span>Download</span>
-                                      </a>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => handleGenerateImage('hero', output.imagePrompts.hero)}
-                                    className="w-full py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-550 hover:to-amber-550 border border-orange-500 rounded-lg text-white font-medium text-[11px] shadow-md hover:shadow-lg hover:scale-[1.01] transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
-                                  >
-                                    <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
-                                    <span>Generer Billede</span>
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="text-[9px] text-slate-500 font-mono mt-3 pt-2 border-t border-slate-800/60 uppercase">High Production Value</div>
-                            </div>
+                            <ImageGenCard
+                              label="1. Hero Image Prompt"
+                              footer="High Production Value"
+                              alt="AI generated hero concept"
+                              ratios={['16:9', '1:1', '4:3', '9:16']}
+                              promptText={output.imagePrompts.hero}
+                              image={generatedImages.hero}
+                              downloadBase={`${(brief.client || '').replace(/\s+/g, '_')}_hero`}
+                              copied={copiedKey === 'prompt_hero'}
+                              onCopy={() => handleCopyToClipboard(output.imagePrompts.hero, 'prompt_hero')}
+                              onAspectChange={(r) => handleAspectChange('hero', r)}
+                              onGenerate={() => handleGenerateImage('hero', output.imagePrompts.hero)}
+                            />
 
                             {/* Prompt 2: Detail */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4 shadow-xl">
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wide">2. Detail / Close-up Prompt</span>
-                                  <button
-                                    onClick={() => handleCopyToClipboard(output.imagePrompts.detail, 'prompt_detail')}
-                                    className="text-slate-500 hover:text-white transition-colors"
-                                  >
-                                    {copiedKey === 'prompt_detail' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                  </button>
-                                </div>
-                                <p className="text-slate-300 text-[11px] leading-relaxed italic border-l border-slate-700 pl-2">
-                                  "{output.imagePrompts.detail}"
-                                </p>
-                              </div>
-
-                              {/* Interactive Generation Section */}
-                              <div className="mt-2 pt-3 border-t border-slate-800/80 space-y-3">
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="text-slate-400 font-mono">Billedformat:</span>
-                                  <div className="flex bg-slate-950 p-0.5 rounded border border-slate-800 space-x-1">
-                                    {['1:1', '4:3', '16:9', '9:16'].map((r) => (
-                                      <button
-                                        key={r}
-                                        onClick={() => handleAspectChange('detail', r)}
-                                        className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded transition-colors ${
-                                          generatedImages.detail.aspectRatio === r
-                                            ? 'bg-orange-500 text-white shadow-sm'
-                                            : 'text-slate-400 hover:text-slate-200'
-                                        }`}
-                                      >
-                                        {r}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {generatedImages.detail.loading ? (
-                                  <div className="bg-slate-950 border border-slate-850 rounded-lg p-8 flex flex-col items-center justify-center space-y-3 min-h-[140px] animate-pulse">
-                                    <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                                    <span className="text-[10px] text-slate-400 font-mono">Genererer billede...</span>
-                                  </div>
-                                ) : generatedImages.detail.error ? (
-                                  <div className="bg-red-950/40 border border-red-900/40 text-red-400 rounded-lg p-3 text-[11px] space-y-2">
-                                    <div className="flex items-start space-x-1.5">
-                                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                                      <span className="leading-tight">{generatedImages.detail.error}</span>
-                                    </div>
-                                    <button
-                                      onClick={() => handleGenerateImage('detail', output.imagePrompts.detail)}
-                                      className="w-full py-1 text-[10px] bg-red-900/60 hover:bg-red-900/80 border border-red-700/50 rounded font-medium text-white transition-all"
-                                    >
-                                      Prøv igen
-                                    </button>
-                                  </div>
-                                ) : generatedImages.detail.url ? (
-                                  <div className="space-y-2">
-                                    <div className="relative group rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
-                                      <img
-                                        src={generatedImages.detail.url}
-                                        alt="AI generated closeup concept"
-                                        referrerPolicy="no-referrer"
-                                        className="w-full h-auto object-cover max-h-[180px] rounded-lg transition-transform duration-300 group-hover:scale-105"
-                                      />
-                                      <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                                        <a
-                                          href={generatedImages.detail.url}
-                                          download={`${brief.client.replace(/\s+/g, '_')}_detail_${generatedImages.detail.aspectRatio.replace(':', 'x')}.jpg`}
-                                          className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-orange-500 hover:scale-110 transition-all shadow-md"
-                                          title="Download i fuld opløsning"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                        </a>
-                                        <button
-                                          onClick={() => handleGenerateImage('detail', output.imagePrompts.detail)}
-                                          className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-orange-500 hover:scale-110 transition-all shadow-md"
-                                          title="Generer nyt billede"
-                                        >
-                                          <RotateCcw className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[10px] text-zinc-400 px-1">
-                                      <span className="font-mono bg-slate-950 px-1.5 py-0.5 rounded text-zinc-500">Format: {generatedImages.detail.aspectRatio}</span>
-                                      <a
-                                        href={generatedImages.detail.url}
-                                        download={`${brief.client.replace(/\s+/g, '_')}_detail.jpg`}
-                                        className="text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1"
-                                      >
-                                        <Download className="w-3 h-3" />
-                                        <span>Download</span>
-                                      </a>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => handleGenerateImage('detail', output.imagePrompts.detail)}
-                                    className="w-full py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-550 hover:to-amber-550 border border-orange-500 rounded-lg text-white font-medium text-[11px] shadow-md hover:shadow-lg hover:scale-[1.01] transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
-                                  >
-                                    <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
-                                    <span>Generer Billede</span>
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="text-[9px] text-slate-500 font-mono mt-3 pt-2 border-t border-slate-800/60 uppercase">Macro / Technical texture</div>
-                            </div>
+                            <ImageGenCard
+                              label="2. Detail / Close-up Prompt"
+                              footer="Macro / Technical texture"
+                              alt="AI generated closeup concept"
+                              ratios={['1:1', '4:3', '16:9', '9:16']}
+                              promptText={output.imagePrompts.detail}
+                              image={generatedImages.detail}
+                              downloadBase={`${(brief.client || '').replace(/\s+/g, '_')}_detail`}
+                              copied={copiedKey === 'prompt_detail'}
+                              onCopy={() => handleCopyToClipboard(output.imagePrompts.detail, 'prompt_detail')}
+                              onAspectChange={(r) => handleAspectChange('detail', r)}
+                              onGenerate={() => handleGenerateImage('detail', output.imagePrompts.detail)}
+                            />
 
                             {/* Prompt 3: Abstract */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4 shadow-xl">
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wide">3. Abstract Background</span>
-                                  <button
-                                    onClick={() => handleCopyToClipboard(output.imagePrompts.abstract, 'prompt_abstract')}
-                                    className="text-slate-500 hover:text-white transition-colors"
-                                  >
-                                    {copiedKey === 'prompt_abstract' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                  </button>
-                                </div>
-                                <p className="text-slate-300 text-[11px] leading-relaxed italic border-l border-slate-700 pl-2">
-                                  "{output.imagePrompts.abstract}"
-                                </p>
-                              </div>
-
-                              {/* Interactive Generation Section */}
-                              <div className="mt-2 pt-3 border-t border-slate-800/80 space-y-3">
-                                <div className="flex items-center justify-between text-[11px]">
-                                  <span className="text-slate-400 font-mono">Billedformat:</span>
-                                  <div className="flex bg-slate-950 p-0.5 rounded border border-slate-800 space-x-1">
-                                    {['16:9', '1:1', '4:3', '9:16'].map((r) => (
-                                      <button
-                                        key={r}
-                                        onClick={() => handleAspectChange('abstract', r)}
-                                        className={`px-2 py-0.5 text-[9px] font-mono font-bold rounded transition-colors ${
-                                          generatedImages.abstract.aspectRatio === r
-                                            ? 'bg-orange-500 text-white shadow-sm'
-                                            : 'text-slate-400 hover:text-slate-200'
-                                        }`}
-                                      >
-                                        {r}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {generatedImages.abstract.loading ? (
-                                  <div className="bg-slate-950 border border-slate-850 rounded-lg p-8 flex flex-col items-center justify-center space-y-3 min-h-[140px] animate-pulse">
-                                    <Loader2 className="w-6 h-6 text-orange-500 animate-spin" />
-                                    <span className="text-[10px] text-slate-400 font-mono">Genererer billede...</span>
-                                  </div>
-                                ) : generatedImages.abstract.error ? (
-                                  <div className="bg-red-950/40 border border-red-900/40 text-red-400 rounded-lg p-3 text-[11px] space-y-2">
-                                    <div className="flex items-start space-x-1.5">
-                                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                                      <span className="leading-tight">{generatedImages.abstract.error}</span>
-                                    </div>
-                                    <button
-                                      onClick={() => handleGenerateImage('abstract', output.imagePrompts.abstract)}
-                                      className="w-full py-1 text-[10px] bg-red-900/60 hover:bg-red-900/80 border border-red-700/50 rounded font-medium text-white transition-all"
-                                    >
-                                      Prøv igen
-                                    </button>
-                                  </div>
-                                ) : generatedImages.abstract.url ? (
-                                  <div className="space-y-2">
-                                    <div className="relative group rounded-lg overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
-                                      <img
-                                        src={generatedImages.abstract.url}
-                                        alt="AI generated abstract background concept"
-                                        referrerPolicy="no-referrer"
-                                        className="w-full h-auto object-cover max-h-[180px] rounded-lg transition-transform duration-300 group-hover:scale-105"
-                                      />
-                                      <div className="absolute inset-0 bg-slate-950/70 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center space-x-2">
-                                        <a
-                                          href={generatedImages.abstract.url}
-                                          download={`${brief.client.replace(/\s+/g, '_')}_abstract_${generatedImages.abstract.aspectRatio.replace(':', 'x')}.jpg`}
-                                          className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-orange-500 hover:scale-110 transition-all shadow-md"
-                                          title="Download i fuld opløsning"
-                                        >
-                                          <Download className="w-4 h-4" />
-                                        </a>
-                                        <button
-                                          onClick={() => handleGenerateImage('abstract', output.imagePrompts.abstract)}
-                                          className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-orange-500 hover:scale-110 transition-all shadow-md"
-                                          title="Generer nyt billede"
-                                        >
-                                          <RotateCcw className="w-4 h-4" />
-                                        </button>
-                                      </div>
-                                    </div>
-                                    <div className="flex items-center justify-between text-[10px] text-zinc-400 px-1">
-                                      <span className="font-mono bg-slate-950 px-1.5 py-0.5 rounded text-zinc-500">Format: {generatedImages.abstract.aspectRatio}</span>
-                                      <a
-                                        href={generatedImages.abstract.url}
-                                        download={`${brief.client.replace(/\s+/g, '_')}_abstract.jpg`}
-                                        className="text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1"
-                                      >
-                                        <Download className="w-3 h-3" />
-                                        <span>Download</span>
-                                      </a>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => handleGenerateImage('abstract', output.imagePrompts.abstract)}
-                                    className="w-full py-2 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-550 hover:to-amber-550 border border-orange-500 rounded-lg text-white font-medium text-[11px] shadow-md hover:shadow-lg hover:scale-[1.01] transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
-                                  >
-                                    <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
-                                    <span>Generer Billede</span>
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="text-[9px] text-slate-500 font-mono mt-3 pt-2 border-t border-slate-800/60 uppercase">Visual Atmosphere textures</div>
-                            </div>
+                            <ImageGenCard
+                              label="3. Abstract Background"
+                              footer="Visual Atmosphere textures"
+                              alt="AI generated abstract background concept"
+                              ratios={['16:9', '1:1', '4:3', '9:16']}
+                              promptText={output.imagePrompts.abstract}
+                              image={generatedImages.abstract}
+                              downloadBase={`${(brief.client || '').replace(/\s+/g, '_')}_abstract`}
+                              copied={copiedKey === 'prompt_abstract'}
+                              onCopy={() => handleCopyToClipboard(output.imagePrompts.abstract, 'prompt_abstract')}
+                              onAspectChange={(r) => handleAspectChange('abstract', r)}
+                              onGenerate={() => handleGenerateImage('abstract', output.imagePrompts.abstract)}
+                            />
 
                           </div>
                         </motion.div>
