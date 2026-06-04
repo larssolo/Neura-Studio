@@ -20,8 +20,9 @@ export const config = {
   model: process.env.ANTHROPIC_MODEL ?? 'claude-opus-4-8',
   // Billig/hurtig model til trivielle opgaver (fx /refine).
   fastModel: process.env.ANTHROPIC_FAST_MODEL ?? 'claude-haiku-4-5',
-  // Rigeligt loft pga. stort, tosproget /generate-output.
-  maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS ?? 16000),
+  // Loft for output-tokens. Sænket fra 16000 → 8000 for at begrænse værste-falds
+  // omkostning pr. kald; det fulde generate-output ligger typisk på ~5-6k.
+  maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS ?? 8000),
   // Pluggbar billed-udbyder: fal (standard) | openai | stability.
   imageProvider: (process.env.IMAGE_PROVIDER ?? 'fal').toLowerCase(),
 };
