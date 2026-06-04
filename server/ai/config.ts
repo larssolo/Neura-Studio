@@ -5,7 +5,9 @@
 
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Indlæs miljøvariabler. Præcedens: ægte env-variabler > .env.local > .env.
+// (.env.local er den lokale, ikke-committede nøglefil README henviser til.)
+dotenv.config({ path: ['.env.local', '.env'] });
 
 /**
  * Centraliseret konfiguration for AI-laget.
