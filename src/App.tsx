@@ -64,6 +64,19 @@ import { DeliberationTimeline } from './components/DeliberationTimeline';
 import { saveSession, loadSession } from './lib/session';
 import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
 
+/**
+ * Menneskelig fejlbesked ud fra en HTTP-status. En 404 betyder næsten altid at
+ * frontend'en serveres uden Express-backenden (forkert port eller en statisk
+ * build), så vi guider brugeren i stedet for at vise en rå statuskode.
+ */
+function httpErrorMessage(status: number, serverMsg?: string): string {
+  if (serverMsg) return serverMsg;
+  if (status === 404) {
+    return 'Backenden svarer ikke (404). Kør appen med "npm run dev" og åbn http://localhost:3000 — ikke en anden port eller en bygget fil.';
+  }
+  return `Serveren svarede med status ${status}`;
+}
+
 const PRESETS: PresetBrief[] = [
   {
     name: "Modaxo Move 2026 (Konference / 3D Maskot)",
@@ -275,8 +288,8 @@ export default function App() {
       })
       .then(async res => {
         if (!res.ok) {
-          const text = await res.json();
-          throw new Error(text.error || "Uventet fejl under scanning.");
+          const text = await res.json().catch(() => ({}));
+          throw new Error(httpErrorMessage(res.status, text.error));
         }
         return res.json();
       })
@@ -484,7 +497,7 @@ export default function App() {
       });
       if (!res.ok) {
         const e = await res.json().catch(() => ({}));
-        throw new Error(e.error || `Serveren svarede med status ${res.status}`);
+        throw new Error(httpErrorMessage(res.status, e.error));
       }
       const data = await res.json();
       setVariants({ key: targetKey, options: data.variants || [] });
@@ -601,7 +614,7 @@ export default function App() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Server returnerede status ${response.status}`);
+        throw new Error(httpErrorMessage(response.status, errData.error));
       }
 
       const data: BrandSurfaceOutput = await response.json();
@@ -648,7 +661,7 @@ export default function App() {
 
       if (!response.ok || !response.body) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Serveren svarede med fejlkode ${response.status}`);
+        throw new Error(httpErrorMessage(response.status, errData.error));
       }
 
       // Consume the SSE stream: phase events update the button label; the final event carries the result.
@@ -748,7 +761,7 @@ export default function App() {
       });
 
       if (!response.ok) {
-        throw new Error(`Fejl under toneanalyse på server (Status ${response.status})`);
+        throw new Error(httpErrorMessage(response.status));
       }
 
       const analysisData = await response.json();
@@ -784,7 +797,7 @@ export default function App() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Fejl på serveren (Status ${response.status})`);
+        throw new Error(httpErrorMessage(response.status, errData.error));
       }
 
       const resData = await response.json();
@@ -855,7 +868,7 @@ export default function App() {
 
       if (!response.ok || !response.body) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Serveren svarede med fejlkode ${response.status}`);
+        throw new Error(httpErrorMessage(response.status, errData.error));
       }
 
       // Live-update helper: skriv den streamede tekst ind i det rigtige output-felt
@@ -1050,7 +1063,7 @@ export default function App() {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || `Serveren svarede med statuskode ${response.status}`);
+        throw new Error(httpErrorMessage(response.status, errData.error));
       }
 
       const data = await response.json();
@@ -1319,7 +1332,7 @@ export default function App() {
               Content Machine
             </span>
             <div className="flex items-center text-[11px] text-slate-500 font-mono mt-0.5">
-              <span>v1.2.0</span>
+              <span>v1.2.1</span>
             </div>
           </div>
         </div>
@@ -3394,7 +3407,7 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.2.0
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.2.1
             </span>
             <span>Konkret. Autentisk. Kreativt.</span>
           </div>
