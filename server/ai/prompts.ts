@@ -288,3 +288,109 @@ ${text}
 """`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Deliberation (redaktionsmøde): Kreativ Direktør + Chefredaktør
+// ---------------------------------------------------------------------------
+
+export const CREATIVE_PUSH_SYSTEM_ROLE = `Du er en prisvindende Kreativ Direktør.
+Din opgave er at skubbe indholdet et niveau højere kreativt: foreslå dristigere, mere uventede vinkler, kroge og overskrifter — uden at miste det konkrete eller opfinde fakta.
+Du leverer IKKE den færdige tekst; du leverer skarpe, alternative idéer som chefredaktøren kan vælge fra. Undgå floskler og tomme buzzwords. Aflever via det angivne værktøj.`;
+
+/** Kreativ Direktør: foreslår dristigere overskrifter/kroge/vinkler ud fra udkast + kritik. */
+export function buildCreativePush(
+  draft: any,
+  critique: any,
+  brief?: Brief,
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const lang = brief?.language || 'Dansk';
+  const tone = brief?.tone || 'professionel, menneskelig, kreativ';
+  const headlines = (draft?.headlines || []).slice(0, 5).map((h: string) => `- ${h}`).join('\n');
+  const hook = (draft?.linkedinPost || '').split('\n')[0] || '';
+  const cliches = (critique?.clichesFound || []).join(', ') || 'ingen registreret';
+
+  const user = `FØRSTEUDKASTETS NUVÆRENDE OVERSKRIFTER:
+${headlines || '- (ingen)'}
+
+FØRSTEUDKASTETS LINKEDIN-KROG (åbningslinje):
+"${hook}"
+
+KORT CASE-TEKST (til kontekst):
+"""
+${draft?.shortCaseText || ''}
+"""
+
+REDAKTIONENS KRITIK (svagheder at løfte):
+- Registrerede floskler: ${cliches}
+- Samlet dom: ${critique?.overallReview || 'N/A'}
+
+OPGAVE:
+Foreslå markant dristigere og mere uventede kreative retninger — uden at miste det konkrete eller fabrikere fakta.
+Lever via værktøjet: mindst 4 nye overskrifter, mindst 3 nye LinkedIn-kroge og 2-3 korte vinkel-noter.
+Tone: ${tone}. Sprog: ${lang}.`;
+
+  return { system: cacheableSystem([CREATIVE_PUSH_SYSTEM_ROLE]), user };
+}
+
+export const SYNTHESIZE_SYSTEM_ROLE = `Du er Chefredaktør for Content Machine.
+Du modtager (1) et førsteudkast, (2) en uvildig redaktionel kritik med floskel-liste og scorer, og (3) kreative alternativer fra en kreativ direktør.
+Din opgave er at producere en FORBEDRET, samlet udgave af hele content-pakken, der er BÅDE mere kreativ OG mere konkret: fjern hver flosret/kliché fra kritikkens liste, indarbejd de stærkeste kreative vinkler og kroge, og hæv konkretheden med specifikke leverancer, tal og formater.
+Bevar alle fakta og tal fra udkastet. Følg de samme regler som for normal generering (billedprompts på engelsk, alle felter udfyldt). Aflever HELE pakken via det angivne værktøj, præcis som skemaet kræver.`;
+
+/** Chefredaktør: syntetiserer udkast + kritik + kreative alternativer til forbedret fuld pakke. */
+export function buildSynthesize(
+  draft: any,
+  critique: any,
+  creative: any,
+  brief: Brief,
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const cliches = (critique?.clichesFound || []).join(', ') || 'ingen';
+  const evalNotes = (critique?.evaluations || [])
+    .map((e: any) => `- ${e.ruleName}: ${e.status} (${e.score}/100) — ${e.feedback}`)
+    .join('\n');
+  const boldHeadlines = (creative?.boldHeadlines || []).map((h: string) => `- ${h}`).join('\n');
+  const boldHooks = (creative?.boldHooks || []).map((h: string) => `- ${h}`).join('\n');
+  const angles = (creative?.angles || []).map((a: string) => `- ${a}`).join('\n');
+
+  const user = `${generateUserText(brief)}
+
+=== FØRSTEUDKAST (skal forbedres, ikke gentages ordret) ===
+KORT CASE-TEKST:
+"""
+${draft?.shortCaseText || ''}
+"""
+LANG CASE-TEKST:
+"""
+${draft?.longCaseText || ''}
+"""
+LINKEDIN-OPSLAG:
+"""
+${draft?.linkedinPost || ''}
+"""
+OVERSKRIFTER: ${(draft?.headlines || []).join(' | ')}
+CTA: ${(draft?.cta || []).join(' | ')}
+NYHEDSBREV-EMNER: ${(draft?.mailchimpSubjects || []).join(' | ')}
+
+=== REDAKTIONEL KRITIK (skal adresseres) ===
+Floskler der SKAL fjernes: ${cliches}
+Scorer — floskel-frihed: ${critique?.clicheScore ?? 'N/A'}/100, konkrethed: ${critique?.concretenessScore ?? 'N/A'}/100, menneskelighed: ${critique?.humanScore ?? 'N/A'}/100
+Regel-evalueringer:
+${evalNotes || '- ingen'}
+Samlet dom: ${critique?.overallReview || 'N/A'}
+
+=== KREATIVE ALTERNATIVER (vælg og forfin de stærkeste) ===
+Dristige overskrifter:
+${boldHeadlines || '- ingen'}
+Dristige LinkedIn-kroge:
+${boldHooks || '- ingen'}
+Friske vinkler:
+${angles || '- ingen'}
+
+OPGAVE:
+Producér en FORBEDRET, samlet udgave af HELE pakken via værktøjet. Den skal være BÅDE mere kreativ (indarbejd de stærkeste alternativer) OG mere konkret (fjern hver flosret fra listen, hæv konkretheden med specifikke leverancer, tal og formater). Bevar alle fakta og tal. Aflever præcis som skemaet kræver.`;
+
+  return {
+    system: cacheableSystem([SYNTHESIZE_SYSTEM_ROLE, GENERATE_SYSTEM_ROLE, cviSectionText(brief)]),
+    user,
+  };
+}

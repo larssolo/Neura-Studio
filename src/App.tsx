@@ -51,15 +51,17 @@ import {
   Moon,
   Download,
   Loader2,
-  Clock
+  Clock,
+  Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult } from './types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis } from './types';
 import { buildMarkdown, downloadTextFile, slugify } from './lib/exportMarkdown';
 import { downloadHtmlFile } from './lib/exportHtml';
 import { downloadDocx } from './lib/exportDocx';
 import { ImageGenCard } from './components/ImageGenCard';
 import { DirectUsableBar } from './components/DirectUsableBar';
+import { DeliberationTimeline } from './components/DeliberationTimeline';
 import { saveSession, loadSession } from './lib/session';
 import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
 
@@ -134,6 +136,15 @@ export default function App() {
   const [isRefining, setIsRefining] = useState<boolean>(false);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [generationStep, setGenerationStep] = useState<string>('');
+
+  // "Dyb tilstand" (redaktionsmøde) — opt-in multi-AI deliberation
+  const [deepMode, setDeepMode] = useState<boolean>(false);
+  const [deepCritique, setDeepCritique] = useState<{
+    before: ToneAnalysis;
+    after?: ToneAnalysis | null;
+    earlyStopped?: boolean;
+    synthesisTruncated?: boolean;
+  } | null>(null);
   
   // Refinement states
   const [selectedTextKey, setSelectedTextKey] = useState<string>('shortCaseText'); // which property in BrandSurfaceOutput is chosen for refinement
@@ -550,10 +561,16 @@ export default function App() {
       return;
     }
 
+    // Dyb tilstand: kør det fulde redaktionsmøde (multi-AI deliberation) i stedet.
+    if (deepMode) {
+      return handleGenerateDeep();
+    }
+
     setIsGenerating(true);
     setErrorMsg(null);
     setRefinementHistory([]);
-    
+    setDeepCritique(null);
+
     // Simulate smart step updates for rich UX
     const steps = [
       "Analyserer projekt-brief...",
@@ -611,6 +628,103 @@ export default function App() {
       setErrorMsg(err.message || 'Der skete en fejl under AI-genereringen.');
     } finally {
       clearInterval(interval);
+      setIsGenerating(false);
+    }
+  };
+
+  // Dyb tilstand: multi-AI "redaktionsmøde" via SSE (udkast → kritik → kreativ → syntese → verificér)
+  const handleGenerateDeep = async () => {
+    setIsGenerating(true);
+    setErrorMsg(null);
+    setRefinementHistory([]);
+    setDeepCritique(null);
+    setGenerationStep('Starter redaktionsmøde …');
+
+    try {
+      const response = await fetch('/api/generate-deep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief })
+      });
+
+      if (!response.ok || !response.body) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || `Serveren svarede med fejlkode ${response.status}`);
+      }
+
+      // Consume the SSE stream: phase events update the button label; the final event carries the result.
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamErr: string | null = null;
+      let finalEvt: any = null;
+
+      while (true) {
+        const { value, done: rdDone } = await reader.read();
+        if (rdDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const part of parts) {
+          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
+          const isErrEvent = part.includes('event: error');
+          if (!dataLine) continue;
+          const payload = dataLine.slice(6);
+          if (payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (isErrEvent && evt.error) {
+              streamErr = evt.error;
+            } else if (evt.done && evt.output) {
+              finalEvt = evt;
+            } else if (evt.phase && typeof evt.label === 'string') {
+              setGenerationStep(evt.label);
+            }
+          } catch {
+            /* ignorér ukomplette/uventede linjer */
+          }
+        }
+      }
+
+      if (streamErr) throw new Error(streamErr);
+      if (!finalEvt || !finalEvt.output) {
+        throw new Error('Redaktionsmødet returnerede intet resultat.');
+      }
+
+      const data: BrandSurfaceOutput = finalEvt.output;
+      const draft: BrandSurfaceOutput = finalEvt.draft || data;
+      setOutput(data);
+      setHistory(prev => pushHistory(prev, brief, data));
+
+      // Seed revisions med udkast (Første) → endelig (Nyeste), så sammenligningen viser udviklingen.
+      const seed = (a?: string, b?: string): string[] =>
+        a && b && a !== b ? [a, b] : b ? [b] : a ? [a] : [];
+      setRevisions({
+        shortCaseText: seed(draft.shortCaseText, data.shortCaseText),
+        longCaseText: seed(draft.longCaseText, data.longCaseText),
+        linkedinPost: seed(draft.linkedinPost, data.linkedinPost),
+        creativeNewsletterSection: data.production?.newsletterSection ? [data.production.newsletterSection] : []
+      });
+      setActiveCompareIndex({
+        shortCaseText: null,
+        longCaseText: null,
+        linkedinPost: null,
+        creativeNewsletterSection: null
+      });
+
+      if (finalEvt.critiqueBefore) {
+        setDeepCritique({
+          before: finalEvt.critiqueBefore,
+          after: finalEvt.critiqueAfter ?? null,
+          earlyStopped: !!finalEvt.earlyStopped,
+          synthesisTruncated: !!finalEvt.synthesisTruncated
+        });
+      }
+      setActiveTab('case');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Der skete en fejl under redaktionsmødet.');
+    } finally {
       setIsGenerating(false);
     }
   };
@@ -1206,7 +1320,7 @@ export default function App() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange-500 to-amber-400 font-extrabold">Content Machine</span>
             </span>
             <div className="flex items-center text-[10px] text-slate-400 font-mono space-x-1 tracking-wider uppercase mt-0.5">
-              <span>v1.0.0</span>
+              <span>v1.1.0</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
               <span className="text-slate-500">System Ready</span>
             </div>
@@ -1606,6 +1720,31 @@ export default function App() {
               />
             </div>
 
+            {/* DEEP MODE TOGGLE (REDAKTIONSMØDE) */}
+            <button
+              type="button"
+              onClick={() => setDeepMode(v => !v)}
+              disabled={isGenerating}
+              aria-pressed={deepMode}
+              className={`w-full flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-lg border transition-all text-left ${
+                deepMode
+                  ? 'bg-brand-orange-600/10 border-brand-orange-500/40'
+                  : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+              } ${isGenerating ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+              title="Lader flere AI-roller kritisere og forbedre hinanden for et mere gennemarbejdet resultat"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Users className={`w-4 h-4 shrink-0 ${deepMode ? 'text-brand-orange-500' : 'text-slate-500'}`} />
+                <div className="min-w-0">
+                  <span className="block text-[11px] font-mono font-bold text-slate-200">Dyb tilstand · Redaktionsmøde</span>
+                  <span className="block text-[9px] text-slate-500 leading-tight truncate">Flere AI-roller forbedrer hinanden (langsommere, dyrere)</span>
+                </div>
+              </div>
+              <span className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${deepMode ? 'bg-brand-orange-500' : 'bg-slate-700'}`}>
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${deepMode ? 'translate-x-4' : ''}`} />
+              </span>
+            </button>
+
             {/* GENERATE ENGINE BUTTON (TRIGGER ALL) */}
             <button
               onClick={handleGenerateAll}
@@ -1621,6 +1760,11 @@ export default function App() {
                 <>
                   <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
                   <span className="animate-pulse">{generationStep || "Arbejder..."}</span>
+                </>
+              ) : deepMode ? (
+                <>
+                  <Users className="w-5 h-5 text-white animate-pulse" />
+                  <span>KØR REDAKTIONSMØDE</span>
                 </>
               ) : (
                 <>
@@ -1771,6 +1915,16 @@ export default function App() {
                 className="space-y-6"
               >
                 
+                {/* 0. SECTION: REDAKTIONSMØDE (DEEP MODE BEFORE/AFTER) */}
+                {deepCritique && (
+                  <DeliberationTimeline
+                    critiqueBefore={deepCritique.before}
+                    critiqueAfter={deepCritique.after}
+                    earlyStopped={deepCritique.earlyStopped}
+                    synthesisTruncated={deepCritique.synthesisTruncated}
+                  />
+                )}
+
                 {/* 1. SECTION: KAN BRUGES DIREKTE (PINNED HIGHLIGHTS) */}
                 <DirectUsableBar
                   directUsable={output.directUsable}
@@ -3245,7 +3399,7 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.0.0
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.1.0
             </span>
             <span>Konkret. Autentisk. Kreativt.</span>
           </div>
