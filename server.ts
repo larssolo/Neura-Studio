@@ -88,6 +88,7 @@ async function startServer() {
       res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // deaktivér proxy-buffering (Render/nginx) så SSE flyder
       res.flushHeaders?.();
 
       const stream = anthropic.messages.stream({
@@ -129,7 +130,9 @@ async function startServer() {
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // deaktivér proxy-buffering (Render/nginx) så SSE flyder
     res.flushHeaders?.();
+    res.write(': connected\n\n'); // åbn streamen straks, så proxyen ikke buffer-venter på første byte
 
     // Afbryd igangværende kald hvis klienten lukker forbindelsen.
     const ac = new AbortController();
@@ -180,7 +183,9 @@ async function startServer() {
     res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache, no-transform');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // deaktivér proxy-buffering (Render/nginx) så SSE flyder
     res.flushHeaders?.();
+    res.write(': connected\n\n'); // åbn streamen straks, så proxyen ikke buffer-venter på første byte
 
     const ac = new AbortController();
     req.on('close', () => ac.abort());
