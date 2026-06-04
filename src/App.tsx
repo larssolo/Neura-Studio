@@ -69,13 +69,13 @@ const PRESETS: PresetBrief[] = [
     brief: {
       client: "Modaxo",
       project: "Modaxo Move 2026",
-      description: "Brand Surface udviklede visuelt indhold til en international konference i København. Vi lavede speaker presentations, dynamiske visuals til LED-skærm, dinner visuals, awards visuals og content til liveoptrædener.",
+      description: "Vi udviklede visuelt indhold til en international konference i København. Vi lavede speaker presentations, dynamiske visuals til LED-skærm, dinner visuals, awards visuals og content til liveoptrædener.",
       details: "350 deltagere fra hele verden, deltagere fra 37 lande, 24x4 meter LED-skærm. Vi var også med til at udvikle Moxi, Modaxos nye lille maskot. Hun blev skabt med udgangspunkt i Modaxos logo og vækket til live som en 3D-karakter.",
       audience: "Virksomheder der holder events, konferencer, messer og keynotes.",
       tone: "Professionel, menneskelig, kreativ, ikke barnlig.",
       language: "Dansk",
       channels: ["Hjemmeside", "LinkedIn", "Nyhedsbrev"],
-      notes: "Brand Surface skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala."
+      notes: "Vi skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala."
     }
   },
   {
@@ -83,13 +83,13 @@ const PRESETS: PresetBrief[] = [
     brief: {
       client: "Bang & Olufsen",
       project: "Beolab Theatre Launch Event",
-      description: "Brand Surface leverede komplet 3D-visualisering og scenekonstruktion til den skandinaviske produktlancering. Vi designede et ultra-high-end digitalt univers, herunder live 3D eksploderede tegninger af produktkomponenter på scenen synkroniseret med lys-show.",
+      description: "Vi leverede komplet 3D-visualisering og scenekonstruktion til den skandinaviske produktlancering. Vi designede et ultra-high-end digitalt univers, herunder live 3D eksploderede tegninger af produktkomponenter på scenen synkroniseret med lys-show.",
       details: "Afholdt i et historisk teater i København for 150 VIP arkitekter og lyd-anmeldere. Ekstremt luksuriøs finish og fotorealistisk 3D visualisering.",
       audience: "High-end lyd-entusiaster, arkitekter, tech-medier og top-forhandlere.",
       tone: "Sofistikeret, design-fokuseret, eksklusiv, præcis.",
       language: "Dansk",
       channels: ["LinkedIn", "Hjemmeside", "Nyhedsbrev"],
-      notes: "Brand Surface skal fremhæves som den præcise kreative teknologiske kraft, der gør det muligt at forstå akustisk storhed visuelt."
+      notes: "Vi skal fremhæves som den præcise kreative teknologiske kraft, der gør det muligt at forstå akustisk storhed visuelt."
     }
   },
   {
@@ -103,7 +103,7 @@ const PRESETS: PresetBrief[] = [
       tone: "Visionær, troværdig, professionel, grøn og skarp.",
       language: "Dansk",
       channels: ["Nyhedsbrev", "LinkedIn"],
-      notes: "Brand Surface skal formidle indviklede tekniske klimadata enkelt, visuelt stærkt og inspirerende."
+      notes: "Vi skal formidle indviklede tekniske klimadata enkelt, visuelt stærkt og inspirerende."
     }
   }
 ];
@@ -119,7 +119,7 @@ export default function App() {
     tone: 'Professionel, menneskelig, kreativ, ikke barnlig.',
     language: 'Dansk',
     channels: ['Hjemmeside', 'LinkedIn', 'Nyhedsbrev'],
-    notes: 'Brand Surface skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala.'
+    notes: 'Vi skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala.'
   });
 
   const [activeTab, setActiveTab] = useState<string>('case'); // Tab keys matching commands
@@ -557,7 +557,7 @@ export default function App() {
     // Simulate smart step updates for rich UX
     const steps = [
       "Analyserer projekt-brief...",
-      "Udtrækker Brand Surface nøgleleverancer...",
+      "Udtrækker nøgleleverancer...",
       "Udelukker generiske marketing-floskler...",
       "Bygger kort og lang case-tekst...",
       "Skriver professionelt LinkedIn opslag...",
@@ -1203,10 +1203,10 @@ export default function App() {
           </div>
           <div>
             <span className="font-display font-bold text-xl tracking-tight text-white">
-              Brand Surface <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange-500 to-amber-400 font-extrabold">Content Machine</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-orange-500 to-amber-400 font-extrabold">Content Machine</span>
             </span>
             <div className="flex items-center text-[10px] text-slate-400 font-mono space-x-1 tracking-wider uppercase mt-0.5">
-              <span>Production Assistant v1.2</span>
+              <span>v1.0.0</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
               <span className="text-slate-500">System Ready</span>
             </div>
@@ -1237,13 +1237,13 @@ export default function App() {
             <span className="w-2 h-2 rounded-full bg-orange-500"></span>
             <span>Tone: Autentisk & Konkret</span>
           </div>
-          <a 
-            href="https://brandsurface.dk" 
-            target="_blank" 
-            rel="noopener noreferrer" 
+          <a
+            href="https://www.larssohl.dk"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-xs text-orange-400 hover:text-orange-300 font-mono transition-colors tracking-wide"
           >
-            brandsurface.dk &rarr;
+            larssohl.dk &rarr;
           </a>
         </div>
       </header>
@@ -1259,7 +1259,7 @@ export default function App() {
             <div className="flex items-center justify-between mb-3 text-slate-300">
               <span className="text-xs font-mono font-bold tracking-wider uppercase flex items-center space-x-1.5">
                 <Compass className="w-3.5 h-3.5 text-orange-500" />
-                <span>Vælg et Brand Surface projekt-brief</span>
+                <span>Vælg et projekt-brief</span>
               </span>
               <div className="flex items-center space-x-2">
                 <button
@@ -1601,7 +1601,7 @@ export default function App() {
                 rows={2}
                 value={brief.notes}
                 onChange={(e) => handleBriefChange('notes', e.target.value)}
-                placeholder="Brand Surface skal fremstå som en kreativ og praktisk samarbejdspartner..."
+                placeholder="Vi skal fremstå som en kreativ og praktisk samarbejdspartner..."
                 className="w-full bg-slate-900 border border-slate-800 focus:border-brand-orange-500 focus:ring-1 focus:ring-brand-orange-500 rounded-lg p-2.5 text-xs text-white placeholder:text-slate-600 leading-relaxed transition-all font-sans resize-y"
               />
             </div>
@@ -1645,7 +1645,7 @@ export default function App() {
           <div className="p-4 bg-slate-950 rounded-xl border border-slate-800/80 text-xs text-slate-400 space-y-2">
             <span className="text-[10px] font-mono tracking-wider text-brand-orange-500 uppercase flex items-center space-x-1">
               <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
-              <span>Brand Surface Redaktionelle Regler:</span>
+              <span>Redaktionelle Regler:</span>
             </span>
             <ul className="list-disc pl-4 space-y-1 text-slate-400 leading-relaxed">
               <li>Ingen unødvendige corporate klichéer (undgå generaliserede floskler).</li>
@@ -1665,7 +1665,7 @@ export default function App() {
             <div className="bg-slate-950 px-4 py-2 flex items-center justify-between border-b border-slate-800 text-slate-400 font-mono text-xs">
               <span className="flex items-center space-x-2">
                 <Terminal className="w-4 h-4 text-orange-500" />
-                <span>Brand Surface Command Bar</span>
+                <span>Content Machine Command Bar</span>
               </span>
               <span className="text-[10px]" title="Skriv en kommando eller navigér">Navi & Raffinering</span>
             </div>
@@ -1737,7 +1737,7 @@ export default function App() {
                 </div>
 
                 <div className="max-w-md space-y-2">
-                  <h3 className="font-display font-medium text-lg text-white">Brand Surface Content Machine klar</h3>
+                  <h3 className="font-display font-medium text-lg text-white">Content Machine klar</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
                     Indlæs et test-brief fra listen til venstre (Modaxo Move 2026 er klar som standard), redigér eventuelt værdierne, og tryk derefter på 
                     <span className="font-bold text-orange-400"> "Kør Content Machine" </span> 
@@ -2861,7 +2861,7 @@ export default function App() {
 
                 </div>
 
-                {/* BRAND SURFACE TONE & FLOSKEL-TJEK PANEL */}
+                {/* TONE & FLOSKEL-TJEK PANEL */}
                 <div id="tone_analysis_panel" className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-2xl space-y-4">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-850 pb-3 gap-2">
                     <div className="flex items-center space-x-2">
@@ -2869,7 +2869,7 @@ export default function App() {
                       <div>
                         <h3 className="font-display font-medium text-xs text-slate-100 uppercase tracking-wider font-bold flex items-center space-x-1.5">
                           <Search className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                          <span>Brand Surface Tone & Floskel-tjek</span>
+                          <span>Tone & Floskel-tjek</span>
                         </h3>
                         <p className="text-[10px] text-slate-400 font-mono mt-0.5">
                           Uafhængig AI-revisor baseret på vores redaktionelle dogmer
@@ -3019,7 +3019,7 @@ export default function App() {
                       {/* CORE GUIDELINES / DETAILED EVALUATIONS */}
                       <div className="space-y-2">
                         <span className="text-[9px] font-mono text-slate-400 uppercase font-bold tracking-wider block">
-                          Overholdelse af Brand Surface Retningslinjer
+                          Overholdelse af Redaktionelle Retningslinjer
                         </span>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -3061,7 +3061,7 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          {/* BRAND SURFACE AI HUMANIZER & DETECTOR BYPASS PANEL */}
+          {/* AI HUMANIZER & DETECTOR BYPASS PANEL */}
           <div id="external_humanizer_panel" className="bg-slate-950 border border-slate-800 rounded-xl p-5 shadow-2xl space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-850 pb-3 gap-2">
               <div className="flex items-center space-x-2">
@@ -3168,7 +3168,7 @@ export default function App() {
                   <div className="bg-emerald-950/20 border border-emerald-900/30 rounded-lg p-3 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-slate-400 uppercase font-bold text-emerald-400">🌱 Efter Brand Surface Humanizing</span>
+                        <span className="text-[10px] font-mono text-slate-400 uppercase font-bold text-emerald-400">🌱 Efter Humanizing</span>
                         <span className="text-[10px] bg-emerald-955 text-emerald-400 border border-emerald-900/40 px-1.5 py-0.5 rounded font-mono font-bold uppercase">Bypassed</span>
                       </div>
                       <div className="mt-2 flex items-baseline space-x-1">
@@ -3242,7 +3242,11 @@ export default function App() {
 
           {/* SYSTEM STATS OR ABOUT (No telemetry data as requested, just a clean branding footer) */}
           <div className="py-4 border-t border-slate-800/65 flex items-center justify-between text-[11px] text-slate-500 font-mono">
-            <span>Brand Surface Content Machine &copy; 2026</span>
+            <span>
+              Content Machine by{' '}
+              <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.0.0
+            </span>
             <span>Konkret. Autentisk. Kreativt.</span>
           </div>
 
@@ -3259,7 +3263,7 @@ export default function App() {
           <div className="border-b-4 border-orange-500 pb-6 mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-extrabold tracking-tight text-slate-950 uppercase font-sans">
-                {printMode === 'cvi' ? 'Brand Surface CVI Designmanual' : printMode === 'case' ? 'Brand Surface Case-Tekster' : 'Brand Surface Content & CVI Leverance'}
+                {printMode === 'cvi' ? 'CVI Designmanual' : printMode === 'case' ? 'Case-Tekster' : 'Content & CVI Leverance'}
               </h1>
               <p className="text-xs font-mono text-slate-500 uppercase tracking-widest mt-1">
                 Autentisk • Konkret • Kreativ Case Formidling
@@ -3503,7 +3507,7 @@ export default function App() {
             <div className="mt-8 border-t border-slate-200 pt-6" style={{ pageBreakInside: 'avoid' }}>
               <div className="bg-slate-50 border border-slate-150 rounded-xl p-4">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 block font-bold mb-1">
-                  Uafhængig Brand Surface Tone-Revisors Vurdering
+                  Uafhængig Tone-Revisors Vurdering
                 </span>
                 <p className="text-xs italic text-slate-600 font-sans leading-relaxed">
                   "{output.toneAnalysis.overallReview}"
@@ -3514,7 +3518,7 @@ export default function App() {
 
           {/* Footer print disclaimer */}
           <div className="mt-12 text-center text-slate-400 text-[10px] font-mono border-t border-slate-150 pt-4">
-            <span>Udarbejdet via Brand Surface Content Machine • brandsurface.dk</span>
+            <span>Udarbejdet via Content Machine • larssohl.dk</span>
           </div>
 
         </div>
