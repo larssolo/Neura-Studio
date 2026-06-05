@@ -134,18 +134,15 @@ async function startServer() {
     res.flushHeaders?.();
     res.write(': connected\n\n'); // åbn streamen straks, så proxyen ikke buffer-venter på første byte
 
-    // Afbryd igangværende kald hvis klienten lukker forbindelsen.
-    const ac = new AbortController();
-    req.on('close', () => ac.abort());
-    res.on('close', () => ac.abort()); // stop også hvis svar-forbindelsen lukkes (proxy/klient)
-
-    // Heartbeat-kommentarer holder forbindelsen i live under de lange (55-110s) kald.
+    // Heartbeat holder forbindelsen i live. Bevidst INGEN abort på forbindelses-luk:
+    // Renders proxy kan droppe en lang SSE, og en abort dér dræbte lovlige kørsler.
+    // Kørslen er kort + omkostnings-bundet, så den får altid lov at gøre færdig.
     const heartbeat = setInterval(() => {
       if (!res.writableEnded) res.write(': keep-alive\n\n');
     }, 15000);
 
     try {
-      const result = await runDeliberation({ brief, signal: ac.signal }, (e) => {
+      const result = await runDeliberation({ brief }, (e) => {
         if (!res.writableEnded) res.write(`data: ${JSON.stringify(e)}\n\n`);
       });
 
@@ -197,7 +194,7 @@ async function startServer() {
     }, 15000);
 
     try {
-      const result = await runVisualDeliberation({ brief, signal: ac.signal }, (e) => {
+      const result = await runVisualDeliberation({ brief }, (e) => {
         if (!res.writableEnded) res.write(`data: ${JSON.stringify(e)}\n\n`);
       });
 
