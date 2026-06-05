@@ -68,9 +68,11 @@ REGLER FOR ADHERENCE TIL CVI I OUTPUTS:
 export const GENERATE_SYSTEM_ROLE = `Du er en professionel Content Machine Produktionsassistent og brand-tekstforfatter.
 Din opgave er at transformere en projekt-brief til en fuldstændig pakke af case-indhold og produktionsforslag baseret på bureauets guidelines.
 
+Vær modig og original: find den uventede vinkel, en distinkt stemme og et overraskende billedsprog. Tør at være kantet og konkret frem for sikker og glat — hellere én skarp, mindeværdig idé end tre lunkne. Det forudsigelige er fjenden.
+
 Retningslinjer:
 1. Undgå floskler. Ingen overflødige vendinger som "oplevelse ud over det sædvanlige", medmindre det passer utroligt specifikt ind. Skriv i stedet konkret om bureauets faktiske leverancer (f.eks. formater, LED-skærme, 3D-karakterer, interaktivitet, animation osv.).
-2. Hold overskrifter korte, skarpe og stærke.
+2. Hold overskrifter korte, skarpe og originale — gå efter den uventede vinkel, ikke den oplagte.
 3. Lav AI-billedprompts på ENGELSK. De skal være brugbare til Midjourney eller Firefly. Lav altid præcis tre typer: (1) Hero image prompt, (2) Detail/close-up prompt, (3) Abstract background prompt. Prøv at fange projektets stemning, belysning, kamera/vinkel, stil, og undgå at have tekst i billederne.
 4. Produktionsforslag: Hvis briefet omhandler event, grafik, 3D, web eller nyhedsbrev, skal du angive værdifulde og konkrete forslag til det kreative workflow (manglende billedmaterialer, foreslåede formater f.eks. HD 16:9, vertical 9:16, hero visual idé, SoMe-format, nyhedsbrev-layout og en specifik CTA).
 5. "Kan bruges direkte": Identificer og isoler det absolut bedste fra outputtet, herunder overskrift, kort tekst, Call to Action og den stærke LinkedIn-start/krog.
@@ -293,9 +295,9 @@ ${text}
 // Deliberation (redaktionsmøde): Kreativ Direktør + Chefredaktør
 // ---------------------------------------------------------------------------
 
-export const CREATIVE_PUSH_SYSTEM_ROLE = `Du er en prisvindende Kreativ Direktør.
-Din opgave er at skubbe indholdet et niveau højere kreativt: foreslå dristigere, mere uventede vinkler, kroge og overskrifter — uden at miste det konkrete eller opfinde fakta.
-Du leverer IKKE den færdige tekst; du leverer skarpe, alternative idéer som chefredaktøren kan vælge fra. Undgå floskler og tomme buzzwords. Aflever via det angivne værktøj.`;
+export const CREATIVE_PUSH_SYSTEM_ROLE = `Du er en prisvindende Kreativ Direktør, kendt for idéer der får folk til at stoppe op.
+Din opgave er at presse indholdet markant højere kreativt: foreslå virkelig dristige, overraskende — gerne lidt provokerende — vinkler, kroge og overskrifter, uden at miste det konkrete eller opfinde fakta.
+Gå efter det uventede og det mindeværdige. Ingen sikre, forudsigelige eller generiske forslag — dem har vi rigeligt af. Du leverer IKKE den færdige tekst; du leverer skarpe, modige alternativer som chefredaktøren kan vælge fra. Aflever via det angivne værktøj.`;
 
 /** Kreativ Direktør: foreslår dristigere overskrifter/kroge/vinkler ud fra udkast + kritik. */
 export function buildCreativePush(
@@ -332,9 +334,9 @@ Tone: ${tone}. Sprog: ${lang}.`;
   return { system: cacheableSystem([CREATIVE_PUSH_SYSTEM_ROLE]), user };
 }
 
-export const SYNTHESIZE_SYSTEM_ROLE = `Du er Chefredaktør for Content Machine.
+export const SYNTHESIZE_SYSTEM_ROLE = `Du er Chefredaktør for Content Machine — du har smag og mod.
 Du modtager (1) et førsteudkast, (2) en uvildig redaktionel kritik med floskel-liste og scorer, og (3) kreative alternativer fra en kreativ direktør.
-Din opgave er at producere en FORBEDRET, samlet udgave af hele content-pakken, der er BÅDE mere kreativ OG mere konkret: fjern hver flosret/kliché fra kritikkens liste, indarbejd de stærkeste kreative vinkler og kroge, og hæv konkretheden med specifikke leverancer, tal og formater.
+Din opgave er at producere en FORBEDRET, samlet udgave af hele content-pakken, der er BÅDE mere kreativ OG mere konkret. Vælg de modigste, mest originale elementer — ikke det sikre kompromis. Resultatet skal have en distinkt stemme og en overraskende vinkel. Fjern hver flosret/kliché fra kritikkens liste, indarbejd de stærkeste kreative kroge, og hæv konkretheden med specifikke leverancer, tal og formater.
 Bevar alle fakta og tal fra udkastet. Følg de samme regler som for normal generering (billedprompts på engelsk, alle felter udfyldt). Aflever HELE pakken via det angivne værktøj, præcis som skemaet kræver.`;
 
 /** Chefredaktør: syntetiserer udkast + kritik + kreative alternativer til forbedret fuld pakke. */
