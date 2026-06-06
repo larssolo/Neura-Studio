@@ -1,0 +1,980 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult } from '../types';
+import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
+import { downloadHtmlFile } from '../lib/exportHtml';
+import { downloadDocx } from '../lib/exportDocx';
+import { saveSession, loadSession } from '../lib/session';
+import { loadHistory, pushHistory, clearHistory, type HistoryItem } from '../lib/history';
+
+function httpErrorMessage(status: number, serverMsg?: string): string {
+  if (serverMsg) return serverMsg;
+  if (status === 404) {
+    return 'Backenden svarer ikke (404). Kør appen med "npm run dev" og åbn http://localhost:3000 — ikke en anden port eller en bygget fil.';
+  }
+  return `Serveren svarede med status ${status}`;
+}
+
+export const PRESETS: PresetBrief[] = [
+  {
+    name: "Modaxo Move 2026 (Konference / 3D Maskot)",
+    brief: {
+      client: "Modaxo",
+      project: "Modaxo Move 2026",
+      description: "Vi udviklede visuelt indhold til en international konference i København. Vi lavede speaker presentations, dynamiske visuals til LED-skærm, dinner visuals, awards visuals og content til liveoptrædener.",
+      details: "350 deltagere fra hele verden, deltagere fra 37 lande, 24x4 meter LED-skærm. Vi var også med til at udvikle Moxi, Modaxos nye lille maskot. Hun blev skabt med udgangspunkt i Modaxos logo og vækket til live som en 3D-karakter.",
+      audience: "Virksomheder der holder events, konferencer, messer og keynotes.",
+      tone: "Professionel, menneskelig, kreativ, ikke barnlig.",
+      language: "Dansk",
+      channels: ["Hjemmeside", "LinkedIn", "Nyhedsbrev"],
+      notes: "Vi skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala."
+    }
+  },
+  {
+    name: "B&O Beolab Launch (Eksklusiv Event / 3D)",
+    brief: {
+      client: "Bang & Olufsen",
+      project: "Beolab Theatre Launch Event",
+      description: "Vi leverede komplet 3D-visualisering og scenekonstruktion til den skandinaviske produktlancering. Vi designede et ultra-high-end digitalt univers, herunder live 3D eksploderede tegninger af produktkomponenter på scenen synkroniseret med lys-show.",
+      details: "Afholdt i et historisk teater i København for 150 VIP arkitekter og lyd-anmeldere. Ekstremt luksuriøs finish og fotorealistisk 3D visualisering.",
+      audience: "High-end lyd-entusiaster, arkitekter, tech-medier og top-forhandlere.",
+      tone: "Sofistikeret, design-fokuseret, eksklusiv, præcis.",
+      language: "Dansk",
+      channels: ["LinkedIn", "Hjemmeside", "Nyhedsbrev"],
+      notes: "Vi skal fremhæves som den præcise kreative teknologiske kraft, der gør det muligt at forstå akustisk storhed visuelt."
+    }
+  },
+  {
+    name: "Ørsted Wind Summit (Data / Infografik / Web)",
+    brief: {
+      client: "Ørsted",
+      project: "Green Wind Summit Copenhagen",
+      description: "Produktion af digital grafik, interaktive infografikker til touch-screens og en komplet nyhedsbrev-kampagne i forbindelse med det globale vindtopmøde.",
+      details: "5 interaktive info-standere på messestanden, 12 animerede infografik-loops. Fokus på vindmølle-teknologiens fremtid på havbunden.",
+      audience: "Industrispecialister, investorer, journalister og grønne rådgivere.",
+      tone: "Visionær, troværdig, professionel, grøn og skarp.",
+      language: "Dansk",
+      channels: ["Nyhedsbrev", "LinkedIn"],
+      notes: "Vi skal formidle indviklede tekniske klimadata enkelt, visuelt stærkt og inspirerende."
+    }
+  }
+];
+
+export function useContentMachine() {
+  const [brief, setBrief] = useState<ProjectBrief>({
+    client: '',
+    project: '',
+    description: '',
+    details: '',
+    audience: 'Virksomheder der holder events, konferencer, messer og keynotes.',
+    tone: 'Professionel, menneskelig, kreativ, ikke barnlig.',
+    language: 'Dansk',
+    channels: ['Hjemmeside', 'LinkedIn', 'Nyhedsbrev'],
+    notes: 'Vi skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala.'
+  });
+
+  const [activeTab, setActiveTab] = useState<string>('case');
+  const [output, setOutput] = useState<BrandSurfaceOutput | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory());
+  const [historyOpen, setHistoryOpen] = useState<boolean>(false);
+  const [variants, setVariants] = useState<{ key: string; options: string[] } | null>(null);
+  const [isVariating, setIsVariating] = useState<boolean>(false);
+
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isRefining, setIsRefining] = useState<boolean>(false);
+  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
+  const [generationStep, setGenerationStep] = useState<string>('');
+
+  const [deepMode, setDeepMode] = useState<boolean>(false);
+  const [deepCritique, setDeepCritique] = useState<{
+    before: ToneAnalysis;
+    after?: ToneAnalysis | null;
+    earlyStopped?: boolean;
+    synthesisTruncated?: boolean;
+  } | null>(null);
+  const [isVisualDeveloping, setIsVisualDeveloping] = useState<boolean>(false);
+  const [visualResult, setVisualResult] = useState<VisualDevResult | null>(null);
+
+  const [selectedTextKey, setSelectedTextKey] = useState<string>('shortCaseText');
+  const [customRefinementPrompt, setCustomRefinementPrompt] = useState<string>('');
+  const [terminalCommand, setTerminalCommand] = useState<string>('');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [refinementHistory, setRefinementHistory] = useState<Array<{ key: string; original: string }>>([]);
+  const [revisions, setRevisions] = useState<Record<string, string[]>>({});
+  const [activeCompareIndex, setActiveCompareIndex] = useState<Record<string, number | null>>({});
+
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const [externalText, setExternalText] = useState<string>('');
+  const [humanizerResult, setHumanizerResult] = useState<HumanizerResult | null>(null);
+  const [isHumanizing, setIsHumanizing] = useState<boolean>(false);
+
+  const [cviFileName, setCviFileName] = useState<string | null>(null);
+  const [isAnalyzingCvi, setIsAnalyzingCvi] = useState<boolean>(false);
+
+  const [printMode, setPrintMode] = useState<'all' | 'cvi' | 'case'>('all');
+
+  const [generatedImages, setGeneratedImages] = useState<Record<'hero' | 'detail' | 'abstract', { url: string; loading: boolean; error: string | null; aspectRatio: string }>>({
+    hero: { url: '', loading: false, error: null, aspectRatio: '16:9' },
+    detail: { url: '', loading: false, error: null, aspectRatio: '1:1' },
+    abstract: { url: '', loading: false, error: null, aspectRatio: '16:9' }
+  });
+
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    const saved = localStorage.getItem('brand_surface_theme');
+    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('brand_surface_theme', theme);
+  }, [theme]);
+
+  const [customPresets, setCustomPresets] = useState<PresetBrief[]>(() => {
+    const local = localStorage.getItem('brand_surface_presets');
+    if (local) {
+      try {
+        return JSON.parse(local);
+      } catch (e) {
+        console.error("Fejl under indlæsning af presets:", e);
+      }
+    }
+    return PRESETS;
+  });
+
+  useEffect(() => {
+    const saved = loadSession();
+    if (saved && (saved.output || saved.brief?.client)) {
+      if (saved.brief) setBrief(saved.brief);
+      if (saved.output) setOutput(saved.output);
+      if (saved.revisions) setRevisions(saved.revisions);
+      if (saved.activeCompareIndex) setActiveCompareIndex(saved.activeCompareIndex);
+      if (saved.generatedImages) setGeneratedImages(prev => ({ ...prev, ...(saved.generatedImages as any) }));
+      if (saved.cviFileName !== undefined) setCviFileName(saved.cviFileName ?? null);
+      if (saved.activeTab) setActiveTab(saved.activeTab);
+      return;
+    }
+    if (customPresets && customPresets.length > 0) {
+      handleLoadPreset(customPresets[0]);
+    } else {
+      setBrief({
+        client: '',
+        project: '',
+        description: '',
+        details: '',
+        audience: '',
+        tone: 'Professionel, menneskelig, kreativ',
+        language: 'Dansk',
+        channels: [],
+        notes: '',
+        cviManual: null
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!output && !brief.client) return;
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab]);
+
+  const handleClearPresets = () => {
+    setCustomPresets([]);
+    localStorage.setItem('brand_surface_presets', JSON.stringify([]));
+    setErrorMsg("Alle presets er nu ryddet. Du kan bygge og pinne dine egne jobs!");
+  };
+
+  const handleRestorePresets = () => {
+    setCustomPresets(PRESETS);
+    localStorage.setItem('brand_surface_presets', JSON.stringify(PRESETS));
+    handleLoadPreset(PRESETS[0]);
+    setErrorMsg(null);
+  };
+
+  const handleCviUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsAnalyzingCvi(true);
+    setCviFileName(file.name);
+    setErrorMsg(null);
+
+    const checkCviResult = (base64String: string) => {
+      fetch('/api/analyze-cvi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileType: file.type, fileContent: base64String, fileName: file.name })
+      })
+      .then(async res => {
+        if (!res.ok) {
+          const text = await res.json().catch(() => ({}));
+          throw new Error(httpErrorMessage(res.status, text.error));
+        }
+        return res.json();
+      })
+      .then(result => {
+        setBrief(prev => ({ ...prev, cviManual: result }));
+        setErrorMsg(`CVI og designmanual "${file.name}" er scannet og indlæst! Din AI vil nu bruge disse regler.`);
+      })
+      .catch(err => {
+        console.error("CVI error:", err);
+        setErrorMsg(`Scanning mislykkedes: ${err.message || 'AI-modellen kunne ikke afkode filen.'}`);
+        setCviFileName(null);
+      })
+      .finally(() => {
+        setIsAnalyzingCvi(false);
+      });
+    };
+
+    try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = reader.result as string;
+        checkCviResult(base64);
+      };
+      reader.onerror = () => {
+        setErrorMsg("Fejl under indlæsning af designmanualen.");
+        setIsAnalyzingCvi(false);
+        setCviFileName(null);
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      setErrorMsg(`Filfejl: ${err.message}`);
+      setIsAnalyzingCvi(false);
+      setCviFileName(null);
+    }
+  };
+
+  const handleRemoveCvi = () => {
+    setBrief(prev => ({ ...prev, cviManual: null }));
+    setCviFileName(null);
+    setErrorMsg("Designmanualen er fjernet.");
+  };
+
+  const handlePinCurrentBrief = () => {
+    if (!brief.client.trim() || !brief.project.trim()) {
+      setErrorMsg("Udfyld venligst mindst 'Kunde' og 'Projekt' for at pinne dette job.");
+      return;
+    }
+    const name = `${brief.client} - ${brief.project}`;
+    const exists = customPresets.some(
+      p => p.brief.project.toLowerCase() === brief.project.toLowerCase() &&
+           p.brief.client.toLowerCase() === brief.client.toLowerCase()
+    );
+    if (exists) {
+      setErrorMsg("Et job med denne kunde og dette projekt-navn er allerede pined i dine presets.");
+      return;
+    }
+    const newPreset: PresetBrief = { name, brief: { ...brief } };
+    const updated = [newPreset, ...customPresets];
+    setCustomPresets(updated);
+    localStorage.setItem('brand_surface_presets', JSON.stringify(updated));
+    setErrorMsg(`Jobbet "${name}" er blevet pined til genveje!`);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'case') {
+      setSelectedTextKey('shortCaseText');
+    } else if (activeTab === 'linkedin') {
+      setSelectedTextKey('linkedinPost');
+    } else if (activeTab === 'newsletter') {
+      setSelectedTextKey('newsletterSection');
+    } else if (activeTab === 'english') {
+      setSelectedTextKey('englishShortCaseText');
+    }
+  }, [activeTab]);
+
+  const handleBriefChange = (field: keyof ProjectBrief, value: any) => {
+    setBrief(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleChannelToggle = (channel: string) => {
+    setBrief(prev => {
+      const current = prev.channels;
+      if (current.includes(channel)) {
+        return { ...prev, channels: current.filter(c => c !== channel) };
+      } else {
+        return { ...prev, channels: [...current, channel] };
+      }
+    });
+  };
+
+  const handleLoadPreset = (preset: PresetBrief) => {
+    setBrief({ ...preset.brief });
+    setCviFileName(preset.brief.cviManual ? "Aktive CVI retningslinjer" : null);
+    setErrorMsg(null);
+  };
+
+  const handleCopyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey(null), 2000);
+    }).catch(err => {
+      console.warn("Kopiering mislykkedes, fallback:", err);
+    });
+  };
+
+  const handleExportSingleSection = (mode: 'all' | 'cvi' | 'case') => {
+    setPrintMode(mode);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setPrintMode('all'), 1000);
+    }, 150);
+  };
+
+  const handleExportMarkdown = () => {
+    if (!output) return;
+    const md = buildMarkdown(output, brief);
+    downloadTextFile(`${slugify(brief.client || 'brand-surface')}-case.md`, md);
+  };
+
+  const handleCopyAllMarkdown = () => {
+    if (!output) return;
+    handleCopyToClipboard(buildMarkdown(output, brief), 'export_all_md');
+  };
+
+  const handleExportHtml = () => {
+    if (!output) return;
+    downloadHtmlFile(output, brief);
+  };
+
+  const handleExportDocx = async () => {
+    if (!output) return;
+    try {
+      await downloadDocx(`${slugify(brief.client || 'brand-surface')}-case.docx`, output, brief);
+    } catch (e: any) {
+      setErrorMsg(e.message || 'Kunne ikke generere Word-dokument.');
+    }
+  };
+
+  const handleLoadHistory = (item: HistoryItem) => {
+    setBrief(item.brief);
+    setOutput(item.output);
+    setRevisions({
+      shortCaseText: [item.output.shortCaseText],
+      longCaseText: [item.output.longCaseText],
+      linkedinPost: [item.output.linkedinPost],
+      creativeNewsletterSection: item.output.production?.newsletterSection
+        ? [item.output.production.newsletterSection]
+        : []
+    });
+    setActiveCompareIndex({ shortCaseText: null, longCaseText: null, linkedinPost: null, creativeNewsletterSection: null });
+    setRefinementHistory([]);
+    setCviFileName(item.brief.cviManual ? 'Aktive CVI retningslinjer' : null);
+    setActiveTab('case');
+    setErrorMsg(null);
+  };
+
+  const handleClearHistory = () => {
+    setHistory(clearHistory());
+  };
+
+  const resolveMainText = (key: string): string => {
+    if (!output) return '';
+    if (key === 'shortCaseText') return output.shortCaseText;
+    if (key === 'longCaseText') return output.longCaseText;
+    if (key === 'linkedinPost') return output.linkedinPost;
+    return '';
+  };
+
+  const handleGenerateVariants = async (targetKey: string) => {
+    const text = resolveMainText(targetKey);
+    if (!text) return;
+    setIsVariating(true);
+    setErrorMsg(null);
+    setVariants({ key: targetKey, options: [] });
+    try {
+      const res = await fetch('/api/variants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, count: 2, brief })
+      });
+      if (!res.ok) {
+        const e = await res.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(res.status, e.error));
+      }
+      const data = await res.json();
+      setVariants({ key: targetKey, options: data.variants || [] });
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke generere varianter.');
+      setVariants(null);
+    } finally {
+      setIsVariating(false);
+    }
+  };
+
+  const handleApplyVariant = (targetKey: string, value: string) => {
+    const original = resolveMainText(targetKey);
+    setRefinementHistory(prev => [...prev, { key: targetKey, original }]);
+    setRevisions(prev => {
+      const list = [...(prev[targetKey] || [])];
+      if (list.length === 0) list.push(original);
+      if (list[list.length - 1] !== value) list.push(value);
+      return { ...prev, [targetKey]: list };
+    });
+    setActiveCompareIndex(prev => ({ ...prev, [targetKey]: null }));
+    setOutput(prev => {
+      if (!prev) return null;
+      const u: BrandSurfaceOutput = { ...prev };
+      if (targetKey === 'shortCaseText') u.shortCaseText = value;
+      else if (targetKey === 'longCaseText') u.longCaseText = value;
+      else if (targetKey === 'linkedinPost') u.linkedinPost = value;
+      if (targetKey === 'shortCaseText' && u.directUsable) {
+        u.directUsable = { ...u.directUsable, bestShortText: value };
+      }
+      return u;
+    });
+    setVariants(null);
+  };
+
+  const handleGenerateAll = async () => {
+    if (!brief.client || !brief.project || !brief.description) {
+      setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at køre Content Machine.");
+      return;
+    }
+    if (deepMode) {
+      return handleGenerateDeep();
+    }
+
+    setIsGenerating(true);
+    setErrorMsg(null);
+    setRefinementHistory([]);
+    setDeepCritique(null);
+
+    const steps = [
+      "Analyserer projekt-brief...",
+      "Udtrækker nøgleleverancer...",
+      "Udelukker generiske marketing-floskler...",
+      "Bygger kort og lang case-tekst...",
+      "Skriver professionelt LinkedIn opslag...",
+      "Formulerer fængende Mailchimp subject lines...",
+      "Designer målrettede AI-billedprompts...",
+      "Sammensætter tekniske produktionsforslag...",
+      "Færdiggør den engelske oversættelse..."
+    ];
+
+    let currentStep = 0;
+    setGenerationStep(steps[0]);
+    const interval = setInterval(() => {
+      currentStep++;
+      if (currentStep < steps.length) setGenerationStep(steps[currentStep]);
+    }, 800);
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const data: BrandSurfaceOutput = await response.json();
+      setOutput(data);
+      setHistory(prev => pushHistory(prev, brief, data));
+      if (data) {
+        setRevisions({
+          shortCaseText: [data.shortCaseText],
+          longCaseText: [data.longCaseText],
+          linkedinPost: [data.linkedinPost],
+          creativeNewsletterSection: data.production?.newsletterSection ? [data.production.newsletterSection] : []
+        });
+        setActiveCompareIndex({ shortCaseText: null, longCaseText: null, linkedinPost: null, creativeNewsletterSection: null });
+      }
+      setActiveTab('case');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Der skete en fejl under AI-genereringen.');
+    } finally {
+      clearInterval(interval);
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateDeep = async () => {
+    setIsGenerating(true);
+    setErrorMsg(null);
+    setRefinementHistory([]);
+    setDeepCritique(null);
+    setGenerationStep('Starter redaktionsmøde …');
+
+    try {
+      const response = await fetch('/api/generate-deep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief })
+      });
+      if (!response.ok || !response.body) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamErr: string | null = null;
+      let finalEvt: any = null;
+
+      while (true) {
+        const { value, done: rdDone } = await reader.read();
+        if (rdDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const part of parts) {
+          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
+          const isErrEvent = part.includes('event: error');
+          if (!dataLine) continue;
+          const payload = dataLine.slice(6);
+          if (payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (isErrEvent && evt.error) streamErr = evt.error;
+            else if (evt.done && evt.output) finalEvt = evt;
+            else if (evt.phase && typeof evt.label === 'string') setGenerationStep(evt.label);
+          } catch { /* ignorér ukomplette/uventede linjer */ }
+        }
+      }
+
+      if (streamErr) throw new Error(streamErr);
+      if (!finalEvt || !finalEvt.output) throw new Error('Redaktionsmødet returnerede intet resultat.');
+
+      const data: BrandSurfaceOutput = finalEvt.output;
+      const draft: BrandSurfaceOutput = finalEvt.draft || data;
+      setOutput(data);
+      setHistory(prev => pushHistory(prev, brief, data));
+
+      const seed = (a?: string, b?: string): string[] =>
+        a && b && a !== b ? [a, b] : b ? [b] : a ? [a] : [];
+      setRevisions({
+        shortCaseText: seed(draft.shortCaseText, data.shortCaseText),
+        longCaseText: seed(draft.longCaseText, data.longCaseText),
+        linkedinPost: seed(draft.linkedinPost, data.linkedinPost),
+        creativeNewsletterSection: data.production?.newsletterSection ? [data.production.newsletterSection] : []
+      });
+      setActiveCompareIndex({ shortCaseText: null, longCaseText: null, linkedinPost: null, creativeNewsletterSection: null });
+
+      if (finalEvt.critiqueBefore) {
+        setDeepCritique({
+          before: finalEvt.critiqueBefore,
+          after: finalEvt.critiqueAfter ?? null,
+          earlyStopped: !!finalEvt.earlyStopped,
+          synthesisTruncated: !!finalEvt.synthesisTruncated
+        });
+      }
+      setActiveTab('case');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Der skete en fejl under redaktionsmødet.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleVisualDevelop = async () => {
+    setIsVisualDeveloping(true);
+    setErrorMsg(null);
+    setVisualResult(null);
+    setGenerationStep('Starter visuel udvikling …');
+
+    try {
+      const response = await fetch('/api/visual-deep', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief })
+      });
+      if (!response.ok || !response.body) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let streamErr: string | null = null;
+      let finalEvt: any = null;
+
+      while (true) {
+        const { value, done: rdDone } = await reader.read();
+        if (rdDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const part of parts) {
+          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
+          const isErrEvent = part.includes('event: error');
+          if (!dataLine) continue;
+          const payload = dataLine.slice(6);
+          if (payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (isErrEvent && evt.error) streamErr = evt.error;
+            else if (evt.done && evt.output) finalEvt = evt;
+            else if (evt.phase && typeof evt.label === 'string') setGenerationStep(evt.label);
+          } catch { /* ignorér ukomplette linjer */ }
+        }
+      }
+
+      if (streamErr) throw new Error(streamErr);
+      if (!finalEvt || !finalEvt.output) throw new Error('Den visuelle redaktion returnerede intet resultat.');
+
+      setVisualResult({
+        concept: finalEvt.output,
+        critiqueBefore: finalEvt.critiqueBefore,
+        critiqueAfter: finalEvt.critiqueAfter ?? null,
+        earlyStopped: !!finalEvt.earlyStopped,
+        synthesisTruncated: !!finalEvt.synthesisTruncated
+      });
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Der skete en fejl under den visuelle udvikling.');
+    } finally {
+      setIsVisualDeveloping(false);
+    }
+  };
+
+  const handleTriggerAnalysis = async () => {
+    if (!output) return;
+    setIsAnalyzing(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          texts: {
+            shortCaseText: output.shortCaseText,
+            longCaseText: output.longCaseText,
+            linkedinPost: output.linkedinPost
+          },
+          brief
+        })
+      });
+      if (!response.ok) throw new Error(httpErrorMessage(response.status));
+      const analysisData = await response.json();
+      setOutput(prev => prev ? { ...prev, toneAnalysis: analysisData } : null);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke gennemføre toneanalysen.');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleHumanizeText = async () => {
+    if (!externalText || !externalText.trim()) {
+      setErrorMsg("Indtast eller indsæt venligst en tekst først.");
+      return;
+    }
+    setIsHumanizing(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/humanize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: externalText })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const resData = await response.json();
+      setHumanizerResult(resData);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke gennemføre humanisering og AI-detektions bypass.');
+    } finally {
+      setIsHumanizing(false);
+    }
+  };
+
+  const handleRefine = async (command: string, targetKey: string) => {
+    if (!output) return;
+
+    let textToRefine = "";
+    let isEnglishObj = false;
+    let isProductionObj = false;
+
+    if (targetKey === 'shortCaseText') textToRefine = output.shortCaseText;
+    else if (targetKey === 'longCaseText') textToRefine = output.longCaseText;
+    else if (targetKey === 'linkedinPost') textToRefine = output.linkedinPost;
+    else if (targetKey === 'englishShortCaseText') { textToRefine = output.english?.shortCaseText || ""; isEnglishObj = true; }
+    else if (targetKey === 'englishLongCaseText') { textToRefine = output.english?.longCaseText || ""; isEnglishObj = true; }
+    else if (targetKey === 'englishLinkedinPost') { textToRefine = output.english?.linkedinPost || ""; isEnglishObj = true; }
+    else if (targetKey === 'creativeHeroVisual') { textToRefine = output.production?.heroVisual || ""; isProductionObj = true; }
+    else if (targetKey === 'creativeSomeFormat') { textToRefine = output.production?.someFormat || ""; isProductionObj = true; }
+    else if (targetKey === 'creativeNewsletterSection') { textToRefine = output.production?.newsletterSection || ""; isProductionObj = true; }
+
+    if (!textToRefine) {
+      setErrorMsg("Kunne ikke finde tekst at raffinere for denne sektion.");
+      return;
+    }
+
+    setIsRefining(true);
+    setErrorMsg(null);
+
+    try {
+      const response = await fetch('/api/refine', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textToRefine, command, brief })
+      });
+      if (!response.ok || !response.body) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+
+      const applyLiveText = (value: string) => {
+        setOutput(prev => {
+          if (!prev) return null;
+          const u: BrandSurfaceOutput = {
+            ...prev,
+            english: prev.english ? { ...prev.english } : prev.english,
+            production: prev.production ? { ...prev.production } : prev.production,
+            directUsable: prev.directUsable ? { ...prev.directUsable } : prev.directUsable,
+          };
+          if (targetKey === 'shortCaseText') u.shortCaseText = value;
+          else if (targetKey === 'longCaseText') u.longCaseText = value;
+          else if (targetKey === 'linkedinPost') u.linkedinPost = value;
+          else if (isEnglishObj && u.english) {
+            if (targetKey === 'englishShortCaseText') u.english.shortCaseText = value;
+            if (targetKey === 'englishLongCaseText') u.english.longCaseText = value;
+            if (targetKey === 'englishLinkedinPost') u.english.linkedinPost = value;
+          } else if (isProductionObj && u.production) {
+            if (targetKey === 'creativeHeroVisual') u.production.heroVisual = value;
+            if (targetKey === 'creativeSomeFormat') u.production.someFormat = value;
+            if (targetKey === 'creativeNewsletterSection') u.production.newsletterSection = value;
+          }
+          if (targetKey === 'shortCaseText' && u.directUsable) u.directUsable.bestShortText = value;
+          return u;
+        });
+      };
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let acc = '';
+      let streamErr: string | null = null;
+
+      while (true) {
+        const { value, done: rdDone } = await reader.read();
+        if (rdDone) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() || '';
+        for (const part of parts) {
+          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
+          const isErrEvent = part.includes('event: error');
+          if (!dataLine) continue;
+          const payload = dataLine.slice(6);
+          if (payload === '[DONE]') continue;
+          try {
+            const evt = JSON.parse(payload);
+            if (isErrEvent && evt.error) streamErr = evt.error;
+            else if (typeof evt.delta === 'string') { acc += evt.delta; applyLiveText(acc); }
+            else if (evt.done && typeof evt.refinedText === 'string') acc = evt.refinedText;
+          } catch { /* ignorér ukomplette/uventede linjer */ }
+        }
+      }
+
+      if (streamErr) throw new Error(streamErr);
+      const refinedText = (acc || textToRefine).trim();
+
+      setRefinementHistory(prev => [...prev, { key: targetKey, original: textToRefine }]);
+      setRevisions(prev => {
+        const currentList = prev[targetKey] || [];
+        const updatedList = [...currentList];
+        if (updatedList.length === 0) updatedList.push(textToRefine);
+        if (updatedList[updatedList.length - 1] !== refinedText) updatedList.push(refinedText);
+        return { ...prev, [targetKey]: updatedList };
+      });
+      setActiveCompareIndex(prev => ({ ...prev, [targetKey]: null }));
+      setOutput(prev => {
+        if (!prev) return null;
+        const updated = { ...prev };
+        if (targetKey === 'shortCaseText') updated.shortCaseText = refinedText;
+        else if (targetKey === 'longCaseText') updated.longCaseText = refinedText;
+        else if (targetKey === 'linkedinPost') updated.linkedinPost = refinedText;
+        else if (isEnglishObj && updated.english) {
+          if (targetKey === 'englishShortCaseText') updated.english.shortCaseText = refinedText;
+          if (targetKey === 'englishLongCaseText') updated.english.longCaseText = refinedText;
+          if (targetKey === 'englishLinkedinPost') updated.english.linkedinPost = refinedText;
+        } else if (isProductionObj && updated.production) {
+          if (targetKey === 'creativeHeroVisual') updated.production.heroVisual = refinedText;
+          if (targetKey === 'creativeSomeFormat') updated.production.someFormat = refinedText;
+          if (targetKey === 'creativeNewsletterSection') updated.production.newsletterSection = refinedText;
+        }
+        if (targetKey === 'shortCaseText' && updated.directUsable) {
+          updated.directUsable.bestShortText = refinedText;
+        }
+        return updated;
+      });
+      setCustomRefinementPrompt('');
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Der opstod en fejl under raffinering af teksten.');
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  const handleUndoRefine = (targetKey: string) => {
+    const historicalItem = [...refinementHistory].reverse().find(h => h.key === targetKey);
+    if (!historicalItem) return;
+
+    setOutput(prev => {
+      if (!prev) return null;
+      const updated = { ...prev };
+      if (targetKey === 'shortCaseText') updated.shortCaseText = historicalItem.original;
+      else if (targetKey === 'longCaseText') updated.longCaseText = historicalItem.original;
+      else if (targetKey === 'linkedinPost') updated.linkedinPost = historicalItem.original;
+      else if (targetKey === 'englishShortCaseText' && updated.english) updated.english.shortCaseText = historicalItem.original;
+      else if (targetKey === 'englishLongCaseText' && updated.english) updated.english.longCaseText = historicalItem.original;
+      else if (targetKey === 'englishLinkedinPost' && updated.english) updated.english.linkedinPost = historicalItem.original;
+      else if (targetKey === 'creativeHeroVisual' && updated.production) updated.production.heroVisual = historicalItem.original;
+      else if (targetKey === 'creativeSomeFormat' && updated.production) updated.production.someFormat = historicalItem.original;
+      else if (targetKey === 'creativeNewsletterSection' && updated.production) updated.production.newsletterSection = historicalItem.original;
+      if (targetKey === 'shortCaseText' && updated.directUsable) {
+        updated.directUsable.bestShortText = historicalItem.original;
+      }
+      return updated;
+    });
+
+    setRefinementHistory(prev => {
+      const idx = prev.findIndex(h => h.key === targetKey && h.original === historicalItem.original);
+      if (idx !== -1) {
+        const copy = [...prev];
+        copy.splice(idx, 1);
+        return copy;
+      }
+      return prev;
+    });
+  };
+
+  const handleGenerateImage = async (key: 'hero' | 'detail' | 'abstract', promptText: string) => {
+    setGeneratedImages(prev => ({ ...prev, [key]: { ...prev[key], loading: true, error: null } }));
+    try {
+      const response = await fetch('/api/generate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: promptText, aspectRatio: generatedImages[key]?.aspectRatio || '16:9' })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const data = await response.json();
+      if (!data.imageUrl) throw new Error('Forkert svar-format fra API.');
+      setGeneratedImages(prev => ({ ...prev, [key]: { ...prev[key], url: data.imageUrl, loading: false, error: null } }));
+    } catch (err: any) {
+      console.error("Fejl i handleGenerateImage:", err);
+      setGeneratedImages(prev => ({
+        ...prev,
+        [key]: { ...prev[key], loading: false, error: err.message || 'Der opstod en uventet fejl under billedgenereringen.' }
+      }));
+    }
+  };
+
+  const handleAspectChange = (key: 'hero' | 'detail' | 'abstract', ratio: string) => {
+    setGeneratedImages(prev => ({ ...prev, [key]: { ...prev[key], aspectRatio: ratio } }));
+  };
+
+  const handleExecuteTerminalCommand = (e: FormEvent) => {
+    e.preventDefault();
+    if (!terminalCommand.trim()) return;
+
+    const cmd = terminalCommand.trim().toLowerCase();
+    setTerminalCommand('');
+
+    if (cmd === '/case') setActiveTab('case');
+    else if (cmd === '/linkedin') setActiveTab('linkedin');
+    else if (cmd === '/newsletter') setActiveTab('newsletter');
+    else if (cmd === '/headlines') setActiveTab('headlines');
+    else if (cmd === '/keywords') setActiveTab('keywords');
+    else if (cmd === '/prompts') setActiveTab('prompts');
+    else if (cmd === '/english') setActiveTab('english');
+    else if (cmd === '/cvi') setActiveTab('cvi');
+    else if (cmd === '/production' || cmd === '/produktionsforslag') setActiveTab('production');
+    else if (cmd === '/run' || cmd === '/generate') handleGenerateAll();
+    else if (cmd === '/shorten') handleRefine('/shorten', selectedTextKey);
+    else if (cmd === '/more-human') handleRefine('/more-human', selectedTextKey);
+    else if (cmd === '/more-business') handleRefine('/more-business', selectedTextKey);
+    else if (cmd.startsWith('/') && cmd.length > 2) handleRefine(terminalCommand, selectedTextKey);
+    else handleRefine(terminalCommand, selectedTextKey);
+  };
+
+  return {
+    // Brief
+    brief, setBrief,
+    // Navigation
+    activeTab, setActiveTab,
+    // Output
+    output, setOutput,
+    // History
+    history, historyOpen, setHistoryOpen,
+    // Variants
+    variants, setVariants, isVariating,
+    // Loading states
+    isGenerating, isRefining, isAnalyzing, isHumanizing, isVisualDeveloping, isAnalyzingCvi,
+    generationStep,
+    // Deep mode
+    deepMode, setDeepMode, deepCritique,
+    // Visual
+    visualResult, setVisualResult,
+    // Refinement
+    selectedTextKey, setSelectedTextKey,
+    customRefinementPrompt, setCustomRefinementPrompt,
+    terminalCommand, setTerminalCommand,
+    errorMsg, setErrorMsg,
+    refinementHistory,
+    revisions, setRevisions,
+    activeCompareIndex, setActiveCompareIndex,
+    // Copy state
+    copiedKey,
+    // Humanizer
+    externalText, setExternalText,
+    humanizerResult, setHumanizerResult,
+    // CVI
+    cviFileName,
+    // Print
+    printMode,
+    // Images
+    generatedImages,
+    // Theme
+    theme, setTheme,
+    // Presets
+    customPresets,
+    // Handlers
+    handleBriefChange,
+    handleChannelToggle,
+    handleLoadPreset,
+    handleClearPresets,
+    handleRestorePresets,
+    handlePinCurrentBrief,
+    handleCviUpload,
+    handleRemoveCvi,
+    handleCopyToClipboard,
+    handleExportSingleSection,
+    handleExportMarkdown,
+    handleCopyAllMarkdown,
+    handleExportHtml,
+    handleExportDocx,
+    handleLoadHistory,
+    handleClearHistory,
+    handleGenerateVariants,
+    handleApplyVariant,
+    handleGenerateAll,
+    handleVisualDevelop,
+    handleTriggerAnalysis,
+    handleHumanizeText,
+    handleRefine,
+    handleUndoRefine,
+    handleGenerateImage,
+    handleAspectChange,
+    handleExecuteTerminalCommand,
+  };
+}
