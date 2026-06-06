@@ -95,12 +95,14 @@ export function generateUserText(brief: Brief): string {
 Sørg for at alle tekster (undtagen de engelske felter og de engelske billedprompts) er skrevet på det angivne sprog, som er ${brief.language || 'Dansk'}.`;
 }
 
-export function buildGenerate(brief: Brief): {
+export function buildGenerate(brief: Brief, chosenIdea?: ChosenIdea | null): {
   system: Anthropic.TextBlockParam[];
   user: string;
 } {
   const system = cacheableSystem([GENERATE_SYSTEM_ROLE, cviSectionText(brief)]);
-  return { system, user: generateUserText(brief) };
+  const campaign = chosenIdea ? campaignContextText(chosenIdea) : '';
+  const user = campaign ? `${generateUserText(brief)}\n\n${campaign}` : generateUserText(brief);
+  return { system, user };
 }
 
 // ---------------------------------------------------------------------------
@@ -336,6 +338,75 @@ Skriv nu en frisk ${label}:`;
 }
 
 // ---------------------------------------------------------------------------
+// /api/big-idea — Den Store Idé: konkurrerende kampagne-platforme
+// ---------------------------------------------------------------------------
+
+export const BIG_IDEA_SYSTEM_ROLE = `Du er Executive Creative Director i et prisvindende reklamebureau i verdensklasse.
+
+Din opgave er at omsætte et projekt-brief til TRE konkurrerende kreative ruter (kampagne-platforme) — som et topbureau der præsenterer flere veje for kunden. Hver rute bygger på ÉN stor idé: kampagnens hjerte, der kan bære indhold på tværs af alle kanaler.
+
+Hvad gør en stor idé stor:
+1. Den er distinkt og uventet — ikke den oplagte, sikre eller generiske vinkel. Tag kreative chancer.
+2. Den udspringer af en reel strategisk indsigt eller kulturel spænding — ikke ud af det blå.
+3. Den er elastisk: den kan udtrykkes konkret på social, OOH, film, aktivering og PR — og stadig føles som samme idé.
+4. Den er mindeværdig og menneskelig, med en klar tone og et levende billedsprog.
+
+Krav til de tre ruter:
+- De skal være MARKANT forskellige fra hinanden — tre ægte alternativer, ikke tre variationer af samme.
+- Ingen floskler, ingen tom marketing-luft. Vær konkret om bureauets faktiske leverancer.
+- Kanal-udtrykkene skal være konkrete og brugbare, ikke abstrakte hensigtserklæringer.
+
+Aflever alle tre ruter via det angivne værktøj, præcist som skemaet kræver.`;
+
+export function buildBigIdea(brief: Brief): {
+  system: Anthropic.TextBlockParam[];
+  user: string;
+} {
+  const system = cacheableSystem([BIG_IDEA_SYSTEM_ROLE, cviSectionText(brief)]);
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
+- Særlige detaljer: ${brief.details || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Tone: ${brief.tone || 'Professionel, menneskelig, kreativ'}
+- Sprog: ${brief.language || 'Dansk'}
+- Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
+- Ekstra noter: ${brief.notes || 'N/A'}
+
+Udvikl nu TRE konkurrerende kreative ruter (kampagne-platforme) for dette projekt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-navne må gerne være på engelsk hvis det er mest naturligt).`;
+
+  return { system, user };
+}
+
+/** En valgt kampagne-platform (delmængde af et CampaignTerritory) til kontekst-injektion. */
+export type ChosenIdea = {
+  name?: string;
+  bigIdea?: string;
+  tagline?: string;
+  manifesto?: string;
+  strategicRoot?: string;
+  toneDescriptor?: string;
+};
+
+/**
+ * Render en valgt kampagne-platform (rute) som en kompakt kontekst-blok, der kan
+ * injiceres i downstream-generering, så alt content bygger på samme store idé.
+ */
+export function campaignContextText(idea: ChosenIdea): string {
+  if (!idea || (!idea.bigIdea && !idea.tagline)) return '';
+  return `VALGT KAMPAGNE-PLATFORM (SKAL GENNEMSYRE ALT INDHOLD):
+- Rute: ${idea.name || 'N/A'}
+- Den store idé: ${idea.bigIdea || 'N/A'}
+- Tagline: ${idea.tagline || 'N/A'}
+- Strategisk rod: ${idea.strategicRoot || 'N/A'}
+- Tone for ruten: ${idea.toneDescriptor || 'N/A'}
+${idea.manifesto ? `- Manifest: ${idea.manifesto}` : ''}
+
+Alt indhold (case-tekster, LinkedIn, nyhedsbrev, overskrifter, CTA m.m.) skal være en tydelig forlængelse af denne store idé og tagline — samme verden, samme tone, samme løfte.`;
+}
+
+// ---------------------------------------------------------------------------
 // /api/logo-prompt — optimér/oversæt logo-prompt til Recraft text-to-vector
 // ---------------------------------------------------------------------------
 
@@ -489,6 +560,7 @@ export function buildSynthesize(
   critique: any,
   creative: any,
   brief: Brief,
+  chosenIdea?: ChosenIdea | null,
 ): { system: Anthropic.TextBlockParam[]; user: string } {
   const cliches = arr(critique?.clichesFound).join(', ') || 'ingen';
   const evalNotes = arr(critique?.evaluations)
@@ -497,9 +569,10 @@ export function buildSynthesize(
   const boldHeadlines = arr(creative?.boldHeadlines).map((h: string) => `- ${h}`).join('\n');
   const boldHooks = arr(creative?.boldHooks).map((h: string) => `- ${h}`).join('\n');
   const angles = arr(creative?.angles).map((a: string) => `- ${a}`).join('\n');
+  const campaign = chosenIdea ? campaignContextText(chosenIdea) : '';
 
   const user = `${generateUserText(brief)}
-
+${campaign ? `\n${campaign}\n` : ''}
 === FØRSTEUDKAST (skal forbedres, ikke gentages ordret) ===
 KORT CASE-TEKST:
 """

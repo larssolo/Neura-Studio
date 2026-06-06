@@ -5,7 +5,7 @@
 
 import { generateStructured } from './structured';
 import { config } from './config';
-import { buildGenerate, buildAnalyze, buildCreativePush, buildSynthesize, type Brief } from './prompts';
+import { buildGenerate, buildAnalyze, buildCreativePush, buildSynthesize, type Brief, type ChosenIdea } from './prompts';
 import { generateTool, analyzeTool, creativeTool } from './schemas';
 
 /**
@@ -51,6 +51,8 @@ export interface CreativeDirections {
 
 export interface DeliberateOptions {
   brief: Brief;
+  /** Valgt kampagne-platform der skal gennemsyre alt indhold (kohærens-kontrakt). */
+  chosenIdea?: ChosenIdea | null;
   /** Antal forbedrings-runder (hard-cappet til 2). Standard 1. */
   maxIterations?: number;
   /** Gennemsnitlig score (0-100) hvor udkastet anses for stærkt nok. Standard 85. */
@@ -103,7 +105,7 @@ export async function runDeliberation(
   opts: DeliberateOptions,
   emit: (e: DeliberateEvent) => void,
 ): Promise<DeliberateResult> {
-  const { brief, signal } = opts;
+  const { brief, chosenIdea, signal } = opts;
   const threshold = opts.goodEnoughThreshold ?? DEFAULT_THRESHOLD;
   const maxIterations = Math.min(Math.max(opts.maxIterations ?? 1, 1), HARD_MAX_ITERATIONS);
   const verify = opts.verify ?? true;
@@ -112,7 +114,7 @@ export async function runDeliberation(
 
   // 1. Udkast (Opus)
   emit({ phase: 'udkast', label: 'Skriver første udkast …' });
-  const gen = buildGenerate(brief);
+  const gen = buildGenerate(brief, chosenIdea);
   const draft = await generateStructured<GeneratedOutput>({
     system: gen.system,
     userContent: [{ type: 'text', text: gen.user }],
@@ -154,7 +156,7 @@ export async function runDeliberation(
     // 4. Syntese (Opus) — med max_tokens-recovery.
     ensureNotAborted(signal);
     emit({ phase: 'syntese', label: 'Chefredaktøren forener kritik og kreativitet …', iteration });
-    const syn = buildSynthesize(current, currentCritique, creative, brief);
+    const syn = buildSynthesize(current, currentCritique, creative, brief, chosenIdea);
     let synthesized: GeneratedOutput;
     try {
       synthesized = await generateStructured<GeneratedOutput>({

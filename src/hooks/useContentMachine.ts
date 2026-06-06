@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDocx } from '../lib/exportDocx';
@@ -116,6 +116,10 @@ export function useContentMachine() {
   const [brainstormResult, setBrainstormResult] = useState<BrainstormResult | null>(null);
   const [isBrainstorming, setIsBrainstorming] = useState<boolean>(false);
 
+  const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(null);
+  const [isGeneratingCampaign, setIsGeneratingCampaign] = useState<boolean>(false);
+  const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => loadSession()?.selectedTerritory ?? null);
+
   const [logoResult, setLogoResult] = useState<LogoResult | null>(null);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState<boolean>(false);
   const [isOptimizingLogoPrompt, setIsOptimizingLogoPrompt] = useState<boolean>(false);
@@ -188,8 +192,8 @@ export function useContentMachine() {
 
   useEffect(() => {
     if (!output && !brief.client) return;
-    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections });
-  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections]);
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory]);
 
   const handleClearPresets = () => {
     setCustomPresets([]);
@@ -579,7 +583,7 @@ export function useContentMachine() {
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief })
+        body: JSON.stringify({ brief, chosenIdea: selectedTerritory })
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
@@ -638,7 +642,7 @@ export function useContentMachine() {
       const response = await fetch('/api/generate-deep', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief })
+        body: JSON.stringify({ brief, chosenIdea: selectedTerritory })
       });
       if (!response.ok || !response.body) {
         const errData = await response.json().catch(() => ({}));
@@ -865,6 +869,43 @@ export function useContentMachine() {
     } finally {
       setIsBrainstorming(false);
     }
+  };
+
+  const handleGenerateBigIdea = async () => {
+    if (!brief.client || !brief.project || !brief.description) {
+      setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at finde Den Store Idé.");
+      return;
+    }
+    setIsGeneratingCampaign(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/big-idea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const raw = await response.json();
+      const { _usage, ...platform } = raw as any;
+      if (_usage) setLastUsage(_usage);
+      setCampaignPlatform(platform as CampaignPlatform);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke udvikle kampagne-platforme.');
+    } finally {
+      setIsGeneratingCampaign(false);
+    }
+  };
+
+  const handleSelectTerritory = (territory: CampaignTerritory) => {
+    setSelectedTerritory(territory);
+  };
+
+  const handleClearTerritory = () => {
+    setSelectedTerritory(null);
   };
 
   const handleGenerateLogo = async (
@@ -1180,6 +1221,10 @@ export function useContentMachine() {
     brainstormResult, setBrainstormResult,
     isBrainstorming,
     handleBrainstorm,
+    // Den Store Idé / kampagne-platform
+    campaignPlatform, setCampaignPlatform,
+    isGeneratingCampaign, handleGenerateBigIdea,
+    selectedTerritory, handleSelectTerritory, handleClearTerritory,
     // Logo
     logoResult, setLogoResult,
     isGeneratingLogo,

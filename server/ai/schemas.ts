@@ -467,6 +467,87 @@ export const humanizeTool: Anthropic.Tool = {
   },
 };
 
+// --- /api/big-idea -----------------------------------------------------------
+
+export const campaignPlatformTool: Anthropic.Tool = {
+  name: 'submit_campaign_platform',
+  description: 'Aflever de tre konkurrerende kampagne-platforme (kreative ruter) som struktureret data.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      territories: {
+        type: 'array',
+        description: 'Præcis 3 distinkte, konkurrerende kreative ruter/territorier.',
+        items: {
+          type: 'object',
+          properties: {
+            name: {
+              type: 'string',
+              description: 'Kort, fængende navn på den kreative rute/territoriet (2-4 ord).',
+            },
+            bigIdea: {
+              type: 'string',
+              description:
+                'Den store idé som én knivskarp sætning — kampagnens hjerte. Modig og uventet, ikke generisk.',
+            },
+            tagline: {
+              type: 'string',
+              description: 'En kort, slagkraftig tagline/endline der fanger idéen.',
+            },
+            manifesto: {
+              type: 'string',
+              description:
+                'Kort, mobiliserende manifest-copy (ca. 30-60 ord) der sælger følelsen og verdenen bag idéen.',
+            },
+            strategicRoot: {
+              type: 'string',
+              description:
+                'Den strategiske indsigt eller kulturelle spænding idéen står på (1-2 sætninger).',
+            },
+            channelExpressions: {
+              type: 'array',
+              description: 'Hvordan idéen kommer til live på 4-5 forskellige kanaler.',
+              items: {
+                type: 'object',
+                properties: {
+                  channel: {
+                    type: 'string',
+                    description: 'Kanalen, fx Social, OOH/Outdoor, Film, Aktivering/Experiential, PR.',
+                  },
+                  idea: {
+                    type: 'string',
+                    description: 'Konkret hvordan den store idé udtrykkes på netop denne kanal.',
+                  },
+                },
+                required: ['channel', 'idea'],
+              },
+            },
+            toneDescriptor: {
+              type: 'string',
+              description: 'Kort beskrivelse af tonen/stemningen for denne rute.',
+            },
+            rationale: {
+              type: 'string',
+              description: 'Hvorfor denne rute vinder — hvad gør den stærk og mindeværdig (1-2 sætninger).',
+            },
+          },
+          required: [
+            'name',
+            'bigIdea',
+            'tagline',
+            'manifesto',
+            'strategicRoot',
+            'channelExpressions',
+            'toneDescriptor',
+            'rationale',
+          ],
+        },
+      },
+    },
+    required: ['territories'],
+  },
+};
+
 // --- /api/logo-prompt --------------------------------------------------------
 
 export const logoPromptTool: Anthropic.Tool = {
