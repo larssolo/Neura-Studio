@@ -143,6 +143,22 @@ export interface CampaignPlatform {
   territories: CampaignTerritory[];
 }
 
+export interface StrategySpringboard {
+  title: string;
+  insight: string;
+}
+
+export interface StrategyFoundation {
+  audienceTruth: string;
+  tension: string;
+  competitiveContext: string;
+  singleMindedProposition: string;
+  reasonsToBelieve: string[];
+  desiredResponse: string;
+  springboards: StrategySpringboard[];
+  strategicSummary: string;
+}
+
 export interface LogoResult {
   imageUrl: string;
   contentType: string;

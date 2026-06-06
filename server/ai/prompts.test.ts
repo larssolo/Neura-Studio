@@ -6,7 +6,9 @@ import {
   buildCreativePush,
   buildSynthesize,
   buildBigIdea,
+  buildStrategy,
   campaignContextText,
+  strategyContextText,
   refineInstruction,
   cacheableSystem,
 } from './prompts';
@@ -66,6 +68,63 @@ describe('buildBigIdea', () => {
     expect(user).toContain('Acme');
     expect(user).toContain('Launch');
     expect(user).toContain('TRE konkurrerende');
+  });
+
+  it('stays unchanged when no strategy is passed (regression)', () => {
+    const { user } = buildBigIdea({ client: 'Acme', project: 'Launch', language: 'Dansk' });
+    expect(user).not.toContain('STRATEGISK FUNDAMENT');
+  });
+
+  it('injects the strategy foundation when present (feeds the idea engine)', () => {
+    const { user } = buildBigIdea(
+      { client: 'Acme', project: 'Launch', language: 'Dansk' },
+      { singleMindedProposition: 'Tid er den nye luksus', audienceTruth: 'De drukner i valg' },
+    );
+    expect(user).toContain('STRATEGISK FUNDAMENT');
+    expect(user).toContain('Tid er den nye luksus');
+    expect(user).toContain('De drukner i valg');
+  });
+});
+
+describe('buildStrategy', () => {
+  it('casts the Head of Strategy and embeds the brief fields', () => {
+    const { system, user } = buildStrategy({ client: 'Acme', project: 'Launch', language: 'Dansk' });
+    expect(system[0].text).toContain('Chefstrateg');
+    expect(user).toContain('Acme');
+    expect(user).toContain('Launch');
+    expect(user).toContain('strategiske fundament');
+  });
+
+  it('adds a cached CVI block when cviManual is present', () => {
+    const { system } = buildStrategy({
+      client: 'Acme',
+      cviManual: { brandColors: ['#FF5400 - Orange'] },
+    });
+    expect(system).toHaveLength(2);
+    expect((system[1] as any).cache_control).toEqual({ type: 'ephemeral' });
+  });
+});
+
+describe('strategyContextText', () => {
+  it('renders the foundation as an injectable context block', () => {
+    const txt = strategyContextText({
+      singleMindedProposition: 'Det enkle løfte',
+      audienceTruth: 'En reel indsigt',
+      reasonsToBelieve: ['Bevis A', 'Bevis B'],
+      springboards: [{ title: 'Afsæt 1', insight: 'Vinkel 1' }],
+    });
+    expect(txt).toContain('STRATEGISK FUNDAMENT');
+    expect(txt).toContain('Det enkle løfte');
+    expect(txt).toContain('Bevis A');
+    expect(txt).toContain('Afsæt 1');
+  });
+
+  it('returns empty string when there is no foundation', () => {
+    expect(strategyContextText({})).toBe('');
+  });
+
+  it('does not crash when array fields are missing (robusthed)', () => {
+    expect(() => strategyContextText({ singleMindedProposition: 'x' } as any)).not.toThrow();
   });
 });
 

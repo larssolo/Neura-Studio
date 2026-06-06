@@ -18,6 +18,7 @@ import {
   buildVariants,
   buildRegenerate,
   buildBrainstorm,
+  buildStrategy,
   buildBigIdea,
   buildLogoPrompt,
   ANALYZE_CVI_SYSTEM_ROLE,
@@ -30,6 +31,7 @@ import {
   humanizeTool,
   variantsTool,
   brainstormTool,
+  strategyTool,
   campaignPlatformTool,
   logoPromptTool,
 } from './server/ai/schemas';
@@ -326,15 +328,45 @@ async function startServer() {
     }
   });
 
-  // Den Store Idé: tre konkurrerende kampagne-platforme ud fra briefet
-  app.post('/api/big-idea', async (req, res) => {
+  // Strategi-fundament: indsigt der fodrer Den Store Idé-motor
+  app.post('/api/strategy', async (req, res) => {
     try {
       const { brief } = req.body;
       if (!brief) {
         return res.status(400).json({ error: 'Brief er påkrævet.' });
       }
 
-      const { system, user } = buildBigIdea(brief);
+      const { system, user } = buildStrategy(brief);
+      let usageInfo: any = null;
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: strategyTool,
+        model: config.model,
+        maxTokens: config.maxTokens,
+        onUsage: (u) => { usageInfo = u; },
+      });
+
+      if (!parsed || !parsed.singleMindedProposition) {
+        throw new Error('Ufuldstændigt output fra Claude. Prøv igen.');
+      }
+
+      res.json({ ...parsed, _usage: usageInfo });
+    } catch (error: any) {
+      console.error('Fejl under Strategi-fundament:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke bygge det strategiske fundament.' });
+    }
+  });
+
+  // Den Store Idé: tre konkurrerende kampagne-platforme ud fra briefet
+  app.post('/api/big-idea', async (req, res) => {
+    try {
+      const { brief, strategy } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+
+      const { system, user } = buildBigIdea(brief, strategy || null);
       let usageInfo: any = null;
       const parsed = await generateStructured<any>({
         system,

@@ -6,6 +6,7 @@ import {
   humanizeTool,
   variantsTool,
   creativeTool,
+  strategyTool,
   campaignPlatformTool,
   visualConceptTool,
   visualCritiqueTool,
@@ -95,6 +96,29 @@ describe('creativeTool', () => {
       expect(props[key].type).toBe('array');
       expect(props[key].items.type).toBe('string');
     }
+  });
+});
+
+describe('strategyTool', () => {
+  it('is named submit_strategy_foundation and requires the eight fields', () => {
+    expect(strategyTool.name).toBe('submit_strategy_foundation');
+    expect((strategyTool.input_schema as any).required).toEqual([
+      'audienceTruth',
+      'tension',
+      'competitiveContext',
+      'singleMindedProposition',
+      'reasonsToBelieve',
+      'desiredResponse',
+      'springboards',
+      'strategicSummary',
+    ]);
+  });
+
+  it('types reasonsToBelieve as a string array and springboards as title+insight objects', () => {
+    const props = (strategyTool.input_schema as any).properties;
+    expect(props.reasonsToBelieve.type).toBe('array');
+    expect(props.reasonsToBelieve.items.type).toBe('string');
+    expect(props.springboards.items.required).toEqual(['title', 'insight']);
   });
 });
 

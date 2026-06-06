@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDocx } from '../lib/exportDocx';
@@ -116,6 +116,9 @@ export function useContentMachine() {
   const [brainstormResult, setBrainstormResult] = useState<BrainstormResult | null>(null);
   const [isBrainstorming, setIsBrainstorming] = useState<boolean>(false);
 
+  const [strategy, setStrategy] = useState<StrategyFoundation | null>(() => loadSession()?.strategy ?? null);
+  const [isGeneratingStrategy, setIsGeneratingStrategy] = useState<boolean>(false);
+
   const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(null);
   const [isGeneratingCampaign, setIsGeneratingCampaign] = useState<boolean>(false);
   const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => loadSession()?.selectedTerritory ?? null);
@@ -192,8 +195,8 @@ export function useContentMachine() {
 
   useEffect(() => {
     if (!output && !brief.client) return;
-    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory });
-  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory]);
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy]);
 
   const handleClearPresets = () => {
     setCustomPresets([]);
@@ -871,6 +874,39 @@ export function useContentMachine() {
     }
   };
 
+  const handleGenerateStrategy = async () => {
+    if (!brief.client || !brief.project || !brief.description) {
+      setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at bygge strategi-fundamentet.");
+      return;
+    }
+    setIsGeneratingStrategy(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/strategy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const raw = await response.json();
+      const { _usage, ...foundation } = raw as any;
+      if (_usage) setLastUsage(_usage);
+      setStrategy(foundation as StrategyFoundation);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke bygge det strategiske fundament.');
+    } finally {
+      setIsGeneratingStrategy(false);
+    }
+  };
+
+  const handleClearStrategy = () => {
+    setStrategy(null);
+  };
+
   const handleGenerateBigIdea = async () => {
     if (!brief.client || !brief.project || !brief.description) {
       setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at finde Den Store Idé.");
@@ -882,7 +918,7 @@ export function useContentMachine() {
       const response = await fetch('/api/big-idea', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief })
+        body: JSON.stringify({ brief, strategy })
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
@@ -1221,6 +1257,9 @@ export function useContentMachine() {
     brainstormResult, setBrainstormResult,
     isBrainstorming,
     handleBrainstorm,
+    // Strategi-fundament
+    strategy, setStrategy,
+    isGeneratingStrategy, handleGenerateStrategy, handleClearStrategy,
     // Den Store Idé / kampagne-platform
     campaignPlatform, setCampaignPlatform,
     isGeneratingCampaign, handleGenerateBigIdea,

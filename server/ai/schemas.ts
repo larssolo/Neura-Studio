@@ -548,6 +548,82 @@ export const campaignPlatformTool: Anthropic.Tool = {
   },
 };
 
+// --- /api/strategy -----------------------------------------------------------
+
+export const strategyTool: Anthropic.Tool = {
+  name: 'submit_strategy_foundation',
+  description: 'Aflever det strategiske fundament (indsigt, spænding, løfte og afsæt) som struktureret data.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      audienceTruth: {
+        type: 'string',
+        description:
+          'Den reelle menneskelige indsigt om målgruppen — ikke en demografisk beskrivelse, men hvad de faktisk tænker, føler og kæmper med (1-2 sætninger).',
+      },
+      tension: {
+        type: 'string',
+        description:
+          'Den centrale spænding, barriere eller konflikt kampagnen skal løse (1-2 sætninger).',
+      },
+      competitiveContext: {
+        type: 'string',
+        description:
+          'Hvordan kategorien/konkurrenterne typisk kommunikerer, og hvilket ledigt territorium dette brand kan eje (1-2 sætninger).',
+      },
+      singleMindedProposition: {
+        type: 'string',
+        description:
+          'Det enkelt-mindede løfte (single-minded proposition) — det ene vi vil have målgruppen til at tage med sig. Knivskarpt, én sætning.',
+      },
+      reasonsToBelieve: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          '2-4 konkrete reasons-to-believe, forankret i de faktiske leverancer, der gør løftet troværdigt.',
+      },
+      desiredResponse: {
+        type: 'string',
+        description:
+          'Hvad målgruppen skal tænke, føle og gøre efter at have mødt kommunikationen (1-2 sætninger).',
+      },
+      springboards: {
+        type: 'array',
+        description: '2-3 strategiske afsæt (springboards) som en kreativ idé-motor kan springe fra.',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Kort, fængende navn på det strategiske afsæt (2-4 ord).',
+            },
+            insight: {
+              type: 'string',
+              description: 'Den strategiske vinkel/indsigt afsættet åbner for (1-2 sætninger).',
+            },
+          },
+          required: ['title', 'insight'],
+        },
+      },
+      strategicSummary: {
+        type: 'string',
+        description:
+          'Kort sammenfatning af det strategiske fundament i ét afsnit (ca. 30-60 ord) — essensen en kreativ direktør kan briefes på.',
+      },
+    },
+    required: [
+      'audienceTruth',
+      'tension',
+      'competitiveContext',
+      'singleMindedProposition',
+      'reasonsToBelieve',
+      'desiredResponse',
+      'springboards',
+      'strategicSummary',
+    ],
+  },
+};
+
 // --- /api/logo-prompt --------------------------------------------------------
 
 export const logoPromptTool: Anthropic.Tool = {
