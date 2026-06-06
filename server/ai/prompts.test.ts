@@ -5,6 +5,8 @@ import {
   buildVariants,
   buildCreativePush,
   buildSynthesize,
+  buildBigIdea,
+  campaignContextText,
   refineInstruction,
   cacheableSystem,
 } from './prompts';
@@ -38,6 +40,45 @@ describe('buildGenerate', () => {
     expect(system).toHaveLength(2);
     expect(system[1].text).toContain('#FF5400');
     expect((system[1] as any).cache_control).toEqual({ type: 'ephemeral' });
+  });
+
+  it('stays unchanged when no chosen idea is passed (regression)', () => {
+    const { user } = buildGenerate(baseBrief);
+    expect(user).not.toContain('VALGT KAMPAGNE-PLATFORM');
+  });
+
+  it('injects the chosen campaign platform into the user text (coherence contract)', () => {
+    const { user } = buildGenerate(baseBrief, {
+      name: 'Rute X',
+      bigIdea: 'Verden venter ikke',
+      tagline: 'Kom i bevægelse',
+    });
+    expect(user).toContain('VALGT KAMPAGNE-PLATFORM');
+    expect(user).toContain('Verden venter ikke');
+    expect(user).toContain('Kom i bevægelse');
+  });
+});
+
+describe('buildBigIdea', () => {
+  it('casts the ECD and embeds the brief fields', () => {
+    const { system, user } = buildBigIdea({ client: 'Acme', project: 'Launch', language: 'Dansk' });
+    expect(system[0].text).toContain('Executive Creative Director');
+    expect(user).toContain('Acme');
+    expect(user).toContain('Launch');
+    expect(user).toContain('TRE konkurrerende');
+  });
+});
+
+describe('campaignContextText', () => {
+  it('renders the chosen idea as an injectable context block', () => {
+    const txt = campaignContextText({ name: 'Rute X', bigIdea: 'Stor idé her', tagline: 'Tagline her' });
+    expect(txt).toContain('VALGT KAMPAGNE-PLATFORM');
+    expect(txt).toContain('Stor idé her');
+    expect(txt).toContain('Tagline her');
+  });
+
+  it('returns empty string when there is no idea', () => {
+    expect(campaignContextText({})).toBe('');
   });
 });
 

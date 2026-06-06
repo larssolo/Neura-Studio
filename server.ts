@@ -18,6 +18,7 @@ import {
   buildVariants,
   buildRegenerate,
   buildBrainstorm,
+  buildBigIdea,
   buildLogoPrompt,
   ANALYZE_CVI_SYSTEM_ROLE,
   cacheableSystem,
@@ -29,6 +30,7 @@ import {
   humanizeTool,
   variantsTool,
   brainstormTool,
+  campaignPlatformTool,
   logoPromptTool,
 } from './server/ai/schemas';
 import { runDeliberation } from './server/ai/deliberate';
@@ -56,12 +58,12 @@ async function startServer() {
   // Main generator endpoint
   app.post('/api/generate', async (req, res) => {
     try {
-      const { brief } = req.body;
+      const { brief, chosenIdea } = req.body;
       if (!brief) {
         return res.status(400).json({ error: 'Brief er påkrævet.' });
       }
 
-      const { system, user } = buildGenerate(brief);
+      const { system, user } = buildGenerate(brief, chosenIdea || null);
       let usageInfo: any = null;
       const parsed = await generateStructured<any>({
         system,
@@ -130,7 +132,7 @@ async function startServer() {
 
   // Deep "redaktionsmøde" generation: multi-AI deliberation loop (streaming via SSE)
   app.post('/api/generate-deep', async (req, res) => {
-    const { brief } = req.body;
+    const { brief, chosenIdea } = req.body;
     if (!brief) {
       return res.status(400).json({ error: 'Brief er påkrævet.' });
     }
@@ -150,7 +152,7 @@ async function startServer() {
     }, 15000);
 
     try {
-      const result = await runDeliberation({ brief }, (e) => {
+      const result = await runDeliberation({ brief, chosenIdea: chosenIdea || null }, (e) => {
         if (!res.writableEnded) res.write(`data: ${JSON.stringify(e)}\n\n`);
       });
 
@@ -321,6 +323,36 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under humanisering:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke fuldføre humanisering af teksten.' });
+    }
+  });
+
+  // Den Store Idé: tre konkurrerende kampagne-platforme ud fra briefet
+  app.post('/api/big-idea', async (req, res) => {
+    try {
+      const { brief } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+
+      const { system, user } = buildBigIdea(brief);
+      let usageInfo: any = null;
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: campaignPlatformTool,
+        model: config.model,
+        maxTokens: config.maxTokens,
+        onUsage: (u) => { usageInfo = u; },
+      });
+
+      if (!parsed || !Array.isArray(parsed.territories) || parsed.territories.length === 0) {
+        throw new Error('Ufuldstændigt output fra Claude. Prøv igen.');
+      }
+
+      res.json({ ...parsed, _usage: usageInfo });
+    } catch (error: any) {
+      console.error('Fejl under Den Store Idé:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke udvikle kampagne-platforme.' });
     }
   });
 

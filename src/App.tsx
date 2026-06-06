@@ -50,6 +50,7 @@ import { AppHeader } from './components/AppHeader';
 import { Toolbar } from './components/Toolbar';
 import { UsageBadge } from './components/UsageBadge';
 import { BrainstormPanel } from './components/BrainstormPanel';
+import { CampaignPanel } from './components/CampaignPanel';
 import { LogoPanel } from './components/LogoPanel';
 import { useContentMachine, PRESETS } from './hooks/useContentMachine';
 
@@ -84,6 +85,9 @@ export default function App() {
     regeneratingKey, handleRegenerateSection,
     brainstormResult, setBrainstormResult,
     isBrainstorming, handleBrainstorm,
+    campaignPlatform, setCampaignPlatform,
+    isGeneratingCampaign, handleGenerateBigIdea,
+    selectedTerritory, handleSelectTerritory, handleClearTerritory,
     logoResult, setLogoResult,
     isGeneratingLogo, handleGenerateLogo,
     isOptimizingLogoPrompt, handleOptimizeLogoPrompt,
@@ -162,6 +166,9 @@ export default function App() {
            handleVisualDevelop={handleVisualDevelop}
            handleBrainstorm={handleBrainstorm}
            isBrainstorming={isBrainstorming}
+           handleGenerateBigIdea={handleGenerateBigIdea}
+           isGeneratingCampaign={isGeneratingCampaign}
+           hasSelectedTerritory={!!selectedTerritory}
            errorMsg={errorMsg}
            generationStep={generationStep}
          />
@@ -180,6 +187,19 @@ export default function App() {
              handleExecuteTerminalCommand={handleExecuteTerminalCommand}
            />
 
+
+          {/* CAMPAIGN PLATFORM PANEL (Den Store Idé) */}
+          {campaignPlatform && (
+            <CampaignPanel
+              platform={campaignPlatform}
+              selectedTerritory={selectedTerritory}
+              onSelectTerritory={handleSelectTerritory}
+              onClearTerritory={handleClearTerritory}
+              onClose={() => setCampaignPlatform(null)}
+              copiedKey={copiedKey}
+              onCopy={handleCopyToClipboard}
+            />
+          )}
 
           {/* BRAINSTORM RESULT PANEL */}
           {brainstormResult && (
@@ -712,7 +732,7 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.8.1
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.9.0
             </span>
             <div className="flex items-center space-x-4">
               {lastUsage && <UsageBadge usage={lastUsage} />}

@@ -6,7 +6,7 @@
 import { Dispatch, SetStateAction, ChangeEvent } from 'react';
 import {
   AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint,
-  Lightbulb, Loader2, Palette, Pin, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
+  Lightbulb, Loader2, Palette, Pin, Rocket, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
 } from 'lucide-react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief } from '../types';
 
@@ -34,6 +34,9 @@ interface BriefFormProps {
   handleVisualDevelop: () => void;
   handleBrainstorm: () => void;
   isBrainstorming: boolean;
+  handleGenerateBigIdea: () => void;
+  isGeneratingCampaign: boolean;
+  hasSelectedTerritory: boolean;
   errorMsg: string | null;
   generationStep: string;
 }
@@ -46,6 +49,7 @@ export function BriefForm({
   handleCviUpload, handleRemoveCvi, handlePinCurrentBrief,
   handleClearPresets, handleRestorePresets,
   handleGenerateAll, handleVisualDevelop, handleBrainstorm, isBrainstorming,
+  handleGenerateBigIdea, isGeneratingCampaign, hasSelectedTerritory,
   errorMsg, generationStep,
 }: BriefFormProps) {
   return (
@@ -428,6 +432,27 @@ export function BriefForm({
               </span>
             </button>
 
+            {/* BIG IDEA BUTTON (Den Store Idé) */}
+            <button
+              type="button"
+              onClick={handleGenerateBigIdea}
+              disabled={isGenerating || isGeneratingCampaign}
+              className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-violet-600/15 to-brand-orange-600/10 border border-violet-500/40 hover:border-violet-400/60 hover:from-violet-600/25 text-violet-100 hover:text-white font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              title="Udvikl tre konkurrerende kampagne-platforme (kreative ruter) — vælg én, og alt indhold bygger på den"
+            >
+              {isGeneratingCampaign ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-violet-300 animate-spin shrink-0" />
+                  <span>Udvikler kampagne-platforme...</span>
+                </>
+              ) : (
+                <>
+                  <Rocket className="w-4 h-4 text-violet-300 shrink-0" />
+                  <span>Find Den Store Idé</span>
+                </>
+              )}
+            </button>
+
             {/* BRAINSTORM BUTTON */}
             <button
               type="button"
@@ -448,6 +473,14 @@ export function BriefForm({
                 </>
               )}
             </button>
+
+            {/* ACTIVE CAMPAIGN PLATFORM INDICATOR */}
+            {hasSelectedTerritory && (
+              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/25 text-[11px] font-mono text-violet-200">
+                <Rocket className="w-3 h-3 text-violet-300 shrink-0" />
+                <span>Genererer på den valgte kampagne-platform</span>
+              </div>
+            )}
 
             {/* GENERATE ENGINE BUTTON (TRIGGER ALL) */}
             <button

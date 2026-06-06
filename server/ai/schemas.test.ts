@@ -6,6 +6,7 @@ import {
   humanizeTool,
   variantsTool,
   creativeTool,
+  campaignPlatformTool,
   visualConceptTool,
   visualCritiqueTool,
   visualDirectionsTool,
@@ -94,6 +95,28 @@ describe('creativeTool', () => {
       expect(props[key].type).toBe('array');
       expect(props[key].items.type).toBe('string');
     }
+  });
+});
+
+describe('campaignPlatformTool', () => {
+  it('is named submit_campaign_platform and requires territories', () => {
+    expect(campaignPlatformTool.name).toBe('submit_campaign_platform');
+    expect((campaignPlatformTool.input_schema as any).required).toEqual(['territories']);
+  });
+
+  it('each territory requires the eight platform fields', () => {
+    const items = (campaignPlatformTool.input_schema as any).properties.territories.items;
+    expect(items.required).toEqual([
+      'name',
+      'bigIdea',
+      'tagline',
+      'manifesto',
+      'strategicRoot',
+      'channelExpressions',
+      'toneDescriptor',
+      'rationale',
+    ]);
+    expect(items.properties.channelExpressions.items.required).toEqual(['channel', 'idea']);
   });
 });
 

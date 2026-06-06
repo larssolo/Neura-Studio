@@ -123,6 +123,26 @@ export interface UsageInfo {
   cacheWriteTokens: number;
 }
 
+export interface CampaignChannelExpression {
+  channel: string;
+  idea: string;
+}
+
+export interface CampaignTerritory {
+  name: string;
+  bigIdea: string;
+  tagline: string;
+  manifesto: string;
+  strategicRoot: string;
+  channelExpressions: CampaignChannelExpression[];
+  toneDescriptor: string;
+  rationale: string;
+}
+
+export interface CampaignPlatform {
+  territories: CampaignTerritory[];
+}
+
 export interface LogoResult {
   imageUrl: string;
   contentType: string;
