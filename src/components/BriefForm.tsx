@@ -6,7 +6,7 @@
 import { Dispatch, SetStateAction, ChangeEvent } from 'react';
 import {
   AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint,
-  Lightbulb, Palette, Pin, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
+  Lightbulb, Loader2, Palette, Pin, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
 } from 'lucide-react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief } from '../types';
 
@@ -32,6 +32,8 @@ interface BriefFormProps {
   handleRestorePresets: () => void;
   handleGenerateAll: () => void;
   handleVisualDevelop: () => void;
+  handleBrainstorm: () => void;
+  isBrainstorming: boolean;
   errorMsg: string | null;
   generationStep: string;
 }
@@ -43,7 +45,7 @@ export function BriefForm({
   handleBriefChange, handleChannelToggle, handleLoadPreset,
   handleCviUpload, handleRemoveCvi, handlePinCurrentBrief,
   handleClearPresets, handleRestorePresets,
-  handleGenerateAll, handleVisualDevelop,
+  handleGenerateAll, handleVisualDevelop, handleBrainstorm, isBrainstorming,
   errorMsg, generationStep,
 }: BriefFormProps) {
   return (
@@ -424,6 +426,27 @@ export function BriefForm({
               <span className={`relative w-9 h-5 rounded-full transition-colors shrink-0 ${deepMode ? 'bg-brand-orange-500' : 'bg-slate-700'}`}>
                 <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${deepMode ? 'translate-x-4' : ''}`} />
               </span>
+            </button>
+
+            {/* BRAINSTORM BUTTON */}
+            <button
+              type="button"
+              onClick={handleBrainstorm}
+              disabled={isGenerating || isBrainstorming}
+              className="w-full py-2.5 px-4 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-200 hover:text-white font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              title="Generer kreative idéer og vinkler for dette brief — uden at forpligte sig til fuld generering"
+            >
+              {isBrainstorming ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-amber-300 animate-spin shrink-0" />
+                  <span>Brainstormer idéer...</span>
+                </>
+              ) : (
+                <>
+                  <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>Brainstorm kreative idéer</span>
+                </>
+              )}
             </button>
 
             {/* GENERATE ENGINE BUTTON (TRIGGER ALL) */}

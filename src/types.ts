@@ -116,6 +116,36 @@ export interface PresetBrief {
   brief: ProjectBrief;
 }
 
+export interface UsageInfo {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+}
+
+export interface LogoResult {
+  imageUrl: string;
+  contentType: string;
+  prompt: string;
+  style: string;
+}
+
+export interface BrainstormAngle {
+  title: string;
+  headline: string;
+  linkedinHook: string;
+  reasoning: string;
+}
+
+export interface BrainstormResult {
+  projectCore: string;
+  angles: BrainstormAngle[];
+  keyDifferentiators: string[];
+  audienceInsights: string[];
+  boldQuestion: string;
+  briefGaps: string[];
+}
+
 export interface HumanizerResult {
   originalAiScore: number;
   clichesDetected: string[];

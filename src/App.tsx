@@ -48,6 +48,9 @@ import { ProductionTab } from './components/tabs/ProductionTab';
 import { BriefForm } from './components/BriefForm';
 import { AppHeader } from './components/AppHeader';
 import { Toolbar } from './components/Toolbar';
+import { UsageBadge } from './components/UsageBadge';
+import { BrainstormPanel } from './components/BrainstormPanel';
+import { LogoPanel } from './components/LogoPanel';
 import { useContentMachine, PRESETS } from './hooks/useContentMachine';
 
 export default function App() {
@@ -76,6 +79,14 @@ export default function App() {
     generatedImages,
     theme, setTheme,
     customPresets,
+    lastUsage,
+    lockedSections, handleToggleLock,
+    regeneratingKey, handleRegenerateSection,
+    brainstormResult, setBrainstormResult,
+    isBrainstorming, handleBrainstorm,
+    logoResult, setLogoResult,
+    isGeneratingLogo, handleGenerateLogo,
+    isOptimizingLogoPrompt, handleOptimizeLogoPrompt,
     handleBriefChange,
     handleChannelToggle,
     handleLoadPreset,
@@ -149,6 +160,8 @@ export default function App() {
            handleRestorePresets={handleRestorePresets}
            handleGenerateAll={handleGenerateAll}
            handleVisualDevelop={handleVisualDevelop}
+           handleBrainstorm={handleBrainstorm}
+           isBrainstorming={isBrainstorming}
            errorMsg={errorMsg}
            generationStep={generationStep}
          />
@@ -167,6 +180,20 @@ export default function App() {
              handleExecuteTerminalCommand={handleExecuteTerminalCommand}
            />
 
+
+          {/* BRAINSTORM RESULT PANEL */}
+          {brainstormResult && (
+            <BrainstormPanel
+              result={brainstormResult}
+              onClose={() => setBrainstormResult(null)}
+              onAddNote={(text) => {
+                const sep = brief.notes.trim() ? '\n\n' : '';
+                setBrief(prev => ({ ...prev, notes: prev.notes.trim() + sep + text }));
+              }}
+              copiedKey={copiedKey}
+              onCopy={handleCopyToClipboard}
+            />
+          )}
 
           {/* VISUAL DEVELOPMENT RESULT (visuel redaktion) */}
           {visualResult && (
@@ -459,6 +486,10 @@ export default function App() {
                            variants={variants}
                            setVariants={setVariants}
                            handleApplyVariant={handleApplyVariant}
+                           lockedSections={lockedSections}
+                           handleToggleLock={handleToggleLock}
+                           handleRegenerateSection={handleRegenerateSection}
+                           regeneratingKey={regeneratingKey}
                          />
                        )}
 
@@ -485,6 +516,10 @@ export default function App() {
                            variants={variants}
                            setVariants={setVariants}
                            handleApplyVariant={handleApplyVariant}
+                           lockedSections={lockedSections}
+                           handleToggleLock={handleToggleLock}
+                           handleRegenerateSection={handleRegenerateSection}
+                           regeneratingKey={regeneratingKey}
                          />
                        )}
 
@@ -506,6 +541,10 @@ export default function App() {
                            activeCompareIndex={activeCompareIndex}
                            setActiveCompareIndex={setActiveCompareIndex}
                            setErrorMsg={setErrorMsg}
+                           lockedSections={lockedSections}
+                           handleToggleLock={handleToggleLock}
+                           handleRegenerateSection={handleRegenerateSection}
+                           regeneratingKey={regeneratingKey}
                          />
                        )}
 
@@ -643,6 +682,19 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          {/* LOGO GENERATOR PANEL */}
+          <LogoPanel
+            brief={brief}
+            logoResult={logoResult}
+            isGeneratingLogo={isGeneratingLogo}
+            handleGenerateLogo={handleGenerateLogo}
+            isOptimizingLogoPrompt={isOptimizingLogoPrompt}
+            handleOptimizeLogoPrompt={handleOptimizeLogoPrompt}
+            onClearResult={() => setLogoResult(null)}
+            copiedKey={copiedKey}
+            onCopy={handleCopyToClipboard}
+          />
+
           {/* AI HUMANIZER & DETECTOR BYPASS PANEL */}
           <HumanizerPanel
             externalText={externalText}
@@ -660,9 +712,12 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.5.2
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.8.1
             </span>
-            <span>Konkret. Autentisk. Kreativt.</span>
+            <div className="flex items-center space-x-4">
+              {lastUsage && <UsageBadge usage={lastUsage} />}
+              <span>Konkret. Autentisk. Kreativt.</span>
+            </div>
           </div>
 
         </div>

@@ -16,6 +16,9 @@ import {
   buildHumanize,
   buildRefine,
   buildVariants,
+  buildRegenerate,
+  buildBrainstorm,
+  buildLogoPrompt,
   ANALYZE_CVI_SYSTEM_ROLE,
   cacheableSystem,
 } from './server/ai/prompts';
@@ -25,10 +28,13 @@ import {
   analyzeCviTool,
   humanizeTool,
   variantsTool,
+  brainstormTool,
+  logoPromptTool,
 } from './server/ai/schemas';
 import { runDeliberation } from './server/ai/deliberate';
 import { runVisualDeliberation } from './server/ai/deliberateVisual';
 import { getImageProvider } from './server/image/provider';
+import { generateLogoSvg } from './server/image/recraftVector';
 
 async function startServer() {
   const app = express();
@@ -56,11 +62,13 @@ async function startServer() {
       }
 
       const { system, user } = buildGenerate(brief);
+      let usageInfo: any = null;
       const parsed = await generateStructured<any>({
         system,
         userContent: [{ type: 'text', text: user }],
         tool: generateTool,
         maxTokens: config.maxTokens,
+        onUsage: (u) => { usageInfo = u; },
       });
 
       // Let runtime-shape-tjek så vi fejler tydeligt frem for at sende et halvt objekt.
@@ -68,7 +76,7 @@ async function startServer() {
         throw new Error('Ufuldstændigt output fra Claude. Prøv igen.');
       }
 
-      res.json(parsed);
+      res.json({ ...parsed, _usage: usageInfo });
     } catch (error: any) {
       console.error('Fejl under generering:', error);
       res.status(500).json({ error: error.message || 'Internt server fejl under generering.' });
@@ -313,6 +321,121 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under humanisering:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke fuldføre humanisering af teksten.' });
+    }
+  });
+
+  // Brainstorm: kreativ idé-eksplosion ud fra briefet (hurtig, struktureret)
+  app.post('/api/brainstorm', async (req, res) => {
+    try {
+      const { brief } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+
+      const { system, user } = buildBrainstorm(brief);
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: brainstormTool,
+        model: config.fastModel,
+        maxTokens: 4096,
+      });
+
+      res.json(parsed);
+    } catch (error: any) {
+      console.error('Fejl under brainstorm:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke gennemføre brainstorm.' });
+    }
+  });
+
+  // Regenerate a single output section from scratch (streaming via SSE)
+  app.post('/api/regenerate-section', async (req, res) => {
+    try {
+      const { brief, sectionKey, currentText } = req.body;
+      if (!sectionKey) {
+        return res.status(400).json({ error: 'sectionKey er påkrævet.' });
+      }
+
+      const { system, user } = buildRegenerate(brief || {}, sectionKey, currentText || '');
+
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+      res.flushHeaders?.();
+
+      const stream = anthropic.messages.stream({
+        model: config.fastModel,
+        max_tokens: 4096,
+        system: [{ type: 'text', text: system }],
+        messages: [{ role: 'user', content: user }],
+      });
+
+      let full = '';
+      stream.on('text', (delta) => {
+        full += delta;
+        res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+      });
+
+      await stream.finalMessage();
+
+      res.write(`data: ${JSON.stringify({ done: true, regeneratedText: full.trim() })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } catch (error: any) {
+      console.error('Fejl under sektion-regenerering:', error);
+      if (!res.headersSent) {
+        res.status(500).json({ error: error.message || 'Kunne ikke regenerere sektionen.' });
+      } else {
+        res.write(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+        res.end();
+      }
+    }
+  });
+
+  // Optimér/oversæt en logo-prompt til Recraft text-to-vector via AI
+  app.post('/api/logo-prompt', async (req, res) => {
+    try {
+      const { brief, currentPrompt, mode } = req.body;
+      const safeMode = mode === 'refine' ? 'refine' : 'translate';
+      if (safeMode === 'refine' && !currentPrompt?.trim()) {
+        return res.status(400).json({ error: 'En eksisterende prompt er påkrævet for forfining.' });
+      }
+
+      const { system, user } = buildLogoPrompt(brief || {}, currentPrompt || '', safeMode);
+      const parsed = await generateStructured<{ prompt: string }>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: logoPromptTool,
+        model: config.fastModel,
+        maxTokens: 1024,
+      });
+
+      res.json({ prompt: (parsed.prompt || '').trim() });
+    } catch (error: any) {
+      console.error('Fejl under logo-prompt optimering:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke optimere logo-prompten.' });
+    }
+  });
+
+  // Logo generator via Recraft V4 Pro text-to-vector (SVG output)
+  app.post('/api/generate-logo', async (req, res) => {
+    try {
+      const { prompt, style, colors } = req.body;
+      if (!prompt?.trim()) {
+        return res.status(400).json({ error: 'Prompt er påkrævet.' });
+      }
+
+      const result = await generateLogoSvg({
+        prompt: prompt.trim(),
+        style: style || undefined,
+        colors: Array.isArray(colors) && colors.length > 0 ? colors : undefined,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Fejl under logo-generering:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke generere logo.' });
     }
   });
 

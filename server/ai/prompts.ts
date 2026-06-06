@@ -292,6 +292,145 @@ ${text}
 }
 
 // ---------------------------------------------------------------------------
+// /api/regenerate-section — frisk enkelt-sektion fra bunden
+// ---------------------------------------------------------------------------
+
+const SECTION_LABELS: Record<string, string> = {
+  shortCaseText: 'kort case-tekst (ca. 100-150 ord, konkret og fængende om de faktiske leverancer)',
+  longCaseText: 'lang case-tekst til hjemmeside (ca. 250-400 ord med konkrete detaljer, milepæle og resultater)',
+  linkedinPost: 'LinkedIn opslag (professionelt og levende, med krog i første linje, klare afsnit og en CTA)',
+  creativeNewsletterSection: 'nyhedsbrev-sektion med kreativt layout-forslag og konkret indhold',
+};
+
+export function buildRegenerate(
+  brief: Brief,
+  sectionKey: string,
+  currentText: string,
+): { system: string; user: string } {
+  const label = SECTION_LABELS[sectionKey] ?? sectionKey;
+  const system = `Du er en professionel Content Machine Produktionsassistent og brand-tekstforfatter.
+
+Opgave: Generer en FRISK, ORIGINAL ny version af: ${label}
+
+KRAV:
+1. Find en ny indgang og vinkel — ignorer den eksisterende teksts konkrete formuleringer
+2. Bevar faktuelle oplysninger fra briefet (klient, projekt, leverancer, tal, navne)
+3. Vær modig og konkret — undgå floskler og generiske marketingvendinger
+4. Svar UDELUKKENDE med den nye tekst — ingen forklaringer, overskrifter eller kommentarer
+5. Skriv på ${brief.language || 'Dansk'}`;
+
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi: ${brief.description || 'N/A'}
+- Særlige detaljer: ${brief.details || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Tone: ${brief.tone || 'Professionel, menneskelig, kreativ'}
+
+EKSISTERENDE VERSION (kun til reference — skriv NOGET ANDERLEDES):
+${currentText}
+
+Skriv nu en frisk ${label}:`;
+
+  return { system, user };
+}
+
+// ---------------------------------------------------------------------------
+// /api/logo-prompt — optimér/oversæt logo-prompt til Recraft text-to-vector
+// ---------------------------------------------------------------------------
+
+export const LOGO_PROMPT_SYSTEM_ROLE = `Du er ekspert i at skrive prompts til AI vektor-logo-generatoren Recraft V4 (text-to-vector).
+
+Du producerer ÉN færdig logo-prompt på ENGELSK, optimeret til at generere et skarpt, skalerbart SVG-vektorlogo.
+
+REGLER FOR EN GOD RECRAFT LOGO-PROMPT:
+1. Skriv på engelsk — Recraft fungerer markant bedre på engelsk.
+2. Vær konkret om: hovedsymbol/motiv, geometrisk form, komposition og stiludtryk.
+3. Beskriv et ENKELT, rent ikon/symbol — ikke en scene eller et fotografi.
+4. Bed ALDRIG om tekst, bogstaver, ord eller typografi i logoet (vektor-loget skal være et rent grafisk mærke).
+5. Brug vektorvenlige termer: "flat vector logo", "minimal geometric icon", "clean lines", "scalable", "solid shapes", "negative space".
+6. Undgå floskler, fotorealisme, gradients-tunge beskrivelser og overflødige ord.
+7. Hold den fokuseret — typisk 1-3 sætninger. Ingen forklaringer rundt om.
+
+Aflever KUN den færdige prompt via det angivne værktøj.`;
+
+export function buildLogoPrompt(
+  brief: Brief,
+  currentPrompt: string,
+  mode: 'translate' | 'refine',
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const colors = (brief.cviManual?.brandColors || []).join(', ');
+  const cviLine = colors ? `\n- Brand-farver (CVI): ${colors}` : '';
+  const styleLine = brief.cviManual?.imageStyleGuidelines
+    ? `\n- Visuel stil (CVI): ${brief.cviManual.imageStyleGuidelines}`
+    : '';
+
+  const task =
+    mode === 'translate'
+      ? `Konvertér nedenstående input til én optimeret, engelsk Recraft logo-prompt. Inddrag relevant kontekst fra briefet, så logoet matcher kunden og projektet.`
+      : `Forfin og skærp nedenstående eksisterende logo-prompt: gør den mere konkret, vektorvenlig og fokuseret — bevar den oprindelige idé og retning, men løft kvaliteten.`;
+
+  const user = `PROJEKT KONTEKST:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad handler det om: ${brief.description || 'N/A'}
+- Branche/målgruppe: ${brief.audience || 'N/A'}
+- Tone/stemning: ${brief.tone || 'N/A'}${cviLine}${styleLine}
+
+INPUT (${mode === 'translate' ? 'rå beskrivelse der skal oversættes' : 'eksisterende prompt der skal forfines'}):
+"""
+${currentPrompt || '(tom — byg en passende logo-prompt ud fra konteksten ovenfor)'}
+"""
+
+OPGAVE:
+${task}
+Aflever den færdige engelske logo-prompt via værktøjet.`;
+
+  return { system: cacheableSystem([LOGO_PROMPT_SYSTEM_ROLE]), user };
+}
+
+// ---------------------------------------------------------------------------
+// /api/brainstorm — kreativ idé-eksplosion før produktionsstart
+// ---------------------------------------------------------------------------
+
+export const BRAINSTORM_SYSTEM_ROLE = `Du er en prisvindende Kreativ Strateg og Idéudvikler for Content Machine.
+
+Din opgave er at analysere et projekt-brief og generere en bred vifte af kreative muligheder — INDEN den egentlige indholdsproduktion begynder.
+
+Formål:
+1. Afdæk den VIRKELIGE kernehistorie (hvad er det egentlig interessante her?)
+2. Foreslå 4 distinkte, dristige kreative retninger — inkl. dem ingen normalt ville overveje
+3. Identificer hvad der gør NETOP dette projekt unikt og mindeværdigt
+4. Stil de skarpe spørgsmål der afslører hvad briefet ikke fortæller
+
+Regler:
+- Vær modig og konkret. Undgå de oplagte, forudsigelige og generiske vinkler.
+- Tænk i kontraster, overraskende åbninger og distinkte stemmer.
+- Fokusér på det SENSORISKE og KONKRETE — hvad ser/føler/oplever målgruppen præcis?
+- Ingen floskler. Ingen svulstige marketingsprog. Kun skarpe, specifikke idéer.
+- Aflever alt via det angivne værktøj.`;
+
+export function buildBrainstorm(brief: Brief): {
+  system: Anthropic.TextBlockParam[];
+  user: string;
+} {
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi: ${brief.description || 'N/A'}
+- Særlige detaljer: ${brief.details || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Tone: ${brief.tone || 'Professionel, menneskelig, kreativ'}
+- Sprog: ${brief.language || 'Dansk'}
+- Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
+- Ekstra noter: ${brief.notes || 'N/A'}
+
+Lav nu en kreativ brainstorm: identificér kernehistorien, foreslå 4 distinkte kreative retninger (med overskrift og LinkedIn-krog for hver), nøgle-differentiatorerne, målgruppeinsigter, et skærpende spørgsmål og brief-mangler. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
+
+  return { system: cacheableSystem([BRAINSTORM_SYSTEM_ROLE]), user };
+}
+
+// ---------------------------------------------------------------------------
 // Deliberation (redaktionsmøde): Kreativ Direktør + Chefredaktør
 // ---------------------------------------------------------------------------
 
