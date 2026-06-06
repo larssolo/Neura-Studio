@@ -17,6 +17,7 @@ import {
   buildRefine,
   buildVariants,
   buildRegenerate,
+  buildBrainstorm,
   ANALYZE_CVI_SYSTEM_ROLE,
   cacheableSystem,
 } from './server/ai/prompts';
@@ -26,6 +27,7 @@ import {
   analyzeCviTool,
   humanizeTool,
   variantsTool,
+  brainstormTool,
 } from './server/ai/schemas';
 import { runDeliberation } from './server/ai/deliberate';
 import { runVisualDeliberation } from './server/ai/deliberateVisual';
@@ -316,6 +318,30 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under humanisering:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke fuldføre humanisering af teksten.' });
+    }
+  });
+
+  // Brainstorm: kreativ idé-eksplosion ud fra briefet (hurtig, struktureret)
+  app.post('/api/brainstorm', async (req, res) => {
+    try {
+      const { brief } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+
+      const { system, user } = buildBrainstorm(brief);
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: brainstormTool,
+        model: config.fastModel,
+        maxTokens: 4096,
+      });
+
+      res.json(parsed);
+    } catch (error: any) {
+      console.error('Fejl under brainstorm:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke gennemføre brainstorm.' });
     }
   });
 

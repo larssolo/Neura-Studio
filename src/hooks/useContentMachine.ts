@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDocx } from '../lib/exportDocx';
@@ -112,6 +112,9 @@ export function useContentMachine() {
   const [externalText, setExternalText] = useState<string>('');
   const [humanizerResult, setHumanizerResult] = useState<HumanizerResult | null>(null);
   const [isHumanizing, setIsHumanizing] = useState<boolean>(false);
+
+  const [brainstormResult, setBrainstormResult] = useState<BrainstormResult | null>(null);
+  const [isBrainstorming, setIsBrainstorming] = useState<boolean>(false);
 
   const [cviFileName, setCviFileName] = useState<string | null>(null);
   const [isAnalyzingCvi, setIsAnalyzingCvi] = useState<boolean>(false);
@@ -833,6 +836,33 @@ export function useContentMachine() {
     }
   };
 
+  const handleBrainstorm = async () => {
+    if (!brief.client || !brief.project || !brief.description) {
+      setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at køre Brainstorm.");
+      return;
+    }
+    setIsBrainstorming(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/brainstorm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const data = await response.json();
+      setBrainstormResult(data as BrainstormResult);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke gennemføre brainstorm.');
+    } finally {
+      setIsBrainstorming(false);
+    }
+  };
+
   const handleRefine = async (command: string, targetKey: string) => {
     if (!output) return;
 
@@ -1079,6 +1109,10 @@ export function useContentMachine() {
     // Humanizer
     externalText, setExternalText,
     humanizerResult, setHumanizerResult,
+    // Brainstorm
+    brainstormResult, setBrainstormResult,
+    isBrainstorming,
+    handleBrainstorm,
     // CVI
     cviFileName,
     // Print

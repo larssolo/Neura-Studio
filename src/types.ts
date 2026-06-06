@@ -123,6 +123,22 @@ export interface UsageInfo {
   cacheWriteTokens: number;
 }
 
+export interface BrainstormAngle {
+  title: string;
+  headline: string;
+  linkedinHook: string;
+  reasoning: string;
+}
+
+export interface BrainstormResult {
+  projectCore: string;
+  angles: BrainstormAngle[];
+  keyDifferentiators: string[];
+  audienceInsights: string[];
+  boldQuestion: string;
+  briefGaps: string[];
+}
+
 export interface HumanizerResult {
   originalAiScore: number;
   clichesDetected: string[];

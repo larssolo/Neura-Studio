@@ -49,6 +49,7 @@ import { BriefForm } from './components/BriefForm';
 import { AppHeader } from './components/AppHeader';
 import { Toolbar } from './components/Toolbar';
 import { UsageBadge } from './components/UsageBadge';
+import { BrainstormPanel } from './components/BrainstormPanel';
 import { useContentMachine, PRESETS } from './hooks/useContentMachine';
 
 export default function App() {
@@ -80,6 +81,8 @@ export default function App() {
     lastUsage,
     lockedSections, handleToggleLock,
     regeneratingKey, handleRegenerateSection,
+    brainstormResult, setBrainstormResult,
+    isBrainstorming, handleBrainstorm,
     handleBriefChange,
     handleChannelToggle,
     handleLoadPreset,
@@ -153,6 +156,8 @@ export default function App() {
            handleRestorePresets={handleRestorePresets}
            handleGenerateAll={handleGenerateAll}
            handleVisualDevelop={handleVisualDevelop}
+           handleBrainstorm={handleBrainstorm}
+           isBrainstorming={isBrainstorming}
            errorMsg={errorMsg}
            generationStep={generationStep}
          />
@@ -171,6 +176,20 @@ export default function App() {
              handleExecuteTerminalCommand={handleExecuteTerminalCommand}
            />
 
+
+          {/* BRAINSTORM RESULT PANEL */}
+          {brainstormResult && (
+            <BrainstormPanel
+              result={brainstormResult}
+              onClose={() => setBrainstormResult(null)}
+              onAddNote={(text) => {
+                const sep = brief.notes.trim() ? '\n\n' : '';
+                setBrief(prev => ({ ...prev, notes: prev.notes.trim() + sep + text }));
+              }}
+              copiedKey={copiedKey}
+              onCopy={handleCopyToClipboard}
+            />
+          )}
 
           {/* VISUAL DEVELOPMENT RESULT (visuel redaktion) */}
           {visualResult && (
@@ -676,7 +695,7 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.6.0
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.7.0
             </span>
             <div className="flex items-center space-x-4">
               {lastUsage && <UsageBadge usage={lastUsage} />}

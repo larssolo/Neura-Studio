@@ -336,6 +336,47 @@ Skriv nu en frisk ${label}:`;
 }
 
 // ---------------------------------------------------------------------------
+// /api/brainstorm — kreativ idé-eksplosion før produktionsstart
+// ---------------------------------------------------------------------------
+
+export const BRAINSTORM_SYSTEM_ROLE = `Du er en prisvindende Kreativ Strateg og Idéudvikler for Content Machine.
+
+Din opgave er at analysere et projekt-brief og generere en bred vifte af kreative muligheder — INDEN den egentlige indholdsproduktion begynder.
+
+Formål:
+1. Afdæk den VIRKELIGE kernehistorie (hvad er det egentlig interessante her?)
+2. Foreslå 4 distinkte, dristige kreative retninger — inkl. dem ingen normalt ville overveje
+3. Identificer hvad der gør NETOP dette projekt unikt og mindeværdigt
+4. Stil de skarpe spørgsmål der afslører hvad briefet ikke fortæller
+
+Regler:
+- Vær modig og konkret. Undgå de oplagte, forudsigelige og generiske vinkler.
+- Tænk i kontraster, overraskende åbninger og distinkte stemmer.
+- Fokusér på det SENSORISKE og KONKRETE — hvad ser/føler/oplever målgruppen præcis?
+- Ingen floskler. Ingen svulstige marketingsprog. Kun skarpe, specifikke idéer.
+- Aflever alt via det angivne værktøj.`;
+
+export function buildBrainstorm(brief: Brief): {
+  system: Anthropic.TextBlockParam[];
+  user: string;
+} {
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi: ${brief.description || 'N/A'}
+- Særlige detaljer: ${brief.details || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Tone: ${brief.tone || 'Professionel, menneskelig, kreativ'}
+- Sprog: ${brief.language || 'Dansk'}
+- Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
+- Ekstra noter: ${brief.notes || 'N/A'}
+
+Lav nu en kreativ brainstorm: identificér kernehistorien, foreslå 4 distinkte kreative retninger (med overskrift og LinkedIn-krog for hver), nøgle-differentiatorerne, målgruppeinsigter, et skærpende spørgsmål og brief-mangler. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
+
+  return { system: cacheableSystem([BRAINSTORM_SYSTEM_ROLE]), user };
+}
+
+// ---------------------------------------------------------------------------
 // Deliberation (redaktionsmøde): Kreativ Direktør + Chefredaktør
 // ---------------------------------------------------------------------------
 

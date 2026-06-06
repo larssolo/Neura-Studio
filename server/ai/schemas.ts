@@ -467,6 +467,80 @@ export const humanizeTool: Anthropic.Tool = {
   },
 };
 
+// --- /api/brainstorm ---------------------------------------------------------
+
+export const brainstormTool: Anthropic.Tool = {
+  name: 'submit_brainstorm',
+  description: 'Aflever brainstorm-idéerne som struktureret data.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      projectCore: {
+        type: 'string',
+        description:
+          'Den virkelige kernehistorie bag projektet — hvad er det EGENTLIG interessante her? (1-2 skarpe sætninger)',
+      },
+      angles: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Kort, fængende titel for denne kreative vinkel (3-5 ord)',
+            },
+            headline: {
+              type: 'string',
+              description: 'En konkret, modig overskrift der repræsenterer denne vinkel',
+            },
+            linkedinHook: {
+              type: 'string',
+              description: 'En fængende åbningslinje til LinkedIn i denne vinkel (max 2 linjer)',
+            },
+            reasoning: {
+              type: 'string',
+              description: 'Hvorfor virker denne vinkel? Hvad er det der gør den stærk? (1-2 sætninger)',
+            },
+          },
+          required: ['title', 'headline', 'linkedinHook', 'reasoning'],
+        },
+        description: 'Præcis 4 distinkte, dristige kreative retninger for dette projekt.',
+      },
+      keyDifferentiators: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          '3-4 specifikke ting der gør netop dette projekt unikt, interessant og mindeværdigt.',
+      },
+      audienceInsights: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          '2-3 konkrete indsigter om målgruppen og hvad de vil reagere positivt på i indholdet.',
+      },
+      boldQuestion: {
+        type: 'string',
+        description:
+          'Ét provokerende eller tankevækkende spørgsmål der — hvis svaret var i indholdet — ville gøre det markant skarpere.',
+      },
+      briefGaps: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          '2-3 vigtige spørgsmål man bør stille kunden for at berige briefet og skrive endnu bedre indhold.',
+      },
+    },
+    required: [
+      'projectCore',
+      'angles',
+      'keyDifferentiators',
+      'audienceInsights',
+      'boldQuestion',
+      'briefGaps',
+    ],
+  },
+};
+
 // --- visuel redaktion (art direction-deliberation) ---------------------------
 
 // Genbrugt billedprompt-skema (engelske prompts til Midjourney/Flux/Firefly).
