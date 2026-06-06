@@ -8,6 +8,7 @@ import {
   creativeTool,
   strategyTool,
   campaignPlatformTool,
+  channelMatrixTool,
   visualConceptTool,
   visualCritiqueTool,
   visualDirectionsTool,
@@ -141,6 +142,31 @@ describe('campaignPlatformTool', () => {
       'rationale',
     ]);
     expect(items.properties.channelExpressions.items.required).toEqual(['channel', 'idea']);
+  });
+});
+
+describe('channelMatrixTool', () => {
+  it('is named submit_channel_matrix and requires channels', () => {
+    expect(channelMatrixTool.name).toBe('submit_channel_matrix');
+    expect((channelMatrixTool.input_schema as any).required).toEqual(['channels']);
+  });
+
+  it('each channel asset requires the seven production fields', () => {
+    const items = (channelMatrixTool.input_schema as any).properties.channels.items;
+    expect(items.required).toEqual([
+      'channel',
+      'format',
+      'headline',
+      'keyMessage',
+      'script',
+      'productionNotes',
+      'cta',
+    ]);
+  });
+
+  it('script blocks require label + content', () => {
+    const items = (channelMatrixTool.input_schema as any).properties.channels.items;
+    expect(items.properties.script.items.required).toEqual(['label', 'content']);
   });
 });
 

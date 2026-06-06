@@ -6,7 +6,7 @@
 import { Dispatch, SetStateAction, ChangeEvent } from 'react';
 import {
   AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint,
-  Lightbulb, Loader2, Palette, Pin, Rocket, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
+  Layers, Lightbulb, Loader2, Palette, Pin, Rocket, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
 } from 'lucide-react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief } from '../types';
 
@@ -40,6 +40,8 @@ interface BriefFormProps {
   handleGenerateBigIdea: () => void;
   isGeneratingCampaign: boolean;
   hasSelectedTerritory: boolean;
+  handleGenerateChannelMatrix: () => void;
+  isGeneratingMatrix: boolean;
   errorMsg: string | null;
   generationStep: string;
 }
@@ -54,6 +56,7 @@ export function BriefForm({
   handleGenerateAll, handleVisualDevelop, handleBrainstorm, isBrainstorming,
   handleGenerateStrategy, isGeneratingStrategy, hasStrategy,
   handleGenerateBigIdea, isGeneratingCampaign, hasSelectedTerritory,
+  handleGenerateChannelMatrix, isGeneratingMatrix,
   errorMsg, generationStep,
 }: BriefFormProps) {
   return (
@@ -509,11 +512,32 @@ export function BriefForm({
               )}
             </button>
 
-            {/* ACTIVE CAMPAIGN PLATFORM INDICATOR */}
+            {/* ACTIVE CAMPAIGN PLATFORM INDICATOR + OMNI-CHANNEL SCALING */}
             {hasSelectedTerritory && (
-              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/25 text-[11px] font-mono text-violet-200">
-                <Rocket className="w-3 h-3 text-violet-300 shrink-0" />
-                <span>Genererer på den valgte kampagne-platform</span>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-violet-500/10 border border-violet-500/25 text-[11px] font-mono text-violet-200">
+                  <Rocket className="w-3 h-3 text-violet-300 shrink-0" />
+                  <span>Genererer på den valgte kampagne-platform</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGenerateChannelMatrix}
+                  disabled={isGenerating || isGeneratingMatrix}
+                  className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-emerald-600/15 to-teal-600/10 border border-emerald-500/40 hover:border-emerald-400/60 hover:from-emerald-600/25 text-emerald-100 hover:text-white font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  title="Skalér den valgte store idé til en produktionsklar eksekvering pr. kanal (film, OOH, radio, social, aktivering, PR)"
+                >
+                  {isGeneratingMatrix ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-emerald-300 animate-spin shrink-0" />
+                      <span>Skalerer til alle kanaler...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Layers className="w-4 h-4 text-emerald-300 shrink-0" />
+                      <span>Skalér til omni-channel matrix</span>
+                    </>
+                  )}
+                </button>
               </div>
             )}
 

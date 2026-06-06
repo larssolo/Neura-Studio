@@ -7,6 +7,7 @@ import {
   buildSynthesize,
   buildBigIdea,
   buildStrategy,
+  buildChannelMatrix,
   campaignContextText,
   strategyContextText,
   refineInstruction,
@@ -138,6 +139,43 @@ describe('campaignContextText', () => {
 
   it('returns empty string when there is no idea', () => {
     expect(campaignContextText({})).toBe('');
+  });
+});
+
+describe('buildChannelMatrix', () => {
+  const baseBrief = { client: 'Acme', project: 'Launch', language: 'Dansk', channels: ['LinkedIn'] };
+  const chosenIdea = {
+    name: 'Rute X',
+    bigIdea: 'Verden venter ikke',
+    tagline: 'Kom i bevægelse',
+    channelExpressions: [{ channel: 'Film', idea: 'En 30-sek hero-film' }],
+  };
+
+  it('casts the Omni-channel director and threads the chosen idea + channel seeds', () => {
+    const { system, user } = buildChannelMatrix(baseBrief, chosenIdea);
+    expect(system[0].text).toContain('Omni-channel Creative Director');
+    expect(user).toContain('VALGT KAMPAGNE-PLATFORM');
+    expect(user).toContain('Verden venter ikke');
+    expect(user).toContain('KANAL-FRØ');
+    expect(user).toContain('En 30-sek hero-film');
+    expect(user).toContain('omni-channel matrix');
+  });
+
+  it('injects the strategy foundation when present (forankring)', () => {
+    const { user } = buildChannelMatrix(baseBrief, chosenIdea, {
+      singleMindedProposition: 'Tid er den nye luksus',
+    });
+    expect(user).toContain('STRATEGISK FUNDAMENT');
+    expect(user).toContain('Tid er den nye luksus');
+  });
+
+  it('stays free of strategy block when none is passed (regression)', () => {
+    const { user } = buildChannelMatrix(baseBrief, chosenIdea);
+    expect(user).not.toContain('STRATEGISK FUNDAMENT');
+  });
+
+  it('does not crash when channelExpressions is missing (robusthed)', () => {
+    expect(() => buildChannelMatrix(baseBrief, { bigIdea: 'x', tagline: 'y' } as any)).not.toThrow();
   });
 });
 

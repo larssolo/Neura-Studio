@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation, ChannelMatrix } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDocx } from '../lib/exportDocx';
@@ -123,6 +123,9 @@ export function useContentMachine() {
   const [isGeneratingCampaign, setIsGeneratingCampaign] = useState<boolean>(false);
   const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => loadSession()?.selectedTerritory ?? null);
 
+  const [channelMatrix, setChannelMatrix] = useState<ChannelMatrix | null>(() => loadSession()?.channelMatrix ?? null);
+  const [isGeneratingMatrix, setIsGeneratingMatrix] = useState<boolean>(false);
+
   const [logoResult, setLogoResult] = useState<LogoResult | null>(null);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState<boolean>(false);
   const [isOptimizingLogoPrompt, setIsOptimizingLogoPrompt] = useState<boolean>(false);
@@ -195,8 +198,8 @@ export function useContentMachine() {
 
   useEffect(() => {
     if (!output && !brief.client) return;
-    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy });
-  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy]);
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix]);
 
   const handleClearPresets = () => {
     setCustomPresets([]);
@@ -937,11 +940,51 @@ export function useContentMachine() {
   };
 
   const handleSelectTerritory = (territory: CampaignTerritory) => {
-    setSelectedTerritory(territory);
+    setSelectedTerritory(prev => {
+      // Skift af rute gør en eksisterende matrix forældet (forkert idé) — ryd den.
+      if (!prev || prev.name !== territory.name || prev.bigIdea !== territory.bigIdea) {
+        setChannelMatrix(null);
+      }
+      return territory;
+    });
   };
 
   const handleClearTerritory = () => {
     setSelectedTerritory(null);
+    setChannelMatrix(null);
+  };
+
+  const handleGenerateChannelMatrix = async () => {
+    if (!selectedTerritory) {
+      setErrorMsg("Vælg en kampagne-platform (rute) først for at skalere den til alle kanaler.");
+      return;
+    }
+    setIsGeneratingMatrix(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/channel-matrix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief, chosenIdea: selectedTerritory, strategy })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const raw = await response.json();
+      const { _usage, ...matrix } = raw as any;
+      if (_usage) setLastUsage(_usage);
+      setChannelMatrix(matrix as ChannelMatrix);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke skalere idéen til kanaler.');
+    } finally {
+      setIsGeneratingMatrix(false);
+    }
+  };
+
+  const handleClearChannelMatrix = () => {
+    setChannelMatrix(null);
   };
 
   const handleGenerateLogo = async (
@@ -1264,6 +1307,9 @@ export function useContentMachine() {
     campaignPlatform, setCampaignPlatform,
     isGeneratingCampaign, handleGenerateBigIdea,
     selectedTerritory, handleSelectTerritory, handleClearTerritory,
+    // Omni-channel matrix
+    channelMatrix, setChannelMatrix,
+    isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,
     // Logo
     logoResult, setLogoResult,
     isGeneratingLogo,

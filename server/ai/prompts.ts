@@ -465,6 +465,7 @@ export type ChosenIdea = {
   manifesto?: string;
   strategicRoot?: string;
   toneDescriptor?: string;
+  channelExpressions?: Array<{ channel?: string; idea?: string }>;
 };
 
 /**
@@ -482,6 +483,61 @@ export function campaignContextText(idea: ChosenIdea): string {
 ${idea.manifesto ? `- Manifest: ${idea.manifesto}` : ''}
 
 Alt indhold (case-tekster, LinkedIn, nyhedsbrev, overskrifter, CTA m.m.) skal være en tydelig forlængelse af denne store idé og tagline — samme verden, samme tone, samme løfte.`;
+}
+
+// ---------------------------------------------------------------------------
+// /api/channel-matrix — Omni-channel: skalér den valgte idé til alle kanaler
+// ---------------------------------------------------------------------------
+
+export const CHANNEL_MATRIX_SYSTEM_ROLE = `Du er Omni-channel Creative Director og integreret producer i et reklamebureau i verdensklasse.
+
+Du modtager ÉN valgt kampagne-platform (en stor idé med tagline, manifest og kanal-frø). Din opgave er at skalere den til en komplet omni-channel matrix: en færdig, produktionsklar eksekvering for hver kanal — samme store idé, men eksekveret native til hver kanals styrker.
+
+Principper:
+1. Trofast mod idéen: hver eksekvering skal umiskendeligt være SAMME kampagne — samme verden, tone, løfte og tagline. Ingen kanal må drive sin egen vej.
+2. Native eksekvering: et filmmanus skal være et rigtigt manus (scener, voiceover, super, lyd); et radiospot skal have SFX, VO og timing; OOH skal være ÉN knivskarp visuel idé med få ord; social skal have krog, caption, hashtags og format; aktivering skal beskrive den fysiske/digitale oplevelse trin for trin; PR skal have en nyhedsvinkel og en pitch.
+3. Konkret og produktionsklar: angiv varighed, format/ratio, antal scener, talent, lyd/musik og en tydelig CTA. Ingen floskler, ingen tom marketing-luft.
+4. script-feltet er en sekvens af navngivne blokke (label + indhold). Brug labels der passer kanalen (fx "Scene 1", "VO", "Super", "SFX", "Caption", "Hashtags", "Headline", "Subline", "Oplevelse", "Pitch", "CTA").
+
+Udvikl en eksekvering for hver kanal i platformens kanal-frø (og briefets kanaler). Aflever hele matrixen via det angivne værktøj, præcist som skemaet kræver.`;
+
+/** Render den valgte rutes kanal-frø som seed-liste til omni-channel-skaleringen. */
+function channelSeedsText(idea: ChosenIdea): string {
+  const seeds = (Array.isArray(idea?.channelExpressions) ? idea.channelExpressions : [])
+    .map((c) => `- ${c?.channel || 'Kanal'}: ${c?.idea || ''}`)
+    .join('\n');
+  return seeds ? `KANAL-FRØ FRA DEN VALGTE RUTE (skal foldes ud til fulde eksekveringer):\n${seeds}` : '';
+}
+
+/**
+ * Skalér den valgte kampagne-platform til en produktionsklar omni-channel matrix.
+ * Trådes med både den store idé (kohærens) og det strategiske fundament (forankring).
+ */
+export function buildChannelMatrix(
+  brief: Brief,
+  chosenIdea: ChosenIdea,
+  strategy?: StrategyFoundation | null,
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const system = cacheableSystem([CHANNEL_MATRIX_SYSTEM_ROLE, cviSectionText(brief)]);
+  const platform = campaignContextText(chosenIdea);
+  const seeds = channelSeedsText(chosenIdea);
+  const foundation = strategy ? strategyContextText(strategy) : '';
+
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
+- Særlige detaljer: ${brief.details || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Tone: ${brief.tone || 'Professionel, menneskelig, kreativ'}
+- Sprog: ${brief.language || 'Dansk'}
+- Briefets kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
+
+${platform || 'INGEN valgt platform — vælg en kreativ rute først.'}
+${seeds ? `\n${seeds}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
+Skalér nu den valgte store idé til en komplet omni-channel matrix — én produktionsklar eksekvering pr. kanal (fold kanal-frøene ud, og dæk briefets kanaler). Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-/format-navne må gerne være engelske hvor det er mest naturligt).`;
+
+  return { system, user };
 }
 
 // ---------------------------------------------------------------------------

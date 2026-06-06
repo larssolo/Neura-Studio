@@ -624,6 +624,77 @@ export const strategyTool: Anthropic.Tool = {
   },
 };
 
+// --- /api/channel-matrix -----------------------------------------------------
+
+export const channelMatrixTool: Anthropic.Tool = {
+  name: 'submit_channel_matrix',
+  description:
+    'Aflever den komplette omni-channel matrix: en produktionsklar eksekvering pr. kanal, skaleret fra den valgte store idé.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      channels: {
+        type: 'array',
+        description:
+          'En produktionsklar eksekvering for hver kanal i platformens kanal-frø (og briefets kanaler). Typisk 4-6.',
+        items: {
+          type: 'object',
+          properties: {
+            channel: {
+              type: 'string',
+              description:
+                'Kanalen, fx "Film / Video", "OOH / Outdoor", "Radio / Audio", "Social", "Aktivering / Experiential", "PR".',
+            },
+            format: {
+              type: 'string',
+              description:
+                'Det konkrete format, fx "30 sek. hero-film 16:9", "Abribus 8 m²", "20 sek. radiospot", "Instagram Reel 9:16".',
+            },
+            headline: {
+              type: 'string',
+              description: 'Den bærende overskrift/super for denne kanal-eksekvering.',
+            },
+            keyMessage: {
+              type: 'string',
+              description: 'Hvad netop denne kanal-eksekvering skal opnå (1 sætning) — forankret i den store idé.',
+            },
+            script: {
+              type: 'array',
+              description:
+                'Sekvensen af navngivne blokke der udgør eksekveringen. Brug labels der passer kanalen (fx "Scene 1", "VO", "Super", "SFX", "Caption", "Hashtags", "Subline", "Oplevelse", "Pitch").',
+              items: {
+                type: 'object',
+                properties: {
+                  label: {
+                    type: 'string',
+                    description: 'Blokkens rolle, fx "Scene 1", "VO", "Super", "SFX", "Caption", "Headline", "CTA".',
+                  },
+                  content: {
+                    type: 'string',
+                    description: 'Det konkrete indhold for denne blok (replik, billedbeskrivelse, copy, lyd).',
+                  },
+                },
+                required: ['label', 'content'],
+              },
+            },
+            productionNotes: {
+              type: 'string',
+              description:
+                'Konkrete produktionsnoter: varighed, format/ratio, antal scener, talent, lyd/musik, leverancer. Ingen floskler.',
+            },
+            cta: {
+              type: 'string',
+              description: 'Den tydelige call-to-action for denne kanal.',
+            },
+          },
+          required: ['channel', 'format', 'headline', 'keyMessage', 'script', 'productionNotes', 'cta'],
+        },
+      },
+    },
+    required: ['channels'],
+  },
+};
+
 // --- /api/logo-prompt --------------------------------------------------------
 
 export const logoPromptTool: Anthropic.Tool = {

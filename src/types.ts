@@ -159,6 +159,25 @@ export interface StrategyFoundation {
   strategicSummary: string;
 }
 
+export interface ChannelScriptBlock {
+  label: string;
+  content: string;
+}
+
+export interface ChannelAsset {
+  channel: string;
+  format: string;
+  headline: string;
+  keyMessage: string;
+  script: ChannelScriptBlock[];
+  productionNotes: string;
+  cta: string;
+}
+
+export interface ChannelMatrix {
+  channels: ChannelAsset[];
+}
+
 export interface LogoResult {
   imageUrl: string;
   contentType: string;
