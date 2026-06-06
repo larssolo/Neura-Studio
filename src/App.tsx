@@ -66,6 +66,15 @@ import { VisualDevPanel } from './components/VisualDevPanel';
 import { PrintView } from './components/PrintView';
 import { ToneAnalysisPanel } from './components/ToneAnalysisPanel';
 import { HumanizerPanel } from './components/HumanizerPanel';
+import { CaseTab } from './components/tabs/CaseTab';
+import { LinkedinTab } from './components/tabs/LinkedinTab';
+import { NewsletterTab } from './components/tabs/NewsletterTab';
+import { HeadlinesTab } from './components/tabs/HeadlinesTab';
+import { KeywordsTab } from './components/tabs/KeywordsTab';
+import { PromptsTab } from './components/tabs/PromptsTab';
+import { EnglishTab } from './components/tabs/EnglishTab';
+import { CviTab } from './components/tabs/CviTab';
+import { ProductionTab } from './components/tabs/ProductionTab';
 import { saveSession, loadSession } from './lib/session';
 import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
 
@@ -2238,823 +2247,128 @@ export default function App() {
                   <div className="p-5 bg-slate-900 flex-1 min-h-[350px]">
                     <AnimatePresence mode="wait">
                       
-                      {/* TAB 1: CASE-TEKSTER (KORT & LANG) */}
-                      {activeTab === 'case' && (
-                        <motion.div
-                          key="tab_case"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-6"
-                        >
-                          {/* Segment 1: Kort case-tekst */}
-                          <div 
-                            onClick={() => setSelectedTextKey('shortCaseText')}
-                            className={`p-4 rounded-xl border transition-all ${
-                              selectedTextKey === 'shortCaseText' 
-                                ? 'bg-slate-850 border-brand-orange-500/40 ring-1 ring-brand-orange-500/30' 
-                                : 'bg-slate-900/50 border-slate-800 hover:border-slate-750'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">1. Kort case-tekst</span>
-                                {selectedTextKey === 'shortCaseText' && <span className="text-[11px] bg-brand-orange-600/20 text-brand-orange-500 px-1.5 py-0.2 rounded font-mono font-medium border border-brand-orange-500/20">Valgt til raffinering</span>}
-                              </div>
-                              <div className="flex items-center space-x-1.5">
-                                {hasHistory('shortCaseText') && (
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleUndoRefine('shortCaseText'); }}
-                                    className="text-[11px] text-amber-500 hover:text-amber-400 font-mono flex items-center space-x-0.5 mr-2"
-                                    title="Fortryd omskrivning"
-                                  >
-                                    <RotateCcw className="w-3 h-3" />
-                                    <span>Fortryd</span>
-                                  </button>
-                                )}
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(output.shortCaseText, 'shortCaseText'); }}
-                                  className="text-slate-400 hover:text-white transition-colors"
-                                  title="Kopier"
-                                >
-                                  {copiedKey === 'shortCaseText' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            </div>
-                            <textarea
-                              value={output.shortCaseText}
-                              onChange={(e) => setOutput(prev => prev ? { ...prev, shortCaseText: e.target.value } : null)}
-                              rows={5}
-                              className="w-full bg-slate-950/40 focus:bg-slate-950 border border-slate-800 focus:border-slate-700 focus:outline-none p-3.5 rounded-lg text-xs leading-relaxed text-slate-200 resize-none font-sans"
-                            />
-                            
-                            {/* Inline refining toolkit */}
-                            <div className="mt-3 pt-2 border-t border-slate-800/60 flex flex-wrap gap-2 items-center justify-between">
-                              <div className="flex items-center space-x-1">
-                                <span className="text-[11px] font-mono text-slate-500 uppercase mr-1">Raffinér:</span>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/shorten', 'shortCaseText'); }}
-                                  disabled={isRefining}
-                                  id="refine_shorten_short_case"
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                  title="Gør kortere"
-                                >
-                                  /shorten
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/more-human', 'shortCaseText'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                  title="Gør mere menneskelig og ualmindelig varm"
-                                >
-                                  /more-human
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/more-business', 'shortCaseText'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                  title="Gør mere forretningsmæssig skarp"
-                                >
-                                  /more-business
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleGenerateVariants('shortCaseText'); }}
-                                  disabled={isVariating}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-amber-700/40 hover:border-amber-600 hover:bg-slate-800 text-amber-400 rounded font-mono"
-                                  title="Generer 2 A/B-varianter"
-                                >
-                                  /variant
-                                </button>
-                              </div>
-                              <span className="text-[11px] text-slate-500 font-mono">Genereret uden marketingfloskler</span>
-                            </div>
 
-                            {/* Revision history comparison selector */}
-                            {renderRevisionSelector('shortCaseText', output.shortCaseText)}
-                            {renderVariants('shortCaseText')}
-                          </div>
+                       {/* TAB 1: CASE-TEKSTER (KORT & LANG) */}
+                       {activeTab === 'case' && (
+                         <CaseTab
+                           output={output}
+                           selectedTextKey={selectedTextKey}
+                           setSelectedTextKey={setSelectedTextKey}
+                           setOutput={setOutput}
+                           isRefining={isRefining}
+                           isVariating={isVariating}
+                           handleRefine={handleRefine}
+                           handleUndoRefine={handleUndoRefine}
+                           handleGenerateVariants={handleGenerateVariants}
+                           handleCopyToClipboard={handleCopyToClipboard}
+                           copiedKey={copiedKey}
+                           refinementHistory={refinementHistory}
+                           revisions={revisions}
+                           setRevisions={setRevisions}
+                           activeCompareIndex={activeCompareIndex}
+                           setActiveCompareIndex={setActiveCompareIndex}
+                           setErrorMsg={setErrorMsg}
+                           variants={variants}
+                           setVariants={setVariants}
+                           handleApplyVariant={handleApplyVariant}
+                         />
+                       )}
 
-                          {/* Segment 2: Længere case-tekst */}
-                          <div 
-                            onClick={() => setSelectedTextKey('longCaseText')}
-                            className={`p-4 rounded-xl border transition-all ${
-                              selectedTextKey === 'longCaseText' 
-                                ? 'bg-slate-850 border-brand-orange-500/40 ring-1 ring-brand-orange-500/30' 
-                                : 'bg-slate-900/50 border-slate-800 hover:border-slate-750'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">2. Længere case-tekst (Website)</span>
-                                {selectedTextKey === 'longCaseText' && <span className="text-[11px] bg-brand-orange-600/20 text-brand-orange-500 px-1.5 py-0.2 rounded font-mono font-medium border border-brand-orange-500/20">Valgt til raffinering</span>}
-                              </div>
-                              <div className="flex items-center space-x-1.5">
-                                {hasHistory('longCaseText') && (
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleUndoRefine('longCaseText'); }}
-                                    className="text-[11px] text-amber-500 hover:text-amber-400 font-mono flex items-center space-x-0.5 mr-2"
-                                    title="Fortryd omskrivning"
-                                  >
-                                    <RotateCcw className="w-3 h-3" />
-                                    <span>Fortryd</span>
-                                  </button>
-                                )}
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(output.longCaseText, 'longCaseText'); }}
-                                  className="text-slate-400 hover:text-white transition-colors"
-                                  title="Kopier"
-                                >
-                                  {copiedKey === 'longCaseText' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            </div>
-                            <textarea
-                              value={output.longCaseText}
-                              onChange={(e) => setOutput(prev => prev ? { ...prev, longCaseText: e.target.value } : null)}
-                              rows={10}
-                              className="w-full bg-slate-955 border border-slate-800 focus:border-slate-700 focus:outline-none p-3.5 rounded-lg text-xs leading-relaxed text-slate-200 resize-none font-sans"
-                            />
-                            
-                            {/* Inline refining toolkit */}
-                            <div className="mt-3 pt-2 border-t border-slate-800/60 flex flex-wrap gap-2 items-center justify-between">
-                              <div className="flex items-center space-x-1">
-                                <span className="text-[11px] font-mono text-slate-500 uppercase mr-1">Raffinér:</span>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/shorten', 'longCaseText'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                >
-                                  /shorten
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/more-human', 'longCaseText'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                >
-                                  /more-human
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/more-business', 'longCaseText'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                >
-                                  /more-business
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleGenerateVariants('longCaseText'); }}
-                                  disabled={isVariating}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-amber-700/40 hover:border-amber-600 hover:bg-slate-800 text-amber-400 rounded font-mono"
-                                  title="Generer 2 A/B-varianter"
-                                >
-                                  /variant
-                                </button>
-                              </div>
-                              <span className="text-[11px] text-slate-500 font-mono">Udførlig design documentation</span>
-                            </div>
+                       {/* TAB 2: LINKEDIN */}
+                       {activeTab === 'linkedin' && (
+                         <LinkedinTab
+                           output={output}
+                           selectedTextKey={selectedTextKey}
+                           setSelectedTextKey={setSelectedTextKey}
+                           setOutput={setOutput}
+                           isRefining={isRefining}
+                           isVariating={isVariating}
+                           handleRefine={handleRefine}
+                           handleUndoRefine={handleUndoRefine}
+                           handleGenerateVariants={handleGenerateVariants}
+                           handleCopyToClipboard={handleCopyToClipboard}
+                           copiedKey={copiedKey}
+                           refinementHistory={refinementHistory}
+                           revisions={revisions}
+                           setRevisions={setRevisions}
+                           activeCompareIndex={activeCompareIndex}
+                           setActiveCompareIndex={setActiveCompareIndex}
+                           setErrorMsg={setErrorMsg}
+                           variants={variants}
+                           setVariants={setVariants}
+                           handleApplyVariant={handleApplyVariant}
+                         />
+                       )}
 
-                            {/* Revision history comparison selector */}
-                            {renderRevisionSelector('longCaseText', output.longCaseText)}
-                            {renderVariants('longCaseText')}
-                          </div>
-                        </motion.div>
-                      )}
+                       {/* TAB 3: NEWSLETTER */}
+                       {activeTab === 'newsletter' && (
+                         <NewsletterTab
+                           output={output}
+                           selectedTextKey={selectedTextKey}
+                           setSelectedTextKey={setSelectedTextKey}
+                           setOutput={setOutput}
+                           isRefining={isRefining}
+                           handleRefine={handleRefine}
+                           handleUndoRefine={handleUndoRefine}
+                           handleCopyToClipboard={handleCopyToClipboard}
+                           copiedKey={copiedKey}
+                           refinementHistory={refinementHistory}
+                           revisions={revisions}
+                           setRevisions={setRevisions}
+                           activeCompareIndex={activeCompareIndex}
+                           setActiveCompareIndex={setActiveCompareIndex}
+                           setErrorMsg={setErrorMsg}
+                         />
+                       )}
 
-                      {/* TAB 2: LINKEDIN */}
-                      {activeTab === 'linkedin' && (
-                        <motion.div
-                          key="tab_linkedin"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-4"
-                        >
-                          <div 
-                            onClick={() => setSelectedTextKey('linkedinPost')}
-                            className={`p-4 rounded-xl border transition-all ${
-                              selectedTextKey === 'linkedinPost' 
-                                ? 'bg-slate-850 border-brand-orange-500/40 ring-1 ring-brand-orange-500/30' 
-                                : 'bg-slate-900/50 border-slate-800 hover:border-slate-750'
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center space-x-2">
-                                <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">3. LinkedIn-opslag</span>
-                                {selectedTextKey === 'linkedinPost' && <span className="text-[11px] bg-brand-orange-600/20 text-brand-orange-500 px-1.5 py-0.2 rounded font-mono font-medium border border-brand-orange-500/20">Valgt til raffinering</span>}
-                              </div>
-                              <div className="flex items-center space-x-1.5">
-                                {hasHistory('linkedinPost') && (
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleUndoRefine('linkedinPost'); }}
-                                    className="text-[11px] text-amber-500 hover:text-amber-400 font-mono flex items-center space-x-0.5 mr-2"
-                                    title="Fortryd omskrivning"
-                                  >
-                                    <RotateCcw className="w-3 h-3" />
-                                    <span>Fortryd</span>
-                                  </button>
-                                )}
-                                <button 
-                                  onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(output.linkedinPost, 'linkedinPost'); }}
-                                  className="text-slate-400 hover:text-white transition-colors"
-                                  title="Kopier"
-                                >
-                                  {copiedKey === 'linkedinPost' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            </div>
-                            <textarea
-                              value={output.linkedinPost}
-                              onChange={(e) => setOutput(prev => prev ? { ...prev, linkedinPost: e.target.value } : null)}
-                              rows={12}
-                              className="w-full bg-slate-950/40 focus:bg-slate-950 border border-slate-800 focus:border-slate-700 focus:outline-none p-3.5 rounded-lg text-xs leading-relaxed text-slate-200 resize-none font-sans"
-                            />
-                            
-                            {/* Inline refining toolkit */}
-                            <div className="mt-3 pt-2 border-t border-slate-800/60 flex flex-wrap gap-2 items-center justify-between">
-                              <div className="flex items-center space-x-1">
-                                <span className="text-[11px] font-mono text-slate-500 uppercase mr-1">Raffinér:</span>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/shorten', 'linkedinPost'); }}
-                                  disabled={isRefining}
-                                  id="refine_shorten_linkedin"
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                >
-                                  /shorten
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/more-human', 'linkedinPost'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                >
-                                  /more-human
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/more-business', 'linkedinPost'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 hover:bg-slate-800 text-slate-300 rounded font-mono"
-                                >
-                                  /more-business
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleGenerateVariants('linkedinPost'); }}
-                                  disabled={isVariating}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-amber-700/40 hover:border-amber-600 hover:bg-slate-800 text-amber-400 rounded font-mono"
-                                  title="Generer 2 A/B-varianter"
-                                >
-                                  /variant
-                                </button>
-                              </div>
-                              <span className="text-[11px] text-slate-500 font-mono">Inkluderer krog, krop, keywords</span>
-                            </div>
+                       {/* TAB 4: HEADLINES */}
+                       {activeTab === 'headlines' && (
+                         <HeadlinesTab output={output} handleCopyToClipboard={handleCopyToClipboard} copiedKey={copiedKey} />
+                       )}
 
-                            {/* Revision history comparison selector */}
-                            {renderRevisionSelector('linkedinPost', output.linkedinPost)}
-                            {renderVariants('linkedinPost')}
-                          </div>
-                        </motion.div>
-                      )}
+                       {/* TAB 5: KEYWORDS & CTA */}
+                       {activeTab === 'keywords' && (
+                         <KeywordsTab output={output} handleCopyToClipboard={handleCopyToClipboard} copiedKey={copiedKey} />
+                       )}
 
-                      {/* TAB 3: NEWSLETTER */}
-                      {activeTab === 'newsletter' && (
-                        <motion.div
-                          key="tab_newsletter"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-4"
-                        >
-                          {/* Subject lines */}
-                          <div className="p-4 bg-slate-900/50 border border-slate-800 rounded-xl space-y-3">
-                            <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">9. Mailchimp Subject Lines</span>
-                            
-                            <div className="space-y-2">
-                              {output.mailchimpSubjects.map((sub, i) => (
-                                <div key={i} className="bg-slate-950 p-2.5 rounded-lg border border-slate-850 flex items-center justify-between text-xs text-white">
-                                  <div className="flex items-center space-x-2 truncate">
-                                    <span className="text-orange-500 font-mono font-bold text-[11px] shrink-0">#{i+1}</span>
-                                    <span className="truncate">{sub}</span>
-                                  </div>
-                                  <button
-                                    onClick={() => handleCopyToClipboard(sub, `mailchimp_${i}`)}
-                                    className="text-slate-500 hover:text-slate-300 ml-2"
-                                  >
-                                    {copiedKey === `mailchimp_${i}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                       {/* TAB 6: PROMPTS */}
+                       {activeTab === 'prompts' && (
+                         <PromptsTab
+                           output={output}
+                           brief={brief}
+                           generatedImages={generatedImages}
+                           copiedKey={copiedKey}
+                           handleCopyToClipboard={handleCopyToClipboard}
+                           handleAspectChange={handleAspectChange}
+                           handleGenerateImage={handleGenerateImage}
+                         />
+                       )}
 
-                          {/* Mailchimp Section layout proposal */}
-                          {output.productionProposed && output.production && (
-                            <div 
-                              onClick={() => setSelectedTextKey('creativeNewsletterSection')}
-                              className={`p-4 rounded-xl border transition-all ${
-                                selectedTextKey === 'creativeNewsletterSection' 
-                                  ? 'bg-slate-850 border-brand-orange-500/40 ring-1 ring-brand-orange-500/30' 
-                                  : 'bg-slate-900/50 border-slate-800 hover:border-slate-750'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">Nyhedsbrev Layout / Sektion</span>
-                                <div className="flex items-center space-x-1.5">
-                                  {hasHistory('creativeNewsletterSection') && (
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); handleUndoRefine('creativeNewsletterSection'); }}
-                                      className="text-[11px] text-amber-500 hover:text-amber-400 font-mono mr-2"
-                                    >
-                                      Fortryd
-                                    </button>
-                                  )}
-                                  <button 
-                                    onClick={(e) => { e.stopPropagation(); handleCopyToClipboard(output.production?.newsletterSection || "", 'creativeNewsletterSection'); }}
-                                    className="text-slate-400 hover:text-white"
-                                  >
-                                    {copiedKey === 'creativeNewsletterSection' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                  </button>
-                                </div>
-                              </div>
-                              <textarea
-                                value={output.production?.newsletterSection || ""}
-                                onChange={(e) => {
-                                  const textVal = e.target.value;
-                                  setOutput(prev => {
-                                    if (!prev || !prev.production) return prev;
-                                    return {
-                                      ...prev,
-                                      production: { ...prev.production, newsletterSection: textVal }
-                                    };
-                                  });
-                                }}
-                                rows={6}
-                                className="w-full bg-slate-955 border border-slate-800 focus:border-slate-700 focus:outline-none p-3.5 rounded-lg text-xs leading-relaxed text-slate-200 resize-none font-sans"
-                              />
+                       {/* TAB 7: ENGLISH */}
+                       {activeTab === 'english' && (
+                         <EnglishTab
+                           output={output}
+                           selectedTextKey={selectedTextKey}
+                           setSelectedTextKey={setSelectedTextKey}
+                           handleCopyToClipboard={handleCopyToClipboard}
+                           copiedKey={copiedKey}
+                         />
+                       )}
 
-                              {/* Inline refining packaging */}
-                              <div className="mt-3 pt-2 border-t border-slate-800/60 flex gap-2">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/shorten', 'creativeNewsletterSection'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded font-mono"
-                                >
-                                  /shorten
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleRefine('/more-human', 'creativeNewsletterSection'); }}
-                                  disabled={isRefining}
-                                  className="px-2 py-1 text-[11px] bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded font-mono"
-                                >
-                                  /more-human
-                                </button>
-                              </div>
+                       {/* TAB 8.5: CVI SUGGESTIONS STYLE BOARD */}
+                       {activeTab === 'cvi' && output.cviSuggestion && (
+                         <CviTab
+                           output={output}
+                           handleCopyToClipboard={handleCopyToClipboard}
+                           copiedKey={copiedKey}
+                           handleExportSingleSection={handleExportSingleSection}
+                         />
+                       )}
 
-                              {/* Revision history comparison selector */}
-                              {renderRevisionSelector('creativeNewsletterSection', output.production?.newsletterSection || "")}
-                            </div>
-                          )}
-                        </motion.div>
-                      )}
-
-                      {/* TAB 4: HEADLINES */}
-                      {activeTab === 'headlines' && (
-                        <motion.div
-                          key="tab_headlines"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-4 font-sans"
-                        >
-                          <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider block w-max">4. Overskrifter (Korte & Stærke)</span>
-                          
-                          <div className="space-y-3">
-                            {output.headlines.map((headline, i) => (
-                              <div key={i} className="bg-slate-900/40 p-3.5 rounded-lg border border-slate-800 flex items-center justify-between text-xs text-white">
-                                <div className="flex items-center space-x-3 leading-relaxed">
-                                  <span className="text-orange-500 font-mono font-bold">#{i+1}</span>
-                                  <span className="font-display font-semibold tracking-tight text-white text-sm">"{headline}"</span>
-                                </div>
-                                <button
-                                  onClick={() => handleCopyToClipboard(headline, `headline_${i}`)}
-                                  className="text-slate-400 hover:text-slate-200"
-                                >
-                                  {copiedKey === `headline_${i}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </motion.div>
-                      )}
-
-                      {/* TAB 5: KEYWORDS & CTA */}
-                      {activeTab === 'keywords' && (
-                        <motion.div
-                          key="tab_keywords"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="grid grid-cols-1 md:grid-cols-2 gap-6"
-                        >
-                          {/* Left: Keywords block */}
-                          <div className="space-y-3">
-                            <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">5. Tags & Keywords</span>
-                            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 flex flex-wrap gap-2">
-                              {output.keywords.map((kw, i) => (
-                                <div 
-                                  key={i} 
-                                  onClick={() => handleCopyToClipboard(kw, `kw_${i}`)}
-                                  className="bg-slate-900 hover:bg-slate-850 hover:text-orange-400 cursor-pointer border border-slate-850 rounded-lg px-2.5 py-1.5 text-xs text-slate-300 font-mono flex items-center space-x-1.5 transition-all text-[11px]"
-                                >
-                                  <span className="text-orange-500">#</span>
-                                  <span>{kw}</span>
-                                  {copiedKey === `kw_${i}` ? <Check className="w-3 h-3 text-emerald-400" /> : null}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Right: CTA options */}
-                          <div className="space-y-3">
-                            <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">6. Call to Action (3 typer)</span>
-                            <div className="space-y-3">
-                              {["Direkte", "Blød", "Kreativ"].map((type, idx) => {
-                                const val = output.cta[idx] || "";
-                                return (
-                                  <div key={idx} className="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5 relative">
-                                    <div className="flex items-center justify-between text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
-                                      <span>{type} CTA</span>
-                                      <button 
-                                        onClick={() => handleCopyToClipboard(val, `cta_${idx}`)}
-                                        className="text-slate-500 hover:text-white"
-                                      >
-                                        {copiedKey === `cta_${idx}` ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                      </button>
-                                    </div>
-                                    <p className="text-white text-xs font-semibold font-mono text-orange-400">{val}</p>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-
-                      {/* TAB 6: PROMPTS */}
-                      {activeTab === 'prompts' && (
-                        <motion.div
-                          key="tab_prompts"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-4 font-sans"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">8. AI-billedprompts (AI Billedmotor integreret)</span>
-                            <span className="text-[11px] text-slate-500 font-mono">Skal altid være på engelsk</span>
-                          </div>
-
-                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            
-                            {/* Prompt 1: Hero */}
-                            <ImageGenCard
-                              label="1. Hero Image Prompt"
-                              footer="High Production Value"
-                              alt="AI generated hero concept"
-                              ratios={['16:9', '1:1', '4:3', '9:16']}
-                              promptText={output.imagePrompts.hero}
-                              image={generatedImages.hero}
-                              downloadBase={`${(brief.client || '').replace(/\s+/g, '_')}_hero`}
-                              copied={copiedKey === 'prompt_hero'}
-                              onCopy={() => handleCopyToClipboard(output.imagePrompts.hero, 'prompt_hero')}
-                              onAspectChange={(r) => handleAspectChange('hero', r)}
-                              onGenerate={() => handleGenerateImage('hero', output.imagePrompts.hero)}
-                            />
-
-                            {/* Prompt 2: Detail */}
-                            <ImageGenCard
-                              label="2. Detail / Close-up Prompt"
-                              footer="Macro / Technical texture"
-                              alt="AI generated closeup concept"
-                              ratios={['1:1', '4:3', '16:9', '9:16']}
-                              promptText={output.imagePrompts.detail}
-                              image={generatedImages.detail}
-                              downloadBase={`${(brief.client || '').replace(/\s+/g, '_')}_detail`}
-                              copied={copiedKey === 'prompt_detail'}
-                              onCopy={() => handleCopyToClipboard(output.imagePrompts.detail, 'prompt_detail')}
-                              onAspectChange={(r) => handleAspectChange('detail', r)}
-                              onGenerate={() => handleGenerateImage('detail', output.imagePrompts.detail)}
-                            />
-
-                            {/* Prompt 3: Abstract */}
-                            <ImageGenCard
-                              label="3. Abstract Background"
-                              footer="Visual Atmosphere textures"
-                              alt="AI generated abstract background concept"
-                              ratios={['16:9', '1:1', '4:3', '9:16']}
-                              promptText={output.imagePrompts.abstract}
-                              image={generatedImages.abstract}
-                              downloadBase={`${(brief.client || '').replace(/\s+/g, '_')}_abstract`}
-                              copied={copiedKey === 'prompt_abstract'}
-                              onCopy={() => handleCopyToClipboard(output.imagePrompts.abstract, 'prompt_abstract')}
-                              onAspectChange={(r) => handleAspectChange('abstract', r)}
-                              onGenerate={() => handleGenerateImage('abstract', output.imagePrompts.abstract)}
-                            />
-
-                          </div>
-                        </motion.div>
-                      )}
-
-                      {/* TAB 7: ENGLISH */}
-                      {activeTab === 'english' && (
-                        <motion.div
-                          key="tab_english"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-4"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider">7. Engelsk Version</span>
-                            <span className="text-[11px] text-slate-500 font-mono">Mature translation</span>
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-4">
-                            
-                            {/* Short english */}
-                            <div 
-                              onClick={() => setSelectedTextKey('englishShortCaseText')}
-                              className={`p-3.5 rounded-lg border text-xs text-white ${
-                                selectedTextKey === 'englishShortCaseText' ? 'bg-slate-850 border-brand-orange-500/40' : 'bg-slate-900/50 border-slate-800'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 uppercase mb-1.5 font-bold tracking-wide">
-                                <span>Short Case Text</span>
-                                <button
-                                  onClick={() => handleCopyToClipboard(output.english?.shortCaseText || "", 'eng_short')}
-                                  className="text-slate-400 hover:text-white"
-                                >
-                                  {copiedKey === 'eng_short' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                              <p className="text-slate-300 leading-relaxed italic">{output.english?.shortCaseText}</p>
-                            </div>
-
-                            {/* Long english */}
-                            <div 
-                              onClick={() => setSelectedTextKey('englishLongCaseText')}
-                              className={`p-3.5 rounded-lg border text-xs text-white ${
-                                selectedTextKey === 'englishLongCaseText' ? 'bg-slate-850 border-brand-orange-500/40' : 'bg-slate-900/50 border-slate-800'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 uppercase mb-1.5 font-bold tracking-wide">
-                                <span>Long Case Text (Website)</span>
-                                <button
-                                  onClick={() => handleCopyToClipboard(output.english?.longCaseText || "", 'eng_long')}
-                                  className="text-slate-400 hover:text-white"
-                                >
-                                  {copiedKey === 'eng_long' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                              <p className="text-slate-300 leading-relaxed italic">{output.english?.longCaseText}</p>
-                            </div>
-
-                            {/* LinkedIn english */}
-                            <div 
-                              onClick={() => setSelectedTextKey('englishLinkedinPost')}
-                              className={`p-3.5 rounded-lg border text-xs text-white ${
-                                selectedTextKey === 'englishLinkedinPost' ? 'bg-slate-850 border-brand-orange-500/40' : 'bg-slate-900/50 border-slate-800'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 uppercase mb-1.5 font-bold tracking-wide">
-                                <span>LinkedIn Post</span>
-                                <button
-                                  onClick={() => handleCopyToClipboard(output.english?.linkedinPost || "", 'eng_linkedin')}
-                                  className="text-slate-400 hover:text-white"
-                                >
-                                  {copiedKey === 'eng_linkedin' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                              <p className="text-slate-300 leading-relaxed italic whitespace-pre-line">{output.english?.linkedinPost}</p>
-                            </div>
-
-                          </div>
-                        </motion.div>
-                      )}
-
-                      {/* TAB 8.5: CVI SUGGESTIONS STYLE BOARD */}
-                      {activeTab === 'cvi' && output.cviSuggestion && (
-                        <motion.div
-                          key="tab_cvi"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-5 text-left"
-                        >
-                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-800/80 pb-3 mb-1">
-                            <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider block w-max">AI-Genereret CVI (Corporate Visual Identity)</span>
-                            <button
-                              onClick={() => handleExportSingleSection('cvi')}
-                              className="flex items-center space-x-1.5 px-3 py-1 bg-brand-orange-600 hover:bg-brand-orange-500 text-white text-[11px] font-semibold rounded-md shadow-sm transition-all active:scale-95 cursor-pointer self-start sm:self-auto"
-                              title="Eksporter kun brandets designmanual og farvekoder som PDF"
-                            >
-                              <Printer className="w-3 h-3 text-white" />
-                              <span>Eksportér designmanual (PDF)</span>
-                            </button>
-                          </div>
-
-                          {/* Concept & Identity Board */}
-                          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-3.5 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full blur-2xl"></div>
-                            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                              <span className="text-xs font-mono text-orange-400 uppercase font-bold tracking-wider">A. Overordnet Designkoncept & Identitet</span>
-                              <button
-                                onClick={() => handleCopyToClipboard(output.cviSuggestion?.visualIdentityConcept || "", 'cvi_concept')}
-                                className="text-slate-550 hover:text-white transition-colors"
-                              >
-                                {copiedKey === 'cvi_concept' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                              </button>
-                            </div>
-                            <p className="text-white text-sm font-semibold leading-relaxed font-serif italic border-l-2 border-brand-orange-500 pl-3">
-                              "{output.cviSuggestion.visualIdentityConcept}"
-                            </p>
-                            <p className="text-slate-350 text-xs leading-relaxed">
-                              {output.cviSuggestion.generalBrandIdentitySummary}
-                            </p>
-                          </div>
-
-                          {/* Dual Grid: Colors & Typography */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            
-                            {/* Color Palette */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
-                              <span className="text-xs font-mono text-orange-400 uppercase font-bold tracking-wider block border-b border-slate-800 pb-2">B. Eksplicit Farvepalet Forslag</span>
-                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1.5">
-                                {output.cviSuggestion.brandColors.map((color, i) => (
-                                  <div 
-                                    key={i} 
-                                    onClick={() => handleCopyToClipboard(color.hex, `hex_${i}`)}
-                                    className="bg-slate-955 p-3 rounded-lg border border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/30 transition-all cursor-pointer flex items-center space-x-3 group relative"
-                                    title="Klik for at kopiere HEX-kode"
-                                  >
-                                    <span 
-                                      className="w-10 h-10 rounded-lg border border-slate-800/50 block shrink-0 transition-transform group-hover:scale-105 shadow-md" 
-                                      style={{ backgroundColor: color.hex }}
-                                    ></span>
-                                    <div className="truncate flex-1 font-sans">
-                                      <span className="text-xs font-bold text-white block truncate">{color.name}</span>
-                                      <span className="text-[11px] font-mono font-medium text-slate-400 block group-hover:text-brand-orange-400 transition-colors uppercase">{color.hex}</span>
-                                      <span className="text-[11px] text-slate-500 block truncate leading-tight">{color.useCase}</span>
-                                    </div>
-                                    <div className="absolute top-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      {copiedKey === `hex_${i}` ? <Check className="w-2.5 h-2.5 text-emerald-400" /> : <Copy className="w-2.5 h-2.5 text-slate-500" />}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Typography Pairings */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4 flex flex-col justify-between">
-                              <div>
-                                <span className="text-xs font-mono text-orange-400 uppercase font-bold tracking-wider block border-b border-slate-800 pb-2">C. Typografi & Typografiske Dogmer</span>
-                                <div className="space-y-4 pt-4">
-                                  <div>
-                                    <span className="text-[11px] font-mono uppercase text-slate-500 font-bold block mb-1">Overskrifter</span>
-                                    <span 
-                                      className="text-lg font-bold text-white tracking-tight leading-none block border-b border-slate-800/50 pb-1 w-max px-0.5"
-                                      style={{ fontFamily: output.cviSuggestion.fonts.primaryHeadings }}
-                                    >
-                                      {output.cviSuggestion.fonts.primaryHeadings}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-[11px] font-mono uppercase text-slate-500 font-bold block mb-1">Brødtekst / Body</span>
-                                    <span 
-                                      className="text-xs text-slate-300 block"
-                                      style={{ fontFamily: output.cviSuggestion.fonts.bodyText }}
-                                    >
-                                      Aktiv brødtekst sat i <strong className="text-white">{output.cviSuggestion.fonts.bodyText}</strong>. Letlæselig og strømlinet.
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                              <p className="text-[11px] text-slate-400 italic bg-slate-955 p-2.5 rounded border border-slate-850 mt-4 leading-relaxed">
-                                <strong>Begrundelse:</strong> {output.cviSuggestion.fonts.description}
-                              </p>
-                            </div>
-
-                          </div>
-
-                          {/* Image styling & Graphic elements guidelines */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            
-                            {/* Fotostil og Billedinstruks */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2.5">
-                              <span className="text-xs font-mono text-orange-400 uppercase font-bold tracking-wider block border-b border-slate-800 pb-2">D. Billedstil og Fotomanual (Midjourney/Firefly input)</span>
-                              <p className="text-slate-300 text-xs leading-relaxed">
-                                {output.cviSuggestion.imageStyleGuidelines}
-                              </p>
-                              <div className="pt-2">
-                                <button
-                                  onClick={() => handleCopyToClipboard(output.cviSuggestion?.imageStyleGuidelines || "", 'cvi_images')}
-                                  className="px-2.5 py-1.5 bg-slate-955 text-slate-300 hover:text-white rounded border border-slate-850 text-[11px] font-mono flex items-center space-x-1.5 transition-all"
-                                >
-                                  <Copy className="w-3 h-3 shrink-0" />
-                                  <span>Kopier fotomanual</span>
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Grafiske Layoutspilleregler */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2.5">
-                              <span className="text-xs font-mono text-orange-400 uppercase font-bold tracking-wider block border-b border-slate-800 pb-2">E. Grafiske Elementer & Layoutspilleregler</span>
-                              <p className="text-slate-300 text-xs leading-relaxed">
-                                {output.cviSuggestion.graphicElementsRules}
-                              </p>
-                              <div className="pt-2">
-                                <button
-                                  onClick={() => handleCopyToClipboard(output.cviSuggestion?.graphicElementsRules || "", 'cvi_graphics')}
-                                  className="px-2.5 py-1.5 bg-slate-955 text-slate-300 hover:text-white rounded border border-slate-855 text-[11px] font-mono flex items-center space-x-1.5 transition-all"
-                                >
-                                  <Copy className="w-3 h-3 shrink-0" />
-                                  <span>Kopier layoutspilleregler</span>
-                                </button>
-                              </div>
-                            </div>
-
-                          </div>
-
-                          {/* Logo Usage rules */}
-                          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-2.5">
-                            <span className="text-xs font-mono text-orange-400 uppercase font-bold tracking-wider block border-b border-slate-800 pb-2">F. Logo Anvendelsesdogmer & Markører</span>
-                            <p className="text-slate-300 text-xs leading-relaxed">
-                              {output.cviSuggestion.logoUsageRules}
-                            </p>
-                          </div>
-
-                        </motion.div>
-                      )}
-
-                      {/* TAB 8: PRODUCTION (PRODUKTIONS-FORSLAG) */}
-                      {activeTab === 'production' && output.production && (
-                        <motion.div
-                          key="tab_production"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          className="space-y-4"
-                        >
-                          <span className="text-[11px] font-mono bg-zinc-800 text-zinc-350 px-2 py-0.5 rounded uppercase font-bold tracking-wider block w-max">10. Kreative workflow & Produktions-forslag</span>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            
-                            {/* Missing Images proposal */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-lg p-3.5">
-                              <span className="text-[11px] font-mono text-slate-400 uppercase font-bold">Mangler i billed-dokumentation (Forslag)</span>
-                              <ul className="list-disc pl-4 mt-2 space-y-1 text-slate-300 text-xs text-left">
-                                {output.production.missingImages.map((mi, i) => (
-                                  <li key={i}>{mi}</li>
-                                ))}
-                              </ul>
-                            </div>
-
-                            {/* Formats required proposal */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-lg p-3.5">
-                              <span className="text-[11px] font-mono text-slate-400 uppercase font-bold">Produktions-formater der bør klargøres</span>
-                              <div className="flex flex-wrap gap-1.5 mt-2">
-                                {output.production.suggestedFormats.map((fmt, i) => (
-                                  <span key={i} className="px-2 py-1 bg-slate-950 text-slate-300 border border-slate-850 rounded text-[11px] font-mono">{fmt}</span>
-                                ))}
-                              </div>
-                            </div>
-
-                            {/* Hero Visual Proposal */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-lg p-3.5 md:col-span-2 space-y-1.5">
-                              <span className="text-[11px] font-mono text-orange-400 uppercase font-bold">Skærm / Hero Visual idé</span>
-                              <p className="text-slate-300 text-xs leading-relaxed">{output.production.heroVisual}</p>
-                            </div>
-
-                            {/* SoMe visual Format Proposal */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-lg p-3.5 space-y-1.5">
-                              <span className="text-[11px] font-mono text-orange-400 uppercase font-bold">Forslag til SoMe-format</span>
-                              <p className="text-slate-300 text-xs leading-relaxed">{output.production.someFormat}</p>
-                            </div>
-
-                            {/* Target production CTA */}
-                            <div className="bg-slate-900 border border-slate-800 rounded-lg p-3.5 space-y-1 rounded relative">
-                              <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 uppercase font-bold">
-                                <span>Produktions-relateret CTA</span>
-                                <button
-                                  onClick={() => handleCopyToClipboard(output.production?.cta || "", 'prod_cta')}
-                                  className="text-slate-500 hover:text-white"
-                                >
-                                  {copiedKey === 'prod_cta' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                                </button>
-                              </div>
-                              <p className="text-orange-400 font-mono text-xs font-semibold pt-1">{output.production.cta}</p>
-                            </div>
-
-                          </div>
-                        </motion.div>
-                      )}
+                       {/* TAB 8: PRODUCTION (PRODUKTIONS-FORSLAG) */}
+                       {activeTab === 'production' && output.production && (
+                         <ProductionTab output={output} handleCopyToClipboard={handleCopyToClipboard} copiedKey={copiedKey} />
+                       )}
 
                     </AnimatePresence>
                   </div>
