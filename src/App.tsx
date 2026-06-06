@@ -76,6 +76,8 @@ import { EnglishTab } from './components/tabs/EnglishTab';
 import { CviTab } from './components/tabs/CviTab';
 import { ProductionTab } from './components/tabs/ProductionTab';
 import { BriefForm } from './components/BriefForm';
+import { AppHeader } from './components/AppHeader';
+import { Toolbar } from './components/Toolbar';
 import { saveSession, loadSession } from './lib/session';
 import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
 
@@ -1416,55 +1418,10 @@ export default function App() {
         step={isHumanizing ? 'Omformulerer og gør teksten mere menneskelig …' : generationStep}
       />
 
-      {/* BRAND HEADER */}
-      <header id="header_section" className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-lg bg-brand-orange-600 flex items-center justify-center">
-            <Sparkles className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="font-display font-bold text-xl tracking-tight text-white">
-              Content Machine
-            </span>
-            <div className="flex items-center text-[11px] text-slate-500 font-mono mt-0.5">
-              <span>v1.5.2</span>
-            </div>
-          </div>
-        </div>
 
-        <div className="flex items-center space-x-3 md:space-x-6">
-          {/* THEME TOGGLER */}
-          <button
-            onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
-            className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg border border-slate-800 hover:bg-slate-850 text-slate-350 hover:text-white transition-all text-[11px] font-mono font-medium cursor-pointer active:scale-95"
-            title={theme === 'dark' ? "Skift til lyst tema (høj kontrast)" : "Skift til mørkt tema"}
-          >
-            {theme === 'dark' ? (
-              <>
-                <Sun className="w-3.5 h-3.5 text-amber-500" />
-                <span className="hidden sm:inline">LYST TEMA</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">MØRKT TEMA</span>
-              </>
-            )}
-          </button>
+       {/* BRAND HEADER */}
+       <AppHeader theme={theme} setTheme={setTheme} />
 
-          <div className="hidden md:flex items-center text-xs bg-slate-850 px-3 py-1.5 rounded-md border border-slate-800 text-slate-350">
-            <span>Tone: Autentisk & Konkret</span>
-          </div>
-          <a
-            href="https://www.larssohl.dk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-orange-400 hover:text-orange-300 font-mono transition-colors tracking-wide"
-          >
-            larssohl.dk &rarr;
-          </a>
-        </div>
-      </header>
 
       {/* WORKSPACE & PANELS */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -1500,66 +1457,17 @@ export default function App() {
         {/* RIGHT COLUMN: PREVIEW & OUTPUT INTERACTION WORKSPACE (7 cols) */}
         <div className="lg:col-span-7 flex flex-col space-y-5">
           
-          {/* TOOLBAR / QUICK COMMANDS */}
-          <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
-            <div className="bg-slate-950 px-4 py-2.5 flex items-center justify-between border-b border-slate-800 text-xs">
-              <span className="flex items-center space-x-2 font-medium text-slate-300">
-                <Sliders className="w-4 h-4 text-slate-500" />
-                <span>Værktøjslinje</span>
-              </span>
-              <span className="text-[11px] text-slate-500" title="Skriv en kommando eller navigér mellem faner">Navigér & forfin</span>
-            </div>
-            
-            <form onSubmit={handleExecuteTerminalCommand} className="flex items-center p-2 bg-slate-900">
-              <input
-                type="text"
-                id="terminal_input"
-                value={terminalCommand}
-                onChange={(e) => setTerminalCommand(e.target.value)}
-                placeholder="Skriv kommando (f.eks. /case, /shorten, /more-human) eller brug knapperne herunder…"
-                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 text-xs font-mono text-white placeholder:text-slate-600 px-3 py-1.5"
-              />
-              <button
-                type="submit"
-                className="mr-1 p-1 px-3 text-[11px] font-mono bg-slate-800 text-slate-300 hover:text-white rounded-md border border-slate-700 transition-colors"
-              >
-                Kør
-              </button>
-            </form>
+           {/* TOOLBAR / QUICK COMMANDS */}
+           <Toolbar
+             output={output}
+             activeTab={activeTab}
+             setActiveTab={setActiveTab}
+             setErrorMsg={setErrorMsg}
+             terminalCommand={terminalCommand}
+             setTerminalCommand={setTerminalCommand}
+             handleExecuteTerminalCommand={handleExecuteTerminalCommand}
+           />
 
-            {/* Quick buttons bar */}
-            <div className="bg-slate-950 border-t border-slate-800 px-3 py-2.5 flex flex-wrap gap-1.5 items-center">
-              <span className="text-[11px] text-slate-500 mr-1">Gå til:</span>
-              {[
-                { label: "/case", tab: "case" },
-                { label: "/linkedin", tab: "linkedin" },
-                { label: "/newsletter", tab: "newsletter" },
-                { label: "/headlines", tab: "headlines" },
-                { label: "/keywords", tab: "keywords" },
-                { label: "/prompts", tab: "prompts" },
-                { label: "/english", tab: "english" },
-                { label: "/cvi", tab: "cvi" },
-                { label: "/production", tab: "production" }
-              ].map(c => (
-                <button
-                  key={c.label}
-                  type="button"
-                  id={`cmd_btn_${c.tab}`}
-                  onClick={() => {
-                    if (output) setActiveTab(c.tab);
-                    else setErrorMsg("Kør venligst maskinen først for at navigere.");
-                  }}
-                  className={`px-2 py-1 text-[11px] font-mono rounded-md border transition-all ${
-                    activeTab === c.tab && output
-                      ? 'bg-orange-500/10 border-orange-500/50 text-orange-400'
-                      : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* VISUAL DEVELOPMENT RESULT (visuel redaktion) */}
           {visualResult && (
