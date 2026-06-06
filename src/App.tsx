@@ -3,62 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
-import { 
-  Sparkles, 
-  Copy, 
-  Check, 
-  RotateCcw, 
-  FileText, 
-  Linkedin, 
-  Mail, 
-  Compass, 
-  Tag, 
-  Image as ImageIcon, 
-  Globe, 
-  Sliders, 
-  Wand2, 
-  ArrowRight, 
-  Layers, 
-  Send,
-  ChevronRight,
-  Info,
-  CheckCircle,
-  HelpCircle,
-  AlertTriangle,
-  Lightbulb,
+import {
+  FileText,
+  Linkedin,
+  Mail,
   Edit2,
-  Volume2,
+  Tag,
+  Image as ImageIcon,
+  Globe,
+  Sliders,
+  Wand2,
+  ArrowRight,
+  Check,
+  Copy,
+  ChevronDown,
+  Palette,
+  BookOpen,
   Zap,
-  Rocket,
+  Printer,
   Scissors,
   Sprout,
   Briefcase,
-  Search,
-  Fingerprint,
-  UserCheck,
-  Cpu,
-  ShieldCheck,
-  Trash2,
-  Pin,
-  Printer,
-  UploadCloud,
-  BookOpen,
-  Palette,
-  ChevronDown,
-  Sun,
-  Moon,
-  Download,
-  Loader2,
   Clock,
-  Users
+  Trash2,
+  Download,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult } from './types';
-import { buildMarkdown, downloadTextFile, slugify } from './lib/exportMarkdown';
-import { downloadHtmlFile } from './lib/exportHtml';
-import { downloadDocx } from './lib/exportDocx';
-import { ImageGenCard } from './components/ImageGenCard';
 import { DirectUsableBar } from './components/DirectUsableBar';
 import { DeliberationTimeline } from './components/DeliberationTimeline';
 import { WorkingOverlay } from './components/WorkingOverlay';
@@ -78,1340 +48,69 @@ import { ProductionTab } from './components/tabs/ProductionTab';
 import { BriefForm } from './components/BriefForm';
 import { AppHeader } from './components/AppHeader';
 import { Toolbar } from './components/Toolbar';
-import { saveSession, loadSession } from './lib/session';
-import { loadHistory, pushHistory, clearHistory, type HistoryItem } from './lib/history';
-
-/**
- * Menneskelig fejlbesked ud fra en HTTP-status. En 404 betyder næsten altid at
- * frontend'en serveres uden Express-backenden (forkert port eller en statisk
- * build), så vi guider brugeren i stedet for at vise en rå statuskode.
- */
-function httpErrorMessage(status: number, serverMsg?: string): string {
-  if (serverMsg) return serverMsg;
-  if (status === 404) {
-    return 'Backenden svarer ikke (404). Kør appen med "npm run dev" og åbn http://localhost:3000 — ikke en anden port eller en bygget fil.';
-  }
-  return `Serveren svarede med status ${status}`;
-}
-
-const PRESETS: PresetBrief[] = [
-  {
-    name: "Modaxo Move 2026 (Konference / 3D Maskot)",
-    brief: {
-      client: "Modaxo",
-      project: "Modaxo Move 2026",
-      description: "Vi udviklede visuelt indhold til en international konference i København. Vi lavede speaker presentations, dynamiske visuals til LED-skærm, dinner visuals, awards visuals og content til liveoptrædener.",
-      details: "350 deltagere fra hele verden, deltagere fra 37 lande, 24x4 meter LED-skærm. Vi var også med til at udvikle Moxi, Modaxos nye lille maskot. Hun blev skabt med udgangspunkt i Modaxos logo og vækket til live som en 3D-karakter.",
-      audience: "Virksomheder der holder events, konferencer, messer og keynotes.",
-      tone: "Professionel, menneskelig, kreativ, ikke barnlig.",
-      language: "Dansk",
-      channels: ["Hjemmeside", "LinkedIn", "Nyhedsbrev"],
-      notes: "Vi skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala."
-    }
-  },
-  {
-    name: "B&O Beolab Launch (Eksklusiv Event / 3D)",
-    brief: {
-      client: "Bang & Olufsen",
-      project: "Beolab Theatre Launch Event",
-      description: "Vi leverede komplet 3D-visualisering og scenekonstruktion til den skandinaviske produktlancering. Vi designede et ultra-high-end digitalt univers, herunder live 3D eksploderede tegninger af produktkomponenter på scenen synkroniseret med lys-show.",
-      details: "Afholdt i et historisk teater i København for 150 VIP arkitekter og lyd-anmeldere. Ekstremt luksuriøs finish og fotorealistisk 3D visualisering.",
-      audience: "High-end lyd-entusiaster, arkitekter, tech-medier og top-forhandlere.",
-      tone: "Sofistikeret, design-fokuseret, eksklusiv, præcis.",
-      language: "Dansk",
-      channels: ["LinkedIn", "Hjemmeside", "Nyhedsbrev"],
-      notes: "Vi skal fremhæves som den præcise kreative teknologiske kraft, der gør det muligt at forstå akustisk storhed visuelt."
-    }
-  },
-  {
-    name: "Ørsted Wind Summit (Data / Infografik / Web)",
-    brief: {
-      client: "Ørsted",
-      project: "Green Wind Summit Copenhagen",
-      description: "Produktion af digital grafik, interaktive infografikker til touch-screens og en komplet nyhedsbrev-kampagne i forbindelse med det globale vindtopmøde.",
-      details: "5 interaktive info-standere på messestanden, 12 animerede infografik-loops. Fokus på vindmølle-teknologiens fremtid på havbunden.",
-      audience: "Industrispecialister, investorer, journalister og grønne rådgivere.",
-      tone: "Visionær, troværdig, professionel, grøn og skarp.",
-      language: "Dansk",
-      channels: ["Nyhedsbrev", "LinkedIn"],
-      notes: "Vi skal formidle indviklede tekniske klimadata enkelt, visuelt stærkt og inspirerende."
-    }
-  }
-];
+import { useContentMachine, PRESETS } from './hooks/useContentMachine';
 
 export default function App() {
-  // Input brief state, initialized with Empty template, but prompts user to load a preset
-  const [brief, setBrief] = useState<ProjectBrief>({
-    client: '',
-    project: '',
-    description: '',
-    details: '',
-    audience: 'Virksomheder der holder events, konferencer, messer og keynotes.',
-    tone: 'Professionel, menneskelig, kreativ, ikke barnlig.',
-    language: 'Dansk',
-    channels: ['Hjemmeside', 'LinkedIn', 'Nyhedsbrev'],
-    notes: 'Vi skal fremstå som en kreativ og praktisk samarbejdspartner, der kan løfte visuelle oplevelser i stor skala.'
-  });
-
-  const [activeTab, setActiveTab] = useState<string>('case'); // Tab keys matching commands
-  const [output, setOutput] = useState<BrandSurfaceOutput | null>(null);
-  const [history, setHistory] = useState<HistoryItem[]>(() => loadHistory());
-  const [historyOpen, setHistoryOpen] = useState<boolean>(false);
-  const [variants, setVariants] = useState<{ key: string; options: string[] } | null>(null);
-  const [isVariating, setIsVariating] = useState<boolean>(false);
-  
-  // Loading states
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
-  const [isRefining, setIsRefining] = useState<boolean>(false);
-  const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
-  const [generationStep, setGenerationStep] = useState<string>('');
-
-  // "Dyb tilstand" (redaktionsmøde) — opt-in multi-AI deliberation
-  const [deepMode, setDeepMode] = useState<boolean>(false);
-  const [deepCritique, setDeepCritique] = useState<{
-    before: ToneAnalysis;
-    after?: ToneAnalysis | null;
-    earlyStopped?: boolean;
-    synthesisTruncated?: boolean;
-  } | null>(null);
-  const [isVisualDeveloping, setIsVisualDeveloping] = useState<boolean>(false);
-  const [visualResult, setVisualResult] = useState<VisualDevResult | null>(null);
-
-  // Refinement states
-  const [selectedTextKey, setSelectedTextKey] = useState<string>('shortCaseText'); // which property in BrandSurfaceOutput is chosen for refinement
-  const [customRefinementPrompt, setCustomRefinementPrompt] = useState<string>('');
-  const [terminalCommand, setTerminalCommand] = useState<string>('');
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [refinementHistory, setRefinementHistory] = useState<Array<{ key: string; original: string }>>([]);
-  const [revisions, setRevisions] = useState<Record<string, string[]>>({});
-  const [activeCompareIndex, setActiveCompareIndex] = useState<Record<string, number | null>>({});
-
-  // Copy success animation states
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  // External Humanizer state
-  const [externalText, setExternalText] = useState<string>('');
-  const [humanizerResult, setHumanizerResult] = useState<HumanizerResult | null>(null);
-  const [isHumanizing, setIsHumanizing] = useState<boolean>(false);
-
-  // CVI states
-  const [cviFileName, setCviFileName] = useState<string | null>(null);
-  const [isAnalyzingCvi, setIsAnalyzingCvi] = useState<boolean>(false);
-
-  // PDF Export Print Mode states
-  const [printMode, setPrintMode] = useState<'all' | 'cvi' | 'case'>('all');
-
-  // Generated images state mapped by prompt key ('hero', 'detail', 'abstract')
-  const [generatedImages, setGeneratedImages] = useState<Record<'hero' | 'detail' | 'abstract', { url: string; loading: boolean; error: string | null; aspectRatio: string }>>({
-    hero: { url: '', loading: false, error: null, aspectRatio: '16:9' },
-    detail: { url: '', loading: false, error: null, aspectRatio: '1:1' },
-    abstract: { url: '', loading: false, error: null, aspectRatio: '16:9' }
-  });
-
-  // Application Theme State (Persisted)
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('brand_surface_theme');
-    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('brand_surface_theme', theme);
-  }, [theme]);
-
-  // Custom presets initialized from localStorage (or defaulting to static PRESETS)
-  const [customPresets, setCustomPresets] = useState<PresetBrief[]>(() => {
-    const local = localStorage.getItem('brand_surface_presets');
-    if (local) {
-      try {
-        return JSON.parse(local);
-      } catch (e) {
-        console.error("Fejl under indlæsning af presets:", e);
-      }
-    }
-    return PRESETS;
-  });
-
-  // On mount: restore the saved working session, or fall back to the default preset
-  useEffect(() => {
-    const saved = loadSession();
-    if (saved && (saved.output || saved.brief?.client)) {
-      if (saved.brief) setBrief(saved.brief);
-      if (saved.output) setOutput(saved.output);
-      if (saved.revisions) setRevisions(saved.revisions);
-      if (saved.activeCompareIndex) setActiveCompareIndex(saved.activeCompareIndex);
-      if (saved.generatedImages) setGeneratedImages(prev => ({ ...prev, ...(saved.generatedImages as any) }));
-      if (saved.cviFileName !== undefined) setCviFileName(saved.cviFileName ?? null);
-      if (saved.activeTab) setActiveTab(saved.activeTab);
-      return;
-    }
-    if (customPresets && customPresets.length > 0) {
-      handleLoadPreset(customPresets[0]);
-    } else {
-      // If presets were cleared, set a clean blank state
-      setBrief({
-        client: '',
-        project: '',
-        description: '',
-        details: '',
-        audience: '',
-        tone: 'Professionel, menneskelig, kreativ',
-        language: 'Dansk',
-        channels: [],
-        notes: '',
-        cviManual: null
-      });
-    }
-  }, []);
-
-  // Auto-save the working session so nothing is lost on refresh
-  useEffect(() => {
-    if (!output && !brief.client) return; // undgå at overskrive med tom start-tilstand
-    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab });
-  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab]);
-
-  // Handler to clear all presets
-  const handleClearPresets = () => {
-    setCustomPresets([]);
-    localStorage.setItem('brand_surface_presets', JSON.stringify([]));
-    setErrorMsg("Alle presets er nu ryddet. Du kan bygge og pinne dine egne jobs!");
-  };
-
-  // Handler to restore defaults
-  const handleRestorePresets = () => {
-    setCustomPresets(PRESETS);
-    localStorage.setItem('brand_surface_presets', JSON.stringify(PRESETS));
-    handleLoadPreset(PRESETS[0]);
-    setErrorMsg(null);
-  };
-
-  // Handler to load CVI manual
-  const handleCviUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsAnalyzingCvi(true);
-    setCviFileName(file.name);
-    setErrorMsg(null);
-
-    const checkCviResult = (base64String: string) => {
-      fetch('/api/analyze-cvi', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          fileType: file.type,
-          fileContent: base64String,
-          fileName: file.name
-        })
-      })
-      .then(async res => {
-        if (!res.ok) {
-          const text = await res.json().catch(() => ({}));
-          throw new Error(httpErrorMessage(res.status, text.error));
-        }
-        return res.json();
-      })
-      .then(result => {
-        setBrief(prev => ({
-          ...prev,
-          cviManual: result
-        }));
-        setErrorMsg(`CVI og designmanual "${file.name}" er scannet og indlæst! Din AI vil nu bruge disse regler.`);
-      })
-      .catch(err => {
-        console.error("CVI error:", err);
-        setErrorMsg(`Scanning mislykkedes: ${err.message || 'AI-modellen kunne ikke afkode filen.'}`);
-        setCviFileName(null);
-      })
-      .finally(() => {
-        setIsAnalyzingCvi(false);
-      });
-    };
-
-    try {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = reader.result as string;
-        checkCviResult(base64);
-      };
-      reader.onerror = () => {
-        setErrorMsg("Fejl under indlæsning af designmanualen.");
-        setIsAnalyzingCvi(false);
-        setCviFileName(null);
-      };
-      reader.readAsDataURL(file);
-    } catch(err: any) {
-      setErrorMsg(`Filfejl: ${err.message}`);
-      setIsAnalyzingCvi(false);
-      setCviFileName(null);
-    }
-  };
-
-  const handleRemoveCvi = () => {
-    setBrief(prev => ({
-      ...prev,
-      cviManual: null
-    }));
-    setCviFileName(null);
-    setErrorMsg("Designmanualen er fjernet.");
-  };
-
-  // Handler to pin the current brief as a preset
-  const handlePinCurrentBrief = () => {
-    if (!brief.client.trim() || !brief.project.trim()) {
-      setErrorMsg("Udfyld venligst mindst 'Kunde' og 'Projekt' for at pinne dette job.");
-      return;
-    }
-
-    const name = `${brief.client} - ${brief.project}`;
-    
-    // Check if duplicate project name exists in our custom presets
-    const exists = customPresets.some(p => p.brief.project.toLowerCase() === brief.project.toLowerCase() && p.brief.client.toLowerCase() === brief.client.toLowerCase());
-    if (exists) {
-      setErrorMsg("Et job med denne kunde og dette projekt-navn er allerede pined i dine presets.");
-      return;
-    }
-
-    const newPreset: PresetBrief = {
-      name,
-      brief: { ...brief }
-    };
-
-    const updated = [newPreset, ...customPresets];
-    setCustomPresets(updated);
-    localStorage.setItem('brand_surface_presets', JSON.stringify(updated));
-    setErrorMsg(`Jobbet "${name}" er blevet pined til genveje!`);
-  };
-
-  // Sync activeTab to default selectedTextKey
-  useEffect(() => {
-    if (activeTab === 'case') {
-      setSelectedTextKey('shortCaseText');
-    } else if (activeTab === 'linkedin') {
-      setSelectedTextKey('linkedinPost');
-    } else if (activeTab === 'newsletter') {
-      setSelectedTextKey('newsletterSection'); // or we edit subject lines differently
-    } else if (activeTab === 'english') {
-      setSelectedTextKey('englishShortCaseText');
-    }
-  }, [activeTab]);
-
-  const handleBriefChange = (field: keyof ProjectBrief, value: any) => {
-    setBrief(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleChannelToggle = (channel: string) => {
-    setBrief(prev => {
-      const current = prev.channels;
-      if (current.includes(channel)) {
-        return { ...prev, channels: current.filter(c => c !== channel) };
-      } else {
-        return { ...prev, channels: [...current, channel] };
-      }
-    });
-  };
-
-  const handleLoadPreset = (preset: PresetBrief) => {
-    setBrief({ ...preset.brief });
-    if (preset.brief.cviManual) {
-      setCviFileName("Aktive CVI retningslinjer");
-    } else {
-      setCviFileName(null);
-    }
-    setErrorMsg(null);
-  };
-
-  // Helper to copy text to clipboard
-  const handleCopyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
-    }).catch(err => {
-      console.warn("Kopiering mislykkedes, fallback:", err);
-    });
-  };
-
-  // Helper to trigger window print for a specific content mode (and temporarily filter the printable view)
-  const handleExportSingleSection = (mode: 'all' | 'cvi' | 'case') => {
-    setPrintMode(mode);
-    setTimeout(() => {
-      window.print();
-      // Restore back to default all-view after print window triggers
-      setTimeout(() => {
-        setPrintMode('all');
-      }, 1000);
-    }, 150);
-  };
-
-  // Export the full content package as Markdown (download or clipboard)
-  const handleExportMarkdown = () => {
-    if (!output) return;
-    const md = buildMarkdown(output, brief);
-    downloadTextFile(`${slugify(brief.client || 'brand-surface')}-case.md`, md);
-  };
-
-  const handleCopyAllMarkdown = () => {
-    if (!output) return;
-    handleCopyToClipboard(buildMarkdown(output, brief), 'export_all_md');
-  };
-
-  const handleExportHtml = () => {
-    if (!output) return;
-    downloadHtmlFile(output, brief);
-  };
-
-  const handleExportDocx = async () => {
-    if (!output) return;
-    try {
-      await downloadDocx(`${slugify(brief.client || 'brand-surface')}-case.docx`, output, brief);
-    } catch (e: any) {
-      setErrorMsg(e.message || 'Kunne ikke generere Word-dokument.');
-    }
-  };
-
-  // Reload a previous generation from the local history
-  const handleLoadHistory = (item: HistoryItem) => {
-    setBrief(item.brief);
-    setOutput(item.output);
-    setRevisions({
-      shortCaseText: [item.output.shortCaseText],
-      longCaseText: [item.output.longCaseText],
-      linkedinPost: [item.output.linkedinPost],
-      creativeNewsletterSection: item.output.production?.newsletterSection
-        ? [item.output.production.newsletterSection]
-        : []
-    });
-    setActiveCompareIndex({ shortCaseText: null, longCaseText: null, linkedinPost: null, creativeNewsletterSection: null });
-    setRefinementHistory([]);
-    setCviFileName(item.brief.cviManual ? 'Aktive CVI retningslinjer' : null);
-    setActiveTab('case');
-    setErrorMsg(null);
-  };
-
-  const handleClearHistory = () => {
-    setHistory(clearHistory());
-  };
-
-  // A/B variants for the main text blocks
-  const resolveMainText = (key: string): string => {
-    if (!output) return '';
-    if (key === 'shortCaseText') return output.shortCaseText;
-    if (key === 'longCaseText') return output.longCaseText;
-    if (key === 'linkedinPost') return output.linkedinPost;
-    return '';
-  };
-
-  const handleGenerateVariants = async (targetKey: string) => {
-    const text = resolveMainText(targetKey);
-    if (!text) return;
-    setIsVariating(true);
-    setErrorMsg(null);
-    setVariants({ key: targetKey, options: [] });
-    try {
-      const res = await fetch('/api/variants', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, count: 2, brief })
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(res.status, e.error));
-      }
-      const data = await res.json();
-      setVariants({ key: targetKey, options: data.variants || [] });
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke generere varianter.');
-      setVariants(null);
-    } finally {
-      setIsVariating(false);
-    }
-  };
-
-  const handleApplyVariant = (targetKey: string, value: string) => {
-    const original = resolveMainText(targetKey);
-    setRefinementHistory(prev => [...prev, { key: targetKey, original }]);
-    setRevisions(prev => {
-      const list = [...(prev[targetKey] || [])];
-      if (list.length === 0) list.push(original);
-      if (list[list.length - 1] !== value) list.push(value);
-      return { ...prev, [targetKey]: list };
-    });
-    setActiveCompareIndex(prev => ({ ...prev, [targetKey]: null }));
-    setOutput(prev => {
-      if (!prev) return null;
-      const u: BrandSurfaceOutput = { ...prev };
-      if (targetKey === 'shortCaseText') u.shortCaseText = value;
-      else if (targetKey === 'longCaseText') u.longCaseText = value;
-      else if (targetKey === 'linkedinPost') u.linkedinPost = value;
-      if (targetKey === 'shortCaseText' && u.directUsable) {
-        u.directUsable = { ...u.directUsable, bestShortText: value };
-      }
-      return u;
-    });
-    setVariants(null);
-  };
-
-  const renderVariants = (targetKey: string) => {
-    if (!variants || variants.key !== targetKey) return null;
-    return (
-      <div className="mt-3 bg-slate-950/80 rounded-xl p-4 border border-amber-800/40 space-y-2 shadow-inner">
-        <div className="flex items-center justify-between">
-          <span className="text-[11px] font-mono uppercase tracking-wider text-amber-500 font-bold">A/B Varianter</span>
-          <button onClick={() => setVariants(null)} className="text-[11px] text-slate-500 hover:text-white font-mono">Luk</button>
-        </div>
-        {isVariating && variants.options.length === 0 && (
-          <div className="text-[11px] text-slate-400 flex items-center space-x-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Genererer varianter...</span>
-          </div>
-        )}
-        {variants.options.map((opt, i) => (
-          <div key={i} className="bg-slate-900/60 border border-slate-800 rounded-lg p-3">
-            <div className="text-[11px] font-mono text-slate-500 uppercase mb-1">Variant {String.fromCharCode(65 + i)}</div>
-            <p className="text-xs text-slate-200 leading-relaxed whitespace-pre-wrap">{opt}</p>
-            <div className="mt-2 flex justify-end">
-              <button
-                onClick={() => handleApplyVariant(targetKey, opt)}
-                className="px-2 py-1 text-[11px] bg-brand-orange-600/20 text-brand-orange-400 border border-brand-orange-500/30 rounded hover:bg-brand-orange-600/30 font-mono"
-              >
-                Brug denne
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  // Run the whole generator
-  const handleGenerateAll = async () => {
-    if (!brief.client || !brief.project || !brief.description) {
-      setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at køre Content Machine.");
-      return;
-    }
-
-    // Dyb tilstand: kør det fulde redaktionsmøde (multi-AI deliberation) i stedet.
-    if (deepMode) {
-      return handleGenerateDeep();
-    }
-
-    setIsGenerating(true);
-    setErrorMsg(null);
-    setRefinementHistory([]);
-    setDeepCritique(null);
-
-    // Simulate smart step updates for rich UX
-    const steps = [
-      "Analyserer projekt-brief...",
-      "Udtrækker nøgleleverancer...",
-      "Udelukker generiske marketing-floskler...",
-      "Bygger kort og lang case-tekst...",
-      "Skriver professionelt LinkedIn opslag...",
-      "Formulerer fængende Mailchimp subject lines...",
-      "Designer målrettede AI-billedprompts...",
-      "Sammensætter tekniske produktionsforslag...",
-      "Færdiggør den engelske oversættelse..."
-    ];
-
-    let currentStep = 0;
-    setGenerationStep(steps[0]);
-    const interval = setInterval(() => {
-      currentStep++;
-      if (currentStep < steps.length) {
-        setGenerationStep(steps[currentStep]);
-      }
-    }, 800);
-
-    try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-
-      const data: BrandSurfaceOutput = await response.json();
-      setOutput(data);
-      setHistory(prev => pushHistory(prev, brief, data));
-      if (data) {
-        setRevisions({
-          shortCaseText: [data.shortCaseText],
-          longCaseText: [data.longCaseText],
-          linkedinPost: [data.linkedinPost],
-          creativeNewsletterSection: data.production?.newsletterSection ? [data.production.newsletterSection] : []
-        });
-        setActiveCompareIndex({
-          shortCaseText: null,
-          longCaseText: null,
-          linkedinPost: null,
-          creativeNewsletterSection: null
-        });
-      }
-      setActiveTab('case');
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Der skete en fejl under AI-genereringen.');
-    } finally {
-      clearInterval(interval);
-      setIsGenerating(false);
-    }
-  };
-
-  // Dyb tilstand: multi-AI "redaktionsmøde" via SSE (udkast → kritik → kreativ → syntese → verificér)
-  const handleGenerateDeep = async () => {
-    setIsGenerating(true);
-    setErrorMsg(null);
-    setRefinementHistory([]);
-    setDeepCritique(null);
-    setGenerationStep('Starter redaktionsmøde …');
-
-    try {
-      const response = await fetch('/api/generate-deep', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief })
-      });
-
-      if (!response.ok || !response.body) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-
-      // Consume the SSE stream: phase events update the button label; the final event carries the result.
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let streamErr: string | null = null;
-      let finalEvt: any = null;
-
-      while (true) {
-        const { value, done: rdDone } = await reader.read();
-        if (rdDone) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
-        buffer = parts.pop() || '';
-        for (const part of parts) {
-          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
-          const isErrEvent = part.includes('event: error');
-          if (!dataLine) continue;
-          const payload = dataLine.slice(6);
-          if (payload === '[DONE]') continue;
-          try {
-            const evt = JSON.parse(payload);
-            if (isErrEvent && evt.error) {
-              streamErr = evt.error;
-            } else if (evt.done && evt.output) {
-              finalEvt = evt;
-            } else if (evt.phase && typeof evt.label === 'string') {
-              setGenerationStep(evt.label);
-            }
-          } catch {
-            /* ignorér ukomplette/uventede linjer */
-          }
-        }
-      }
-
-      if (streamErr) throw new Error(streamErr);
-      if (!finalEvt || !finalEvt.output) {
-        throw new Error('Redaktionsmødet returnerede intet resultat.');
-      }
-
-      const data: BrandSurfaceOutput = finalEvt.output;
-      const draft: BrandSurfaceOutput = finalEvt.draft || data;
-      setOutput(data);
-      setHistory(prev => pushHistory(prev, brief, data));
-
-      // Seed revisions med udkast (Første) → endelig (Nyeste), så sammenligningen viser udviklingen.
-      const seed = (a?: string, b?: string): string[] =>
-        a && b && a !== b ? [a, b] : b ? [b] : a ? [a] : [];
-      setRevisions({
-        shortCaseText: seed(draft.shortCaseText, data.shortCaseText),
-        longCaseText: seed(draft.longCaseText, data.longCaseText),
-        linkedinPost: seed(draft.linkedinPost, data.linkedinPost),
-        creativeNewsletterSection: data.production?.newsletterSection ? [data.production.newsletterSection] : []
-      });
-      setActiveCompareIndex({
-        shortCaseText: null,
-        longCaseText: null,
-        linkedinPost: null,
-        creativeNewsletterSection: null
-      });
-
-      if (finalEvt.critiqueBefore) {
-        setDeepCritique({
-          before: finalEvt.critiqueBefore,
-          after: finalEvt.critiqueAfter ?? null,
-          earlyStopped: !!finalEvt.earlyStopped,
-          synthesisTruncated: !!finalEvt.synthesisTruncated
-        });
-      }
-      setActiveTab('case');
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Der skete en fejl under redaktionsmødet.');
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  // Visuel redaktion: art direction-deliberation via SSE (kun visuelle/billed-idéer)
-  const handleVisualDevelop = async () => {
-    setIsVisualDeveloping(true);
-    setErrorMsg(null);
-    setVisualResult(null);
-    setGenerationStep('Starter visuel udvikling …');
-
-    try {
-      const response = await fetch('/api/visual-deep', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief })
-      });
-
-      if (!response.ok || !response.body) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let streamErr: string | null = null;
-      let finalEvt: any = null;
-
-      while (true) {
-        const { value, done: rdDone } = await reader.read();
-        if (rdDone) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
-        buffer = parts.pop() || '';
-        for (const part of parts) {
-          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
-          const isErrEvent = part.includes('event: error');
-          if (!dataLine) continue;
-          const payload = dataLine.slice(6);
-          if (payload === '[DONE]') continue;
-          try {
-            const evt = JSON.parse(payload);
-            if (isErrEvent && evt.error) {
-              streamErr = evt.error;
-            } else if (evt.done && evt.output) {
-              finalEvt = evt;
-            } else if (evt.phase && typeof evt.label === 'string') {
-              setGenerationStep(evt.label);
-            }
-          } catch {
-            /* ignorér ukomplette linjer */
-          }
-        }
-      }
-
-      if (streamErr) throw new Error(streamErr);
-      if (!finalEvt || !finalEvt.output) {
-        throw new Error('Den visuelle redaktion returnerede intet resultat.');
-      }
-
-      setVisualResult({
-        concept: finalEvt.output,
-        critiqueBefore: finalEvt.critiqueBefore,
-        critiqueAfter: finalEvt.critiqueAfter ?? null,
-        earlyStopped: !!finalEvt.earlyStopped,
-        synthesisTruncated: !!finalEvt.synthesisTruncated
-      });
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Der skete en fejl under den visuelle udvikling.');
-    } finally {
-      setIsVisualDeveloping(false);
-    }
-  };
-
-  const handleTriggerAnalysis = async () => {
-    if (!output) return;
-    setIsAnalyzing(true);
-    setErrorMsg(null);
-    
-    try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          texts: {
-            shortCaseText: output.shortCaseText,
-            longCaseText: output.longCaseText,
-            linkedinPost: output.linkedinPost
-          },
-          brief
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(httpErrorMessage(response.status));
-      }
-
-      const analysisData = await response.json();
-      setOutput(prev => {
-        if (!prev) return null;
-        return {
-          ...prev,
-          toneAnalysis: analysisData
-        };
-      });
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke gennemføre toneanalysen.');
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const handleHumanizeText = async () => {
-    if (!externalText || !externalText.trim()) {
-      setErrorMsg("Indtast eller indsæt venligst en tekst først.");
-      return;
-    }
-    setIsHumanizing(true);
-    setErrorMsg(null);
-
-    try {
-      const response = await fetch('/api/humanize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: externalText })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-
-      const resData = await response.json();
-      setHumanizerResult(resData);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke gennemføre humanisering og AI-detektions bypass.');
-    } finally {
-      setIsHumanizing(false);
-    }
-  };
-
-  // Local Refinement
-  const handleRefine = async (command: string, targetKey: string) => {
-    if (!output) return;
-
-    // Resolve what text we are sending
-    let textToRefine = "";
-    let isEnglishObj = false;
-    let isProductionObj = false;
-
-    if (targetKey === 'shortCaseText') textToRefine = output.shortCaseText;
-    else if (targetKey === 'longCaseText') textToRefine = output.longCaseText;
-    else if (targetKey === 'linkedinPost') textToRefine = output.linkedinPost;
-    else if (targetKey === 'englishShortCaseText') {
-      textToRefine = output.english?.shortCaseText || "";
-      isEnglishObj = true;
-    }
-    else if (targetKey === 'englishLongCaseText') {
-      textToRefine = output.english?.longCaseText || "";
-      isEnglishObj = true;
-    }
-    else if (targetKey === 'englishLinkedinPost') {
-      textToRefine = output.english?.linkedinPost || "";
-      isEnglishObj = true;
-    }
-    else if (targetKey === 'creativeHeroVisual') {
-      textToRefine = output.production?.heroVisual || "";
-      isProductionObj = true;
-    }
-    else if (targetKey === 'creativeSomeFormat') {
-      textToRefine = output.production?.someFormat || "";
-      isProductionObj = true;
-    }
-    else if (targetKey === 'creativeNewsletterSection') {
-      textToRefine = output.production?.newsletterSection || "";
-      isProductionObj = true;
-    }
-
-    if (!textToRefine) {
-      setErrorMsg("Kunne ikke finde tekst at raffinere for denne sektion.");
-      return;
-    }
-
-    setIsRefining(true);
-    setErrorMsg(null);
-
-    try {
-      const response = await fetch('/api/refine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: textToRefine,
-          command,
-          brief
-        })
-      });
-
-      if (!response.ok || !response.body) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-
-      // Live-update helper: skriv den streamede tekst ind i det rigtige output-felt
-      const applyLiveText = (value: string) => {
-        setOutput(prev => {
-          if (!prev) return null;
-          const u: BrandSurfaceOutput = {
-            ...prev,
-            english: prev.english ? { ...prev.english } : prev.english,
-            production: prev.production ? { ...prev.production } : prev.production,
-            directUsable: prev.directUsable ? { ...prev.directUsable } : prev.directUsable,
-          };
-          if (targetKey === 'shortCaseText') u.shortCaseText = value;
-          else if (targetKey === 'longCaseText') u.longCaseText = value;
-          else if (targetKey === 'linkedinPost') u.linkedinPost = value;
-          else if (isEnglishObj && u.english) {
-            if (targetKey === 'englishShortCaseText') u.english.shortCaseText = value;
-            if (targetKey === 'englishLongCaseText') u.english.longCaseText = value;
-            if (targetKey === 'englishLinkedinPost') u.english.linkedinPost = value;
-          } else if (isProductionObj && u.production) {
-            if (targetKey === 'creativeHeroVisual') u.production.heroVisual = value;
-            if (targetKey === 'creativeSomeFormat') u.production.someFormat = value;
-            if (targetKey === 'creativeNewsletterSection') u.production.newsletterSection = value;
-          }
-          if (targetKey === 'shortCaseText' && u.directUsable) u.directUsable.bestShortText = value;
-          return u;
-        });
-      };
-
-      // Consume the Server-Sent Events stream from /api/refine
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let acc = '';
-      let streamErr: string | null = null;
-
-      while (true) {
-        const { value, done: rdDone } = await reader.read();
-        if (rdDone) break;
-        buffer += decoder.decode(value, { stream: true });
-        const parts = buffer.split('\n\n');
-        buffer = parts.pop() || '';
-        for (const part of parts) {
-          const dataLine = part.split('\n').find(l => l.startsWith('data: '));
-          const isErrEvent = part.includes('event: error');
-          if (!dataLine) continue;
-          const payload = dataLine.slice(6);
-          if (payload === '[DONE]') continue;
-          try {
-            const evt = JSON.parse(payload);
-            if (isErrEvent && evt.error) {
-              streamErr = evt.error;
-            } else if (typeof evt.delta === 'string') {
-              acc += evt.delta;
-              applyLiveText(acc);
-            } else if (evt.done && typeof evt.refinedText === 'string') {
-              acc = evt.refinedText;
-            }
-          } catch {
-            /* ignorér ukomplette/uventede linjer */
-          }
-        }
-      }
-
-      if (streamErr) throw new Error(streamErr);
-      const refinedText = (acc || textToRefine).trim();
-
-      // Store history for UNDO ability
-      setRefinementHistory(prev => [...prev, { key: targetKey, original: textToRefine }]);
-
-      // Update the revisions timeline state
-      setRevisions(prev => {
-        const currentList = prev[targetKey] || [];
-        const updatedList = [...currentList];
-
-        // Ensure the original structure is initialized if it's empty
-        if (updatedList.length === 0) {
-          updatedList.push(textToRefine);
-        }
-
-        // Only append if it's a new unique revision step
-        if (updatedList[updatedList.length - 1] !== refinedText) {
-          updatedList.push(refinedText);
-        }
-
-        return {
-          ...prev,
-          [targetKey]: updatedList
-        };
-      });
-
-      // Clear the revision comparison selection for this target key, as we are now viewing the newest active text
-      setActiveCompareIndex(prev => ({
-        ...prev,
-        [targetKey]: null
-      }));
-
-      // Update output state safely
-      setOutput(prev => {
-        if (!prev) return null;
-        const updated = { ...prev };
-
-        if (targetKey === 'shortCaseText') updated.shortCaseText = refinedText;
-        else if (targetKey === 'longCaseText') updated.longCaseText = refinedText;
-        else if (targetKey === 'linkedinPost') updated.linkedinPost = refinedText;
-        else if (isEnglishObj && updated.english) {
-          if (targetKey === 'englishShortCaseText') updated.english.shortCaseText = refinedText;
-          if (targetKey === 'englishLongCaseText') updated.english.longCaseText = refinedText;
-          if (targetKey === 'englishLinkedinPost') updated.english.linkedinPost = refinedText;
-        }
-        else if (isProductionObj && updated.production) {
-          if (targetKey === 'creativeHeroVisual') updated.production.heroVisual = refinedText;
-          if (targetKey === 'creativeSomeFormat') updated.production.someFormat = refinedText;
-          if (targetKey === 'creativeNewsletterSection') updated.production.newsletterSection = refinedText;
-        }
-
-        // Also update direct usable best matches if we refine their core text
-        if (targetKey === 'shortCaseText' && updated.directUsable) {
-          updated.directUsable.bestShortText = refinedText;
-        }
-
-        return updated;
-      });
-
-      setCustomRefinementPrompt('');
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Der opstod en fejl under raffinering af teksten.');
-    } finally {
-      setIsRefining(false);
-    }
-  };
-
-  // Undo last refine
-  const handleUndoRefine = (targetKey: string) => {
-    const historicalItem = [...refinementHistory].reverse().find(h => h.key === targetKey);
-    if (!historicalItem) return;
-
-    setOutput(prev => {
-      if (!prev) return null;
-      const updated = { ...prev };
-
-      if (targetKey === 'shortCaseText') updated.shortCaseText = historicalItem.original;
-      else if (targetKey === 'longCaseText') updated.longCaseText = historicalItem.original;
-      else if (targetKey === 'linkedinPost') updated.linkedinPost = historicalItem.original;
-      else if (targetKey === 'englishShortCaseText' && updated.english) updated.english.shortCaseText = historicalItem.original;
-      else if (targetKey === 'englishLongCaseText' && updated.english) updated.english.longCaseText = historicalItem.original;
-      else if (targetKey === 'englishLinkedinPost' && updated.english) updated.english.linkedinPost = historicalItem.original;
-      else if (targetKey === 'creativeHeroVisual' && updated.production) updated.production.heroVisual = historicalItem.original;
-      else if (targetKey === 'creativeSomeFormat' && updated.production) updated.production.someFormat = historicalItem.original;
-      else if (targetKey === 'creativeNewsletterSection' && updated.production) updated.production.newsletterSection = historicalItem.original;
-
-      if (targetKey === 'shortCaseText' && updated.directUsable) {
-        updated.directUsable.bestShortText = historicalItem.original;
-      }
-
-      return updated;
-    });
-
-    // Remove from history
-    setRefinementHistory(prev => {
-      const idx = prev.findIndex(h => h.key === targetKey && h.original === historicalItem.original);
-      if (idx !== -1) {
-        const copy = [...prev];
-        copy.splice(idx, 1);
-        return copy;
-      }
-      return prev;
-    });
-  };
-
-  // Generate actual image via express API using the configured image provider (default: Flux/fal.ai)
-  const handleGenerateImage = async (key: 'hero' | 'detail' | 'abstract', promptText: string) => {
-    setGeneratedImages(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        loading: true,
-        error: null
-      }
-    }));
-
-    try {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: promptText,
-          aspectRatio: generatedImages[key]?.aspectRatio || '16:9'
-        })
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-
-      const data = await response.json();
-      if (!data.imageUrl) {
-        throw new Error('Forkert svar-format fra API.');
-      }
-
-      setGeneratedImages(prev => ({
-        ...prev,
-        [key]: {
-          ...prev[key],
-          url: data.imageUrl,
-          loading: false,
-          error: null
-        }
-      }));
-    } catch (err: any) {
-      console.error("Fejl i handleGenerateImage:", err);
-      setGeneratedImages(prev => ({
-        ...prev,
-        [key]: {
-          ...prev[key],
-          loading: false,
-          error: err.message || 'Der opstod en uventet fejl under billedgenereringen.'
-        }
-      }));
-    }
-  };
-
-  const handleAspectChange = (key: 'hero' | 'detail' | 'abstract', ratio: string) => {
-    setGeneratedImages(prev => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        aspectRatio: ratio
-      }
-    }));
-  };
-
-  // Helper to render revision selector and split-screen comparison
-  const renderRevisionSelector = (targetKey: string, activeValue: string) => {
-    const revs = revisions[targetKey] || [];
-    if (revs.length <= 1) return null;
-
-    const activeCompareIdx = activeCompareIndex[targetKey];
-    const currentRevisionCount = revs.length;
-
-    return (
-      <div className="mt-3 bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 text-xs text-slate-350 space-y-3 shadow-inner">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sliders className="w-3.5 h-3.5 text-amber-500" />
-            <span className="font-mono text-[11px] uppercase tracking-wider text-slate-400 font-bold">
-              AI-Raffinering Historik & Sammenligning ({currentRevisionCount - 1} omskrivninger)
-            </span>
-          </div>
-          {activeCompareIdx !== null && (
-            <button
-              type="button"
-              onClick={() => {
-                setActiveCompareIndex(prev => ({ ...prev, [targetKey]: null }));
-              }}
-              className="text-[11px] text-brand-orange-500 hover:text-brand-orange-400 font-medium font-mono cursor-pointer"
-            >
-              [Luk Sammenligning]
-            </button>
-          )}
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/50 p-2.5 rounded-lg border border-slate-800/40">
-          {/* Version badge selectors */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] text-slate-500 font-mono">Udgaver:</span>
-            {revs.map((revText, index) => {
-              const isCurrent = index === revs.length - 1;
-              const isSelected = activeCompareIdx === index || (activeCompareIdx === null && isCurrent);
-              let label = index === 0 ? "Første" : `#${index}`;
-              if (isCurrent) label += " (Nyeste)";
-
-              return (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => {
-                    setActiveCompareIndex(prev => ({
-                      ...prev,
-                      [targetKey]: isCurrent ? null : index
-                    }));
-                  }}
-                  className={`px-2.5 py-1 rounded text-[11px] font-mono transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-brand-orange-500/20 text-brand-orange-400 border border-brand-orange-500/40 font-semibold'
-                      : 'bg-slate-950 text-slate-400 border border-slate-850 hover:bg-slate-800 hover:text-slate-200'
-                  }`}
-                  title={isCurrent ? "Aktivt og nyeste omskrevne udkast" : `Omskrivning #${index}`}
-                >
-                  {label}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Range Slider for stepping through chronological versions */}
-          {revs.length > 2 && (
-            <div className="flex items-center space-x-2.5 flex-1 max-w-[180px] sm:ml-auto">
-              <span className="text-[11px] text-slate-500 font-mono shrink-0">Hurtig-slider:</span>
-              <input
-                type="range"
-                min="0"
-                max={revs.length - 1}
-                value={activeCompareIdx !== null ? activeCompareIdx : revs.length - 1}
-                onChange={(e) => {
-                  const idx = parseInt(e.target.value);
-                  setActiveCompareIndex(prev => ({
-                    ...prev,
-                    [targetKey]: idx === revs.length - 1 ? null : idx
-                  }));
-                }}
-                className="w-full h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer"
-                style={{ accentColor: '#ff5400' }}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Diff comparison box */}
-        {activeCompareIdx !== null && revs[activeCompareIdx] !== undefined && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-3 mt-1 border-t border-slate-900">
-            {/* Version selected visually */}
-            <div className="p-3.5 bg-slate-900/90 rounded-lg border border-slate-800/80 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-mono uppercase text-amber-500 font-bold">
-                  <span>HISTORISK UDGAVE: {activeCompareIdx === 0 ? "FØRSTE GENERERING" : `RAF-UDSKRIFT #${activeCompareIdx}`}</span>
-                  <span className="bg-amber-500/10 px-1.5 py-0.5 rounded text-[11px] border border-amber-500/25">Revision Arkiv</span>
-                </div>
-                <div className="text-[11px] text-slate-350 leading-relaxed italic whitespace-pre-wrap mt-2 overflow-y-auto max-h-[160px] font-sans">
-                  "{revs[activeCompareIdx]}"
-                </div>
-              </div>
-              <div className="pt-3 border-t border-slate-850/60 mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const selectedText = revs[activeCompareIdx];
-                    
-                    // Backup active manual edit in the revisions list if it is not already there
-                    setRevisions(prev => {
-                      const currentList = prev[targetKey] || [];
-                      const updatedList = [...currentList];
-                      if (!updatedList.includes(activeValue)) {
-                        updatedList.push(activeValue);
-                      }
-                      // Also move the restored one to the top as a new revision step
-                      updatedList.push(selectedText);
-                      return { ...prev, [targetKey]: updatedList };
-                    });
-
-                    // Set as primary active editor text
-                    setOutput(prev => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      if (targetKey === 'shortCaseText') updated.shortCaseText = selectedText;
-                      else if (targetKey === 'longCaseText') updated.longCaseText = selectedText;
-                      else if (targetKey === 'linkedinPost') updated.linkedinPost = selectedText;
-                      else if (targetKey === 'creativeNewsletterSection' && updated.production) {
-                        updated.production.newsletterSection = selectedText;
-                      }
-                      return updated;
-                    });
-
-                    setActiveCompareIndex(prev => ({ ...prev, [targetKey]: null }));
-                    setErrorMsg(`Gendannede udgave "${activeCompareIdx === 0 ? 'Første' : `Ref #${activeCompareIdx}`}" som aktiv tekst til redigering.`);
-                  }}
-                  className="px-3 py-1.5 bg-brand-orange-500 hover:bg-brand-orange-600 text-white font-bold font-sans rounded text-[11px] transition-all cursor-pointer shadow-md tracking-wide"
-                >
-                  Gør denne udgave aktiv
-                </button>
-              </div>
-            </div>
-
-            {/* Current active text */}
-            <div className="p-3.5 bg-slate-950 rounded-lg border border-slate-800 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-[11px] font-mono uppercase text-emerald-400 font-bold">
-                  <span>NUVÆRENDE AKTIVE UDGAVE INKL. EVENTUELLE MANUELLE RETTELSER</span>
-                  <span className="bg-emerald-500/15 px-1.5 py-0.5 rounded text-[11px] border border-emerald-500/25 font-semibold">Aktiv nu</span>
-                </div>
-                <div className="text-[11px] text-slate-200 leading-relaxed whitespace-pre-wrap mt-2 overflow-y-auto max-h-[160px] font-sans">
-                  "{activeValue || '(Tom tekst)'}"
-                </div>
-              </div>
-              <div className="pt-3 border-t border-slate-905 mt-4 text-right text-[11px] font-mono text-slate-500">
-                Låst til midlertidig sammenligning
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Unified Terminal CLI command simulator
-  const handleExecuteTerminalCommand = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!terminalCommand.trim()) return;
-
-    const cmd = terminalCommand.trim().toLowerCase();
-    setTerminalCommand('');
-
-    // Toggle tabs using / slash commands
-    if (cmd === '/case') {
-      setActiveTab('case');
-    } else if (cmd === '/linkedin') {
-      setActiveTab('linkedin');
-    } else if (cmd === '/newsletter') {
-      setActiveTab('newsletter');
-    } else if (cmd === '/headlines') {
-      setActiveTab('headlines');
-    } else if (cmd === '/keywords') {
-      setActiveTab('keywords');
-    } else if (cmd === '/prompts') {
-      setActiveTab('prompts');
-    } else if (cmd === '/english') {
-      setActiveTab('english');
-    } else if (cmd === '/cvi') {
-      setActiveTab('cvi');
-    } else if (cmd === '/production' || cmd === '/produktionsforslag') {
-      setActiveTab('production');
-    } else if (cmd === '/run' || cmd === '/generate') {
-      handleGenerateAll();
-    } 
-    // Refinement commands applied to active selected key
-    else if (cmd === '/shorten') {
-      handleRefine('/shorten', selectedTextKey);
-    } else if (cmd === '/more-human') {
-      handleRefine('/more-human', selectedTextKey);
-    } else if (cmd === '/more-business') {
-      handleRefine('/more-business', selectedTextKey);
-    } 
-    // Custom instruction
-    else if (cmd.startsWith('/') && cmd.length > 2) {
-      handleRefine(terminalCommand, selectedTextKey);
-    } else {
-      // Treat as a direct custom edit prompt
-      handleRefine(terminalCommand, selectedTextKey);
-    }
-  };
-
-  // Helper to check if history exists for a specific key
-  const hasHistory = (key: string) => refinementHistory.some(h => h.key === key);
+  const {
+    brief, setBrief,
+    activeTab, setActiveTab,
+    output, setOutput,
+    history, historyOpen, setHistoryOpen,
+    variants, setVariants, isVariating,
+    isGenerating, isRefining, isAnalyzing, isHumanizing, isVisualDeveloping, isAnalyzingCvi,
+    generationStep,
+    deepMode, setDeepMode, deepCritique,
+    visualResult, setVisualResult,
+    selectedTextKey, setSelectedTextKey,
+    customRefinementPrompt, setCustomRefinementPrompt,
+    terminalCommand, setTerminalCommand,
+    errorMsg, setErrorMsg,
+    refinementHistory,
+    revisions, setRevisions,
+    activeCompareIndex, setActiveCompareIndex,
+    copiedKey,
+    externalText, setExternalText,
+    humanizerResult, setHumanizerResult,
+    cviFileName,
+    printMode,
+    generatedImages,
+    theme, setTheme,
+    customPresets,
+    handleBriefChange,
+    handleChannelToggle,
+    handleLoadPreset,
+    handleClearPresets,
+    handleRestorePresets,
+    handlePinCurrentBrief,
+    handleCviUpload,
+    handleRemoveCvi,
+    handleCopyToClipboard,
+    handleExportSingleSection,
+    handleExportMarkdown,
+    handleCopyAllMarkdown,
+    handleExportHtml,
+    handleExportDocx,
+    handleLoadHistory,
+    handleClearHistory,
+    handleGenerateVariants,
+    handleApplyVariant,
+    handleGenerateAll,
+    handleVisualDevelop,
+    handleTriggerAnalysis,
+    handleHumanizeText,
+    handleRefine,
+    handleUndoRefine,
+    handleGenerateImage,
+    handleAspectChange,
+    handleExecuteTerminalCommand,
+  } = useContentMachine();
 
   return (
     <div className={`min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans transition-all duration-300 antialiased selection:bg-orange-500 selection:text-white ${theme === 'light' ? 'light-mode' : ''}`}>
-      
+
       {/* SCREEN INTERFACE (HIDDEN WHEN PRINTING) */}
       <div className="print:hidden flex flex-col min-h-screen w-full flex-1">
-      
+
       <WorkingOverlay
         show={isGenerating || isVisualDeveloping || isHumanizing}
         title={isVisualDeveloping ? 'Visuel udvikling' : isHumanizing ? 'Humaniserer' : deepMode ? 'Redaktionsmøde' : 'Genererer'}
@@ -1425,7 +124,7 @@ export default function App() {
 
       {/* WORKSPACE & PANELS */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
+
 
          {/* LEFT COLUMN: BRIEF ENTRY (4 cols) */}
          <BriefForm
@@ -1456,7 +155,7 @@ export default function App() {
 
         {/* RIGHT COLUMN: PREVIEW & OUTPUT INTERACTION WORKSPACE (7 cols) */}
         <div className="lg:col-span-7 flex flex-col space-y-5">
-          
+
            {/* TOOLBAR / QUICK COMMANDS */}
            <Toolbar
              output={output}
@@ -1500,7 +199,7 @@ export default function App() {
                 <div className="max-w-md space-y-2">
                   <h3 className="font-display font-medium text-lg text-white">Content Machine klar</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Indlæs et test-brief fra listen til venstre (Modaxo Move 2026 er klar som standard), redigér eventuelt værdierne, og tryk derefter på 
+                    Indlæs et test-brief fra listen til venstre (Modaxo Move 2026 er klar som standard), redigér eventuelt værdierne, og tryk derefter på
                     <span className="font-bold text-orange-400"> "Generér indhold" </span>
                     for at generere brandindhold, SoMe og produktionsstrategier på ét sekund.
                   </p>
@@ -1531,7 +230,7 @@ export default function App() {
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                
+
                 {/* 0. SECTION: REDAKTIONSMØDE (DEEP MODE BEFORE/AFTER) */}
                 {deepCritique && (
                   <DeliberationTimeline
@@ -1551,7 +250,7 @@ export default function App() {
 
                 {/* MAIN RICH OUTPUT WORKSPACE WITH NAVIGATION TAB SHEETS */}
                 <div className="bg-slate-950 rounded-xl border border-slate-800 shadow-sm overflow-hidden flex flex-col">
-                  
+
                   {/* TAB SWITCHERS BAR */}
                   <div className="bg-slate-950/90 border-b border-slate-800 px-2 pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 sm:pb-0">
                     <div className="flex gap-1 flex-1 overflow-x-auto sm:flex-wrap sm:overflow-x-visible">
@@ -1576,8 +275,8 @@ export default function App() {
                               setActiveTab(tab.id);
                             }}
                             className={`flex items-center space-x-1.5 px-3 py-2.5 text-xs font-semibold rounded-t-lg transition-all border-t-2 cursor-pointer shrink-0 whitespace-nowrap ${
-                              active 
-                                ? 'bg-slate-900 border-brand-orange-500 text-white shadow-md' 
+                              active
+                                ? 'bg-slate-900 border-brand-orange-500 text-white shadow-md'
                                 : 'bg-transparent border-transparent text-slate-400 hover:bg-slate-900/40 hover:text-slate-200'
                             }`}
                           >
@@ -1735,7 +434,7 @@ export default function App() {
                   {/* ACTIVE TAB CONTAINER PANEL */}
                   <div className="p-5 bg-slate-900 flex-1 min-h-[350px]">
                     <AnimatePresence mode="wait">
-                      
+
 
                        {/* TAB 1: CASE-TEKSTER (KORT & LANG) */}
                        {activeTab === 'case' && (
@@ -1864,7 +563,7 @@ export default function App() {
 
                   {/* BOTTOM REFINEMENT PROMPT SECTION */}
                   <div className="p-4 bg-slate-950/90 border-t border-slate-850 text-slate-400 font-sans text-xs space-y-3.5">
-                    
+
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-850 pb-3">
                       <div className="space-y-1 text-left">
                         <span className="text-[11px] font-mono font-bold tracking-wider text-slate-200 flex items-center space-x-1.5 uppercase">
@@ -1972,7 +671,7 @@ export default function App() {
       </div> {/* End of print:hidden screen wrapper */}
 
 
-      {/* 🖨️ PREMIUM DIGITAL BRAND REVISION RAPPORT / PDF PRINT LAYOUT */}
+      {/* PREMIUM DIGITAL BRAND REVISION RAPPORT / PDF PRINT LAYOUT */}
       <PrintView output={output} brief={brief} printMode={printMode} generatedImages={generatedImages} />
 
     </div>
