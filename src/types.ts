@@ -123,6 +123,13 @@ export interface UsageInfo {
   cacheWriteTokens: number;
 }
 
+export interface LogoResult {
+  imageUrl: string;
+  contentType: string;
+  prompt: string;
+  style: string;
+}
+
 export interface BrainstormAngle {
   title: string;
   headline: string;

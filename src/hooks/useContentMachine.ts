@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDocx } from '../lib/exportDocx';
@@ -115,6 +115,9 @@ export function useContentMachine() {
 
   const [brainstormResult, setBrainstormResult] = useState<BrainstormResult | null>(null);
   const [isBrainstorming, setIsBrainstorming] = useState<boolean>(false);
+
+  const [logoResult, setLogoResult] = useState<LogoResult | null>(null);
+  const [isGeneratingLogo, setIsGeneratingLogo] = useState<boolean>(false);
 
   const [cviFileName, setCviFileName] = useState<string | null>(null);
   const [isAnalyzingCvi, setIsAnalyzingCvi] = useState<boolean>(false);
@@ -863,6 +866,38 @@ export function useContentMachine() {
     }
   };
 
+  const handleGenerateLogo = async (
+    prompt: string,
+    style: string,
+    colors: Array<{ r: number; g: number; b: number }>,
+  ) => {
+    if (!prompt.trim()) {
+      setErrorMsg("Indtast en logo-beskrivelse for at generere logo.");
+      return;
+    }
+    setIsGeneratingLogo(true);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/generate-logo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt.trim(), style: style || undefined, colors })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const data = await response.json();
+      if (!data.imageUrl) throw new Error('Forkert svar-format fra logo-API.');
+      setLogoResult({ imageUrl: data.imageUrl, contentType: data.contentType, prompt, style });
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke generere logo.');
+    } finally {
+      setIsGeneratingLogo(false);
+    }
+  };
+
   const handleRefine = async (command: string, targetKey: string) => {
     if (!output) return;
 
@@ -1113,6 +1148,10 @@ export function useContentMachine() {
     brainstormResult, setBrainstormResult,
     isBrainstorming,
     handleBrainstorm,
+    // Logo
+    logoResult, setLogoResult,
+    isGeneratingLogo,
+    handleGenerateLogo,
     // CVI
     cviFileName,
     // Print

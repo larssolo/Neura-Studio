@@ -50,6 +50,7 @@ import { AppHeader } from './components/AppHeader';
 import { Toolbar } from './components/Toolbar';
 import { UsageBadge } from './components/UsageBadge';
 import { BrainstormPanel } from './components/BrainstormPanel';
+import { LogoPanel } from './components/LogoPanel';
 import { useContentMachine, PRESETS } from './hooks/useContentMachine';
 
 export default function App() {
@@ -83,6 +84,8 @@ export default function App() {
     regeneratingKey, handleRegenerateSection,
     brainstormResult, setBrainstormResult,
     isBrainstorming, handleBrainstorm,
+    logoResult, setLogoResult,
+    isGeneratingLogo, handleGenerateLogo,
     handleBriefChange,
     handleChannelToggle,
     handleLoadPreset,
@@ -678,6 +681,17 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          {/* LOGO GENERATOR PANEL */}
+          <LogoPanel
+            brief={brief}
+            logoResult={logoResult}
+            isGeneratingLogo={isGeneratingLogo}
+            handleGenerateLogo={handleGenerateLogo}
+            onClearResult={() => setLogoResult(null)}
+            copiedKey={copiedKey}
+            onCopy={handleCopyToClipboard}
+          />
+
           {/* AI HUMANIZER & DETECTOR BYPASS PANEL */}
           <HumanizerPanel
             externalText={externalText}
@@ -695,7 +709,7 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.7.0
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.8.0
             </span>
             <div className="flex items-center space-x-4">
               {lastUsage && <UsageBadge usage={lastUsage} />}

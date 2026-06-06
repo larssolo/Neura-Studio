@@ -32,6 +32,7 @@ import {
 import { runDeliberation } from './server/ai/deliberate';
 import { runVisualDeliberation } from './server/ai/deliberateVisual';
 import { getImageProvider } from './server/image/provider';
+import { generateLogoSvg } from './server/image/recraftVector';
 
 async function startServer() {
   const app = express();
@@ -387,6 +388,27 @@ async function startServer() {
         res.write(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
         res.end();
       }
+    }
+  });
+
+  // Logo generator via Recraft V4 Pro text-to-vector (SVG output)
+  app.post('/api/generate-logo', async (req, res) => {
+    try {
+      const { prompt, style, colors } = req.body;
+      if (!prompt?.trim()) {
+        return res.status(400).json({ error: 'Prompt er påkrævet.' });
+      }
+
+      const result = await generateLogoSvg({
+        prompt: prompt.trim(),
+        style: style || undefined,
+        colors: Array.isArray(colors) && colors.length > 0 ? colors : undefined,
+      });
+
+      res.json(result);
+    } catch (error: any) {
+      console.error('Fejl under logo-generering:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke generere logo.' });
     }
   });
 
