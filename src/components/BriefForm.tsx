@@ -6,7 +6,8 @@
 import { Dispatch, SetStateAction, ChangeEvent } from 'react';
 import {
   AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint, Gauge,
-  Layers, Lightbulb, Loader2, Palette, Pin, Radio, Rocket, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
+  Layers, Lightbulb, Loader2, Palette, Pin, Radio, Rocket, RotateCcw, ShieldCheck,
+  Sparkles, Swords, Target, Trash2, UploadCloud, Users, Wallet,
 } from 'lucide-react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief } from '../types';
 
@@ -419,6 +420,82 @@ export function BriefForm({
                 placeholder="Vi skal fremstå som en kreativ og praktisk samarbejdspartner..."
                 className="w-full bg-slate-900 border border-slate-800 focus:border-brand-orange-500 focus:ring-1 focus:ring-brand-orange-500 rounded-lg p-2.5 text-xs text-white placeholder:text-slate-600 leading-relaxed transition-all font-sans resize-y"
               />
+            </div>
+
+            {/* STRATEGIC INTAKE (rigere brief — fodrer strategi, idé, pres-test & effekt-lag) */}
+            <div className="bg-slate-900/40 rounded-xl p-4 border border-slate-800/80 space-y-3">
+              <div className="flex items-center space-x-2">
+                <Target className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase">Strategisk intake</span>
+                <span className="text-[10px] text-slate-500 font-mono">valgfrit · skærper alle AI-trin</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Jo mere præcis kontekst, jo skarpere strategi, idéer, KPI'er og pitch. Udfyld det du har — felterne fodrer alle led i kæden.
+              </p>
+
+              {/* Business goal & KPI */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <Target className="w-3 h-3 text-sky-500 shrink-0" />
+                  <span>Forretningsmål & KPI</span>
+                </label>
+                <input
+                  type="text"
+                  id="input_business_goal"
+                  value={brief.businessGoal ?? ''}
+                  onChange={(e) => handleBriefChange('businessGoal', e.target.value)}
+                  placeholder="f.eks. +5% markedsandel, +10pp kendskab, 200 leads"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 transition-all font-sans"
+                />
+              </div>
+
+              {/* Competitors */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <Swords className="w-3 h-3 text-rose-500 shrink-0" />
+                  <span>Konkurrenter</span>
+                </label>
+                <input
+                  type="text"
+                  id="input_competitors"
+                  value={brief.competitors ?? ''}
+                  onChange={(e) => handleBriefChange('competitors', e.target.value)}
+                  placeholder="f.eks. Brand A, Brand B — så vi undgår deres positioner"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 transition-all font-sans"
+                />
+              </div>
+
+              {/* Mandatories */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+                  <span>Mandatories (skal med / må ikke)</span>
+                </label>
+                <textarea
+                  id="input_mandatories"
+                  rows={2}
+                  value={brief.mandatories ?? ''}
+                  onChange={(e) => handleBriefChange('mandatories', e.target.value)}
+                  placeholder="f.eks. logo skal være med, payoff må ikke ændres, ingen humor om bæredygtighed"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg p-2.5 text-xs text-white placeholder:text-slate-600 leading-relaxed transition-all font-sans resize-y"
+                />
+              </div>
+
+              {/* Budget */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <Wallet className="w-3 h-3 text-amber-500 shrink-0" />
+                  <span>Budget-ramme</span>
+                </label>
+                <input
+                  type="text"
+                  id="input_budget"
+                  value={brief.budget ?? ''}
+                  onChange={(e) => handleBriefChange('budget', e.target.value)}
+                  placeholder="f.eks. 500k DKK produktion + 1M media — kalibrerer kanal-valg"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 transition-all font-sans"
+                />
+              </div>
             </div>
 
             {/* DEEP MODE TOGGLE (REDAKTIONSMØDE) */}

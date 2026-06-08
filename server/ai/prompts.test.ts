@@ -14,6 +14,7 @@ import {
   territoryFullText,
   campaignContextText,
   strategyContextText,
+  briefIntakeText,
   refineInstruction,
   cacheableSystem,
 } from './prompts';
@@ -364,5 +365,48 @@ describe('buildSynthesize', () => {
     const badCritique = { clichesFound: 'a, b', evaluations: 'nej', overallReview: 'ok' } as any;
     const badCreative = { boldHeadlines: 'h', boldHooks: 'k', angles: 'v' } as any;
     expect(() => buildSynthesize(badDraft, badCritique, badCreative, { client: 'Acme' })).not.toThrow();
+  });
+});
+
+describe('briefIntakeText (rigere brief-intake)', () => {
+  it('renders only the filled structured fields', () => {
+    const text = briefIntakeText({ businessGoal: '+5% markedsandel', budget: '1M media' });
+    expect(text).toContain('STRATEGISK INTAKE');
+    expect(text).toContain('+5% markedsandel');
+    expect(text).toContain('1M media');
+    // Unfilled fields are omitted entirely (no empty "N/A" noise)
+    expect(text).not.toContain('Konkurrenter');
+    expect(text).not.toContain('Mandatories');
+  });
+
+  it('returns an empty string when no intake fields are set', () => {
+    expect(briefIntakeText({ client: 'Acme' })).toBe('');
+    expect(briefIntakeText({ businessGoal: '   ' })).toBe('');
+  });
+
+  it('labels competitors and mandatories with their strategic intent', () => {
+    const text = briefIntakeText({ competitors: 'Brand A, Brand B', mandatories: 'logo skal med' });
+    expect(text).toContain('Konkurrenter (undgå deres positioner): Brand A, Brand B');
+    expect(text).toContain('Mandatories (skal med / må ikke bruges): logo skal med');
+  });
+
+  it('flows into the strategy prompt so the foundation is grounded in client KPIs', () => {
+    const { user } = buildStrategy({ client: 'Acme', businessGoal: '+10pp kendskab', competitors: 'Rival' });
+    expect(user).toContain('STRATEGISK INTAKE');
+    expect(user).toContain('+10pp kendskab');
+    expect(user).toContain('Rival');
+  });
+
+  it('flows into the effectiveness prompt so KPI targets can use real benchmarks', () => {
+    const { user } = buildEffectiveness(
+      { client: 'Acme', businessGoal: '200 leads pr. kvartal' },
+      { bigIdea: 'Stor idé', tagline: 'Tag' },
+    );
+    expect(user).toContain('200 leads pr. kvartal');
+  });
+
+  it('is omitted from prompts when the brief has no intake data', () => {
+    const { user } = buildStrategy({ client: 'Acme' });
+    expect(user).not.toContain('STRATEGISK INTAKE');
   });
 });

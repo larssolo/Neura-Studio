@@ -26,8 +26,32 @@ export type Brief = {
   language?: string;
   channels?: string[];
   notes?: string;
+  businessGoal?: string;
+  competitors?: string;
+  mandatories?: string;
+  budget?: string;
   cviManual?: CviManual | null;
 };
+
+/**
+ * Render de strukturerede intake-felter (forretningsmål/KPI, konkurrenter,
+ * mandatories, budget) som en kompakt kontekst-blok. Kun de UDFYLDTE felter tages
+ * med, så prompten ikke fyldes med "N/A". Returnerer tom streng hvis intet er sat.
+ * Bruges på tværs af strategi, idé, brainstorm, pres-test og effekt-laget.
+ */
+export function briefIntakeText(brief: Brief): string {
+  const lines: string[] = [];
+  if (brief.businessGoal && brief.businessGoal.trim())
+    lines.push(`- Forretningsmål & KPI: ${brief.businessGoal.trim()}`);
+  if (brief.competitors && brief.competitors.trim())
+    lines.push(`- Konkurrenter (undgå deres positioner): ${brief.competitors.trim()}`);
+  if (brief.mandatories && brief.mandatories.trim())
+    lines.push(`- Mandatories (skal med / må ikke bruges): ${brief.mandatories.trim()}`);
+  if (brief.budget && brief.budget.trim())
+    lines.push(`- Budget-ramme: ${brief.budget.trim()}`);
+  if (!lines.length) return '';
+  return `STRATEGISK INTAKE (præcis kontekst fra kunden — brug aktivt, overhold mandatories):\n${lines.join('\n')}`;
+}
 
 /**
  * Konvertér tekstblokke til system-blokke og markér den SIDSTE som cache-grænse
@@ -81,6 +105,7 @@ Retningslinjer:
 Aflever hele resultatet via det angivne værktøj, præcist som beskrevet af værktøjets skema.`;
 
 export function generateUserText(brief: Brief): string {
+  const intake = briefIntakeText(brief);
   return `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -91,7 +116,7 @@ export function generateUserText(brief: Brief): string {
 - Sprog: ${brief.language || 'Dansk'}
 - Hvor det bruges: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-
+${intake ? `\n${intake}\n` : ''}
 Sørg for at alle tekster (undtagen de engelske felter og de engelske billedprompts) er skrevet på det angivne sprog, som er ${brief.language || 'Dansk'}.`;
 }
 
@@ -384,6 +409,7 @@ Timing: ${culturalIntel.timingContext || 'N/A'}
 Åbningsspørgsmål: ${culturalIntel.openingQuestion || 'N/A'}\n`;
       })()
     : '';
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -394,7 +420,7 @@ Timing: ${culturalIntel.timingContext || 'N/A'}
 - Sprog: ${brief.language || 'Dansk'}
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-${culturalBlock}
+${intake ? `\n${intake}\n` : ''}${culturalBlock}
 Udvikl nu det strategiske fundament for dette projekt: målgruppe-indsigt, central spænding, konkurrence-kontekst, det enkelt-mindede løfte, reasons-to-believe, ønsket respons og 2-3 strategiske afsæt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
 
   return { system, user };
@@ -465,6 +491,7 @@ export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null)
 } {
   const system = cacheableSystem([BIG_IDEA_SYSTEM_ROLE, cviSectionText(brief)]);
   const foundation = strategy ? strategyContextText(strategy) : '';
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -475,7 +502,7 @@ export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null)
 - Sprog: ${brief.language || 'Dansk'}
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-${foundation ? `\n${foundation}\n` : ''}
+${intake ? `\n${intake}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
 Udvikl nu TRE konkurrerende kreative ruter (kampagne-platforme) for dette projekt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-navne må gerne være på engelsk hvis det er mest naturligt).`;
 
   return { system, user };
@@ -560,13 +587,14 @@ export function buildTerritoryCritique(
 ): { system: Anthropic.TextBlockParam[]; user: string } {
   const system = cacheableSystem([TERRITORY_CRITIQUE_SYSTEM_ROLE, cviSectionText(brief)]);
   const foundation = strategy ? strategyContextText(strategy) : '';
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
 - Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
 - Målgruppe: ${brief.audience || 'N/A'}
 - Sprog: ${brief.language || 'Dansk'}
-${foundation ? `\n${foundation}\n` : ''}
+${intake ? `\n${intake}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
 ${territoryFullText(territory)}
 
 Pres-test nu denne rute brutalt ærligt på de fire akser, og lever konkrete svagheder, provokationer og kill-kriteriet. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
@@ -665,6 +693,7 @@ export function buildChannelMatrix(
   const platform = campaignContextText(chosenIdea);
   const seeds = channelSeedsText(chosenIdea);
   const foundation = strategy ? strategyContextText(strategy) : '';
+  const intake = briefIntakeText(brief);
 
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
@@ -675,7 +704,7 @@ export function buildChannelMatrix(
 - Tone: ${brief.tone || 'Professionel, menneskelig, kreativ'}
 - Sprog: ${brief.language || 'Dansk'}
 - Briefets kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
-
+${intake ? `\n${intake}\n` : ''}
 ${platform || 'INGEN valgt platform — vælg en kreativ rute først.'}
 ${seeds ? `\n${seeds}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
 Skalér nu den valgte store idé til en komplet omni-channel matrix — én produktionsklar eksekvering pr. kanal (fold kanal-frøene ud, og dæk briefets kanaler). Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-/format-navne må gerne være engelske hvor det er mest naturligt).`;
@@ -720,13 +749,14 @@ export function buildEffectiveness(
     (Array.isArray(channels) && channels.length ? channels : brief.channels || []).join(', ') ||
     'N/A';
 
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
 - Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
 - Målgruppe: ${brief.audience || 'N/A'}
 - Sprog: ${brief.language || 'Dansk'}
-
+${intake ? `\n${intake}\n` : ''}
 ${platform || 'INGEN valgt platform — vælg en kreativ rute først.'}
 ${foundation ? `\n${foundation}\n` : ''}
 KANALER AT MÅLE: ${channelList}
@@ -815,6 +845,7 @@ export function buildBrainstorm(brief: Brief): {
   system: Anthropic.TextBlockParam[];
   user: string;
 } {
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -825,7 +856,7 @@ export function buildBrainstorm(brief: Brief): {
 - Sprog: ${brief.language || 'Dansk'}
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-
+${intake ? `\n${intake}\n` : ''}
 Lav nu en kreativ brainstorm: identificér kernehistorien, foreslå 4 distinkte kreative retninger (med overskrift og LinkedIn-krog for hver), nøgle-differentiatorerne, målgruppeinsigter, et skærpende spørgsmål og brief-mangler. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
 
   return { system: cacheableSystem([BRAINSTORM_SYSTEM_ROLE]), user };

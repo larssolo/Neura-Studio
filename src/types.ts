@@ -26,6 +26,14 @@ export interface ProjectBrief {
   language: string;
   channels: string[];
   notes: string;
+  /** Strategisk intake — forretningsmål & KPI (fx "+5% salg, +10pp kendskab"). */
+  businessGoal?: string;
+  /** Navngivne konkurrenter, så scanning/strategi kan undgå deres positioner. */
+  competitors?: string;
+  /** Mandatories: ting der SKAL med, eller absolut ikke må bruges. */
+  mandatories?: string;
+  /** Budget-ramme, så kanal-valg og produktion kalibreres til virkeligheden. */
+  budget?: string;
   cviManual?: CviManual | null;
 }
 
