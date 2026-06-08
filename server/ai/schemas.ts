@@ -548,6 +548,110 @@ export const campaignPlatformTool: Anthropic.Tool = {
   },
 };
 
+// --- /api/sharpen-idea (ECD pres-test) ---------------------------------------
+
+export const territoryCritiqueTool: Anthropic.Tool = {
+  name: 'submit_territory_critique',
+  description: 'Aflever den strategiske pres-test af én kreativ rute som struktureret kritik.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      distinctivenessScore: {
+        type: 'integer',
+        description: 'Score 0-100: hvor distinkt og uventet er idéen? (100 = umulig at forveksle med konkurrenten; lav = generisk kategori-kliché).',
+      },
+      truthScore: {
+        type: 'integer',
+        description: 'Score 0-100: hvor solidt står idéen på en reel strategisk indsigt eller kulturel spænding (ikke ud af det blå)?',
+      },
+      elasticityScore: {
+        type: 'integer',
+        description: 'Score 0-100: hvor godt strækker idéen sig på tværs af kanaler og over tid uden at falde fra hinanden?',
+      },
+      memorabilityScore: {
+        type: 'integer',
+        description: 'Score 0-100: hvor mindeværdig, menneskelig og delbar er idéen?',
+      },
+      weaknesses: {
+        type: 'array',
+        description: '2-4 konkrete svagheder: hvor er idéen generisk, derivativ, risikabel eller uklar? Vær brutalt ærlig.',
+        items: { type: 'string' },
+      },
+      provocations: {
+        type: 'array',
+        description: '2-3 skarpe spørgsmål den kreative direktør SKAL svare på for at skærpe idéen.',
+        items: { type: 'string' },
+      },
+      killCriterion: {
+        type: 'string',
+        description: 'Den ene største risiko der kan dræbe idéen — det der ville få kunden eller kulturen til at afvise den.',
+      },
+      verdict: {
+        type: 'string',
+        description: 'Samlet strategisk dom (2-3 sætninger): står idéen, eller skal den skærpes/omtænkes?',
+      },
+    },
+    required: [
+      'distinctivenessScore',
+      'truthScore',
+      'elasticityScore',
+      'memorabilityScore',
+      'weaknesses',
+      'provocations',
+      'killCriterion',
+      'verdict',
+    ],
+  },
+};
+
+export const sharpenedTerritoryTool: Anthropic.Tool = {
+  name: 'submit_sharpened_territory',
+  description: 'Aflever den skærpede kreative rute (samme rute, hævet et niveau) som struktureret data.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Rutens navn (behold eller skærp — samme rute, ikke en ny).' },
+      bigIdea: {
+        type: 'string',
+        description: 'Den skærpede store idé som én knivskarp sætning — mere distinkt, sand og mindeværdig end før.',
+      },
+      tagline: { type: 'string', description: 'Skærpet tagline/endline.' },
+      manifesto: { type: 'string', description: 'Skærpet manifest-copy (ca. 30-60 ord).' },
+      strategicRoot: { type: 'string', description: 'Den strategiske indsigt/spænding idéen står på (skærpet hvis nødvendigt).' },
+      channelExpressions: {
+        type: 'array',
+        description: 'Hvordan den skærpede idé kommer til live på 4-5 kanaler.',
+        items: {
+          type: 'object',
+          properties: {
+            channel: { type: 'string', description: 'Kanalen, fx Social, OOH, Film, Aktivering, PR.' },
+            idea: { type: 'string', description: 'Konkret udtryk på netop denne kanal.' },
+          },
+          required: ['channel', 'idea'],
+        },
+      },
+      toneDescriptor: { type: 'string', description: 'Tone/stemning for ruten.' },
+      rationale: { type: 'string', description: 'Hvorfor den skærpede rute vinder (1-2 sætninger).' },
+      whatChanged: {
+        type: 'array',
+        description: '2-4 konkrete punkter: hvad blev skærpet, og hvordan svarer det på pres-testens kritik?',
+        items: { type: 'string' },
+      },
+    },
+    required: [
+      'name',
+      'bigIdea',
+      'tagline',
+      'manifesto',
+      'strategicRoot',
+      'channelExpressions',
+      'toneDescriptor',
+      'rationale',
+      'whatChanged',
+    ],
+  },
+};
+
 // --- /api/strategy -----------------------------------------------------------
 
 export const strategyTool: Anthropic.Tool = {

@@ -190,6 +190,40 @@ export interface CulturalScanResult {
   searchedAt: string;
 }
 
+// ---------------------------------------------------------------------------
+// ECD pres-test af Idéen
+// ---------------------------------------------------------------------------
+
+export interface TerritoryCritique {
+  distinctivenessScore: number;
+  truthScore: number;
+  elasticityScore: number;
+  memorabilityScore: number;
+  weaknesses: string[];
+  provocations: string[];
+  killCriterion: string;
+  verdict: string;
+}
+
+export interface SharpenedTerritory {
+  name: string;
+  bigIdea: string;
+  tagline: string;
+  manifesto: string;
+  strategicRoot: string;
+  channelExpressions: CampaignChannelExpression[];
+  toneDescriptor: string;
+  rationale: string;
+  whatChanged: string[];
+}
+
+export interface IdeaDeliberationResult {
+  critiqueBefore: TerritoryCritique;
+  sharpened?: SharpenedTerritory;
+  critiqueAfter?: TerritoryCritique;
+  earlyStopped: boolean;
+}
+
 export interface ChannelScriptBlock {
   label: string;
   content: string;

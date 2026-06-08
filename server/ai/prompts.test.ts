@@ -8,11 +8,75 @@ import {
   buildBigIdea,
   buildStrategy,
   buildChannelMatrix,
+  buildTerritoryCritique,
+  buildTerritorySharpen,
+  territoryFullText,
   campaignContextText,
   strategyContextText,
   refineInstruction,
   cacheableSystem,
 } from './prompts';
+
+const sampleTerritory = {
+  name: 'Rute Alfa',
+  bigIdea: 'En knivskarp idé',
+  tagline: 'Slagkraftig tagline',
+  manifesto: 'Mobiliserende manifest.',
+  strategicRoot: 'Bygger på en spænding.',
+  channelExpressions: [{ channel: 'Film', idea: '30-sek film' }],
+  toneDescriptor: 'Modig',
+  rationale: 'Den vinder.',
+};
+
+describe('territoryFullText', () => {
+  it('serialises all territory fields including channel expressions', () => {
+    const text = territoryFullText(sampleTerritory);
+    expect(text).toContain('En knivskarp idé');
+    expect(text).toContain('Slagkraftig tagline');
+    expect(text).toContain('Film: 30-sek film');
+    expect(text).toContain('Den vinder.');
+  });
+
+  it('does not crash when channelExpressions is missing', () => {
+    expect(() => territoryFullText({ bigIdea: 'x' } as any)).not.toThrow();
+  });
+});
+
+describe('buildTerritoryCritique', () => {
+  it('includes the CSO pressure-test role and the territory', () => {
+    const { system, user } = buildTerritoryCritique({ client: 'Acme' }, sampleTerritory);
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Chief Strategy Officer');
+    expect(user).toContain('En knivskarp idé');
+    expect(user).toContain('Acme');
+  });
+
+  it('injects strategy foundation when provided', () => {
+    const { user } = buildTerritoryCritique({ client: 'Acme' }, sampleTerritory, {
+      singleMindedProposition: 'Vi gør det enkelt.',
+      audienceTruth: 'De er overset.',
+    } as any);
+    expect(user).toContain('Vi gør det enkelt.');
+  });
+});
+
+describe('buildTerritorySharpen', () => {
+  it('threads the critique findings into the ECD sharpening prompt', () => {
+    const { system, user } = buildTerritorySharpen({ client: 'Acme' }, sampleTerritory, {
+      distinctivenessScore: 40,
+      weaknesses: ['For generisk'],
+      provocations: ['Hvad er det uventede?'],
+      killCriterion: 'Konkurrenten ejer allerede dette.',
+      verdict: 'Skal skærpes.',
+    });
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Executive Creative Director');
+    expect(user).toContain('For generisk');
+    expect(user).toContain('Hvad er det uventede?');
+    expect(user).toContain('Konkurrenten ejer allerede dette.');
+    expect(user).toContain('En knivskarp idé');
+  });
+});
 
 describe('cacheableSystem', () => {
   it('marks only the last block with cache_control and filters empty blocks', () => {

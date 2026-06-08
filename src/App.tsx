@@ -53,6 +53,7 @@ import { UsageBadge } from './components/UsageBadge';
 import { BrainstormPanel } from './components/BrainstormPanel';
 import { CampaignPanel } from './components/CampaignPanel';
 import { CulturalAntennaPanel } from './components/CulturalAntennaPanel';
+import { IdeaPressureTestPanel } from './components/IdeaPressureTestPanel';
 import { StrategyPanel } from './components/StrategyPanel';
 import { ChannelMatrixPanel } from './components/ChannelMatrixPanel';
 import { LogoPanel } from './components/LogoPanel';
@@ -95,6 +96,8 @@ export default function App() {
     campaignPlatform, setCampaignPlatform,
     isGeneratingCampaign, handleGenerateBigIdea,
     selectedTerritory, handleSelectTerritory, handleClearTerritory,
+    pressureTest, isSharpening, sharpeningTarget,
+    handleSharpenIdea, handleAdoptSharpened, handleClearPressureTest,
     channelMatrix,
     isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,
     logoResult, setLogoResult,
@@ -238,7 +241,22 @@ export default function App() {
               onSelectTerritory={handleSelectTerritory}
               onClearTerritory={handleClearTerritory}
               onExportDeck={handleExportDeck}
+              onPressureTest={handleSharpenIdea}
+              isSharpening={isSharpening}
+              sharpeningTarget={sharpeningTarget}
               onClose={() => setCampaignPlatform(null)}
+              copiedKey={copiedKey}
+              onCopy={handleCopyToClipboard}
+            />
+          )}
+
+          {/* ECD PRESSURE-TEST PANEL */}
+          {pressureTest && (
+            <IdeaPressureTestPanel
+              original={pressureTest.original}
+              result={pressureTest.result}
+              onAdopt={handleAdoptSharpened}
+              onClose={handleClearPressureTest}
               copiedKey={copiedKey}
               onCopy={handleCopyToClipboard}
             />
@@ -803,7 +821,7 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.13.0
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.14.0
             </span>
             <div className="flex items-center space-x-4">
               {lastUsage && <UsageBadge usage={lastUsage} />}

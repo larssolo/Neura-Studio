@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation, ChannelMatrix, CulturalScanResult } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation, ChannelMatrix, CulturalScanResult, IdeaDeliberationResult } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDeckFile } from '../lib/exportDeck';
@@ -126,6 +126,11 @@ export function useContentMachine() {
   const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(null);
   const [isGeneratingCampaign, setIsGeneratingCampaign] = useState<boolean>(false);
   const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => loadSession()?.selectedTerritory ?? null);
+
+  // ECD pres-test (transient — gemmes ikke i session)
+  const [pressureTest, setPressureTest] = useState<{ original: CampaignTerritory; result: IdeaDeliberationResult } | null>(null);
+  const [isSharpening, setIsSharpening] = useState<boolean>(false);
+  const [sharpeningTarget, setSharpeningTarget] = useState<string | null>(null);
 
   const [channelMatrix, setChannelMatrix] = useState<ChannelMatrix | null>(() => loadSession()?.channelMatrix ?? null);
   const [isGeneratingMatrix, setIsGeneratingMatrix] = useState<boolean>(false);
@@ -1011,6 +1016,67 @@ export function useContentMachine() {
     setChannelMatrix(null);
   };
 
+  const handleSharpenIdea = async (territory: CampaignTerritory) => {
+    setIsSharpening(true);
+    setSharpeningTarget(territory.name);
+    setErrorMsg(null);
+    try {
+      const response = await fetch('/api/sharpen-idea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief, territory, strategy: strategy ?? undefined }),
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const raw = await response.json();
+      const { _usage, ...result } = raw as any;
+      if (_usage) setLastUsage(_usage);
+      setPressureTest({ original: territory, result: result as IdeaDeliberationResult });
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke pres-teste ruten.');
+    } finally {
+      setIsSharpening(false);
+      setSharpeningTarget(null);
+    }
+  };
+
+  const handleAdoptSharpened = () => {
+    if (!pressureTest?.result?.sharpened) return;
+    const { original, result } = pressureTest;
+    const s = result.sharpened!;
+    // SharpenedTerritory → CampaignTerritory (dropper whatChanged).
+    const adopted: CampaignTerritory = {
+      name: s.name,
+      bigIdea: s.bigIdea,
+      tagline: s.tagline,
+      manifesto: s.manifesto,
+      strategicRoot: s.strategicRoot,
+      channelExpressions: s.channelExpressions,
+      toneDescriptor: s.toneDescriptor,
+      rationale: s.rationale,
+    };
+    // Erstat den oprindelige rute i platformen, så kortet afspejler den skærpede idé.
+    setCampaignPlatform(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        territories: prev.territories.map(t =>
+          t.name === original.name && t.bigIdea === original.bigIdea ? adopted : t,
+        ),
+      };
+    });
+    setSelectedTerritory(adopted);
+    setChannelMatrix(null); // skærpet idé gør en eksisterende matrix forældet
+    setPressureTest(null);
+  };
+
+  const handleClearPressureTest = () => {
+    setPressureTest(null);
+  };
+
   const handleGenerateChannelMatrix = async () => {
     if (!selectedTerritory) {
       setErrorMsg("Vælg en kampagne-platform (rute) først for at skalere den til alle kanaler.");
@@ -1366,6 +1432,9 @@ export function useContentMachine() {
     campaignPlatform, setCampaignPlatform,
     isGeneratingCampaign, handleGenerateBigIdea,
     selectedTerritory, handleSelectTerritory, handleClearTerritory,
+    // ECD pres-test af Idéen
+    pressureTest, isSharpening, sharpeningTarget,
+    handleSharpenIdea, handleAdoptSharpened, handleClearPressureTest,
     // Omni-channel matrix
     channelMatrix, setChannelMatrix,
     isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,

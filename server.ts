@@ -21,6 +21,7 @@ import {
   buildStrategy,
   buildBigIdea,
   buildChannelMatrix,
+  type Territory,
   buildLogoPrompt,
   ANALYZE_CVI_SYSTEM_ROLE,
   cacheableSystem,
@@ -40,6 +41,7 @@ import {
 import { runDeliberation } from './server/ai/deliberate';
 import { runVisualDeliberation } from './server/ai/deliberateVisual';
 import { runCulturalScan } from './server/ai/culturalScan';
+import { runIdeaDeliberation } from './server/ai/deliberateIdea';
 import { getImageProvider } from './server/image/provider';
 import { generateLogoSvg } from './server/image/recraftVector';
 
@@ -416,6 +418,41 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under Den Store Idé:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke udvikle kampagne-platforme.' });
+    }
+  });
+
+  // ECD pres-test: pres-test og skærp én valgt kreativ rute
+  app.post('/api/sharpen-idea', async (req, res) => {
+    try {
+      const { brief, territory, strategy } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+      if (!territory || !territory.bigIdea) {
+        return res.status(400).json({ error: 'En kreativ rute (med en stor idé) er påkrævet.' });
+      }
+
+      let totalUsage: any = null;
+      const result = await runIdeaDeliberation({
+        brief,
+        territory: territory as Territory,
+        strategy: strategy || null,
+        onUsage: (u) => {
+          if (!totalUsage) {
+            totalUsage = { ...u };
+          } else {
+            totalUsage.inputTokens += u.inputTokens;
+            totalUsage.outputTokens += u.outputTokens;
+            totalUsage.cacheReadTokens += u.cacheReadTokens;
+            totalUsage.cacheWriteTokens += u.cacheWriteTokens;
+          }
+        },
+      });
+
+      res.json({ ...result, _usage: totalUsage });
+    } catch (error: any) {
+      console.error('Fejl under ECD pres-test:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke pres-teste ruten.' });
     }
   });
 

@@ -510,6 +510,125 @@ Alt indhold (case-tekster, LinkedIn, nyhedsbrev, overskrifter, CTA m.m.) skal v�
 }
 
 // ---------------------------------------------------------------------------
+// /api/sharpen-idea — ECD pres-test: strategisk kritik + skærpning af én rute
+// ---------------------------------------------------------------------------
+
+/** En fuld kreativ rute der skal pres-testes/skærpes. */
+export type Territory = ChosenIdea & {
+  rationale?: string;
+};
+
+/** Render en fuld kreativ rute (alle felter) til pres-test/skærpning. */
+export function territoryFullText(t: Territory): string {
+  const channels = (Array.isArray(t?.channelExpressions) ? t.channelExpressions : [])
+    .map((c) => `  - ${c?.channel || 'Kanal'}: ${c?.idea || ''}`)
+    .join('\n');
+  return `KREATIV RUTE TIL VURDERING:
+- Navn: ${t.name || 'N/A'}
+- Den store idé: ${t.bigIdea || 'N/A'}
+- Tagline: ${t.tagline || 'N/A'}
+- Manifest: ${t.manifesto || 'N/A'}
+- Strategisk rod: ${t.strategicRoot || 'N/A'}
+- Tone: ${t.toneDescriptor || 'N/A'}
+- Kanal-udtryk:
+${channels || '  - N/A'}
+- Selvforklaring (hvorfor den vinder): ${t.rationale || 'N/A'}`;
+}
+
+export const TERRITORY_CRITIQUE_SYSTEM_ROLE = `Du er Chief Strategy Officer i et prisvindende reklamebureau i verdensklasse, og du leder den interne pres-test FØR idéen præsenteres for kunden.
+
+Din opgave er at pres-teste ÉN kreativ rute brutalt ærligt — som den skarpeste strateg i rummet der vil have idéen til at vinde awards og virke i markedet, ikke bare lyde godt i et mødelokale.
+
+Vurdér på fire akser (0-100):
+1. Distinkthed: er idéen uventet og umulig at forveksle med konkurrenten — eller er det en sikker kategori-kliché?
+2. Sandhed: står den på en reel strategisk indsigt eller kulturel spænding — eller er den ud af det blå?
+3. Elasticitet: kan den bære indhold på tværs af kanaler og over tid — eller er det en engangs-eksekvering forklædt som platform?
+4. Mindeværdighed: er den menneskelig, delbar og mindeværdig — eller glemt i morgen?
+
+Vær konkret og kompromisløs:
+- Peg på de PRÆCISE svagheder — hvor er den generisk, derivativ, uklar eller risikabel?
+- Stil de skarpe spørgsmål den kreative direktør SKAL svare på.
+- Identificér det ene kill-kriterium: den største risiko der kan dræbe idéen.
+- Undgå høflig ros. En pres-test der kun roser er værdiløs.
+
+Aflever via det angivne værktøj.`;
+
+export function buildTerritoryCritique(
+  brief: Brief,
+  territory: Territory,
+  strategy?: StrategyFoundation | null,
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const system = cacheableSystem([TERRITORY_CRITIQUE_SYSTEM_ROLE, cviSectionText(brief)]);
+  const foundation = strategy ? strategyContextText(strategy) : '';
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Sprog: ${brief.language || 'Dansk'}
+${foundation ? `\n${foundation}\n` : ''}
+${territoryFullText(territory)}
+
+Pres-test nu denne rute brutalt ærligt på de fire akser, og lever konkrete svagheder, provokationer og kill-kriteriet. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
+  return { system, user };
+}
+
+export const TERRITORY_SHARPEN_SYSTEM_ROLE = `Du er Executive Creative Director i et reklamebureau i verdensklasse, og du har lige fået din strategs brutale pres-test af din egen rute.
+
+Din opgave er at SKÆRPE ruten — ikke kassere den, ikke lave en ny. Det er samme idé, hævet et niveau: mere distinkt, mere sand, mere elastisk og mere mindeværdig, og den skal svare direkte på pres-testens kritik.
+
+Principper:
+1. Behold rutens DNA — navn, strategisk kerne og verden. Skift ikke spor; skærp det eksisterende.
+2. Svar på provokationerne og lukket kill-kriteriet konkret i den skærpede idé.
+3. Gør den store idé skarpere og mere uventet — fjern det generiske, tilføj det specifikke og menneskelige.
+4. Hæv kanal-udtrykkene fra hensigtserklæringer til konkrete, modige eksekveringer.
+5. Ingen floskler. Hvert skærpet element skal være mærkbart bedre end før.
+
+Forklar til sidst præcist hvad du skærpede og hvordan det svarer på kritikken. Aflever via det angivne værktøj.`;
+
+export function buildTerritorySharpen(
+  brief: Brief,
+  territory: Territory,
+  critique: {
+    distinctivenessScore?: number;
+    truthScore?: number;
+    elasticityScore?: number;
+    memorabilityScore?: number;
+    weaknesses?: string[];
+    provocations?: string[];
+    killCriterion?: string;
+    verdict?: string;
+  },
+  strategy?: StrategyFoundation | null,
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const system = cacheableSystem([TERRITORY_SHARPEN_SYSTEM_ROLE, cviSectionText(brief)]);
+  const foundation = strategy ? strategyContextText(strategy) : '';
+  const weaknesses = (critique.weaknesses || []).map((w) => `  - ${w}`).join('\n');
+  const provocations = (critique.provocations || []).map((p) => `  - ${p}`).join('\n');
+  const critiqueText = `STRATEGENS PRES-TEST (skal besvares i skærpningen):
+- Scorer: Distinkthed ${critique.distinctivenessScore ?? '?'}/100, Sandhed ${critique.truthScore ?? '?'}/100, Elasticitet ${critique.elasticityScore ?? '?'}/100, Mindeværdighed ${critique.memorabilityScore ?? '?'}/100
+- Svagheder:
+${weaknesses || '  - N/A'}
+- Provokationer at svare på:
+${provocations || '  - N/A'}
+- Kill-kriterium: ${critique.killCriterion || 'N/A'}
+- Dom: ${critique.verdict || 'N/A'}`;
+
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Sprog: ${brief.language || 'Dansk'}
+${foundation ? `\n${foundation}\n` : ''}
+${territoryFullText(territory)}
+
+${critiqueText}
+
+Skærp nu ruten så den svarer på pres-testen — samme rute, hævet et niveau. Aflever den skærpede rute (alle felter) + hvad du ændrede, via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
+  return { system, user };
+}
+
+// ---------------------------------------------------------------------------
 // /api/channel-matrix — Omni-channel: skalér den valgte idé til alle kanaler
 // ---------------------------------------------------------------------------
 

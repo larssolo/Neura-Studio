@@ -9,7 +9,9 @@ import {
   ChevronDown,
   ChevronUp,
   Copy,
+  Gavel,
   Lightbulb,
+  Loader2,
   Megaphone,
   Presentation,
   Quote,
@@ -26,6 +28,9 @@ interface CampaignPanelProps {
   onSelectTerritory: (territory: CampaignTerritory) => void;
   onClearTerritory: () => void;
   onExportDeck?: () => void;
+  onPressureTest?: (territory: CampaignTerritory) => void;
+  isSharpening?: boolean;
+  sharpeningTarget?: string | null;
   onClose: () => void;
   copiedKey: string | null;
   onCopy: (text: string, key: string) => void;
@@ -37,6 +42,9 @@ export function CampaignPanel({
   onSelectTerritory,
   onClearTerritory,
   onExportDeck,
+  onPressureTest,
+  isSharpening,
+  sharpeningTarget,
   onClose,
   copiedKey,
   onCopy,
@@ -219,21 +227,37 @@ export function CampaignPanel({
                     </div>
                   </div>
 
-                  {/* Select button */}
-                  <button
-                    onClick={() => (selected ? onClearTerritory() : onSelectTerritory(t))}
-                    className={`w-full mt-1 py-2.5 px-4 rounded-lg font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all ${
-                      selected
-                        ? 'bg-violet-500/15 border border-violet-500/40 text-violet-200 hover:bg-violet-500/25'
-                        : 'bg-violet-600 hover:bg-violet-500 text-white active:scale-[0.99]'
-                    }`}
-                  >
-                    {selected ? (
-                      <><Check className="w-4 h-4" /><span>Valgt — fravælg denne rute</span></>
-                    ) : (
-                      <><Target className="w-4 h-4" /><span>Vælg denne rute</span></>
+                  {/* Action buttons */}
+                  <div className="flex items-center space-x-2 mt-1">
+                    <button
+                      onClick={() => (selected ? onClearTerritory() : onSelectTerritory(t))}
+                      className={`flex-1 py-2.5 px-4 rounded-lg font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all ${
+                        selected
+                          ? 'bg-violet-500/15 border border-violet-500/40 text-violet-200 hover:bg-violet-500/25'
+                          : 'bg-violet-600 hover:bg-violet-500 text-white active:scale-[0.99]'
+                      }`}
+                    >
+                      {selected ? (
+                        <><Check className="w-4 h-4" /><span>Valgt — fravælg</span></>
+                      ) : (
+                        <><Target className="w-4 h-4" /><span>Vælg denne rute</span></>
+                      )}
+                    </button>
+                    {onPressureTest && (
+                      <button
+                        onClick={() => onPressureTest(t)}
+                        disabled={isSharpening}
+                        className="py-2.5 px-3 rounded-lg bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-200 hover:text-white font-display font-semibold text-xs flex items-center justify-center space-x-1.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed shrink-0"
+                        title="Pres-test ruten strategisk og lad ECD skærpe den"
+                      >
+                        {isSharpening && sharpeningTarget === t.name ? (
+                          <><Loader2 className="w-4 h-4 animate-spin shrink-0" /><span>Pres-tester...</span></>
+                        ) : (
+                          <><Gavel className="w-4 h-4 shrink-0" /><span>Pres-test</span></>
+                        )}
+                      </button>
                     )}
-                  </button>
+                  </div>
                 </div>
               )}
             </div>
