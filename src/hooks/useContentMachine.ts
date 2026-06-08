@@ -4,21 +4,20 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation, ChannelMatrix, CulturalScanResult, IdeaDeliberationResult, EffectivenessFramework } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDeckFile } from '../lib/exportDeck';
 import { downloadDocx } from '../lib/exportDocx';
 import { saveSession, loadSession } from '../lib/session';
 import { loadHistory, pushHistory, clearHistory, type HistoryItem } from '../lib/history';
-
-function httpErrorMessage(status: number, serverMsg?: string): string {
-  if (serverMsg) return serverMsg;
-  if (status === 404) {
-    return 'Backenden svarer ikke (404). Kør appen med "npm run dev" og åbn http://localhost:3000 — ikke en anden port eller en bygget fil.';
-  }
-  return `Serveren svarede med status ${status}`;
-}
+import { httpErrorMessage } from './httpError';
+import { useTheme } from './useTheme';
+import { useClipboard } from './useClipboard';
+import { useImageGeneration } from './useImageGeneration';
+import { useHumanizer } from './useHumanizer';
+import { useLogo } from './useLogo';
+import { useCreativeFunnel } from './useCreativeFunnel';
 
 export const PRESETS: PresetBrief[] = [
   {
@@ -108,39 +107,8 @@ export function useContentMachine() {
   const [revisions, setRevisions] = useState<Record<string, string[]>>({});
   const [activeCompareIndex, setActiveCompareIndex] = useState<Record<string, number | null>>({});
 
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const [externalText, setExternalText] = useState<string>('');
-  const [humanizerResult, setHumanizerResult] = useState<HumanizerResult | null>(null);
-  const [isHumanizing, setIsHumanizing] = useState<boolean>(false);
-
   const [brainstormResult, setBrainstormResult] = useState<BrainstormResult | null>(null);
   const [isBrainstorming, setIsBrainstorming] = useState<boolean>(false);
-
-  const [culturalIntel, setCulturalIntel] = useState<CulturalScanResult | null>(() => loadSession()?.culturalIntel ?? null);
-  const [isScanning, setIsScanning] = useState<boolean>(false);
-
-  const [strategy, setStrategy] = useState<StrategyFoundation | null>(() => loadSession()?.strategy ?? null);
-  const [isGeneratingStrategy, setIsGeneratingStrategy] = useState<boolean>(false);
-
-  const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(null);
-  const [isGeneratingCampaign, setIsGeneratingCampaign] = useState<boolean>(false);
-  const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => loadSession()?.selectedTerritory ?? null);
-
-  // ECD pres-test (transient — gemmes ikke i session)
-  const [pressureTest, setPressureTest] = useState<{ original: CampaignTerritory; result: IdeaDeliberationResult } | null>(null);
-  const [isSharpening, setIsSharpening] = useState<boolean>(false);
-  const [sharpeningTarget, setSharpeningTarget] = useState<string | null>(null);
-
-  const [channelMatrix, setChannelMatrix] = useState<ChannelMatrix | null>(() => loadSession()?.channelMatrix ?? null);
-  const [isGeneratingMatrix, setIsGeneratingMatrix] = useState<boolean>(false);
-
-  const [effectiveness, setEffectiveness] = useState<EffectivenessFramework | null>(() => loadSession()?.effectiveness ?? null);
-  const [isGeneratingEffectiveness, setIsGeneratingEffectiveness] = useState<boolean>(false);
-
-  const [logoResult, setLogoResult] = useState<LogoResult | null>(null);
-  const [isGeneratingLogo, setIsGeneratingLogo] = useState<boolean>(false);
-  const [isOptimizingLogoPrompt, setIsOptimizingLogoPrompt] = useState<boolean>(false);
 
   const [cviFileName, setCviFileName] = useState<string | null>(null);
   const [isAnalyzingCvi, setIsAnalyzingCvi] = useState<boolean>(false);
@@ -151,20 +119,28 @@ export function useContentMachine() {
   const [lockedSections, setLockedSections] = useState<string[]>(() => loadSession()?.lockedSections ?? []);
   const [regeneratingKey, setRegeneratingKey] = useState<string | null>(null);
 
-  const [generatedImages, setGeneratedImages] = useState<Record<'hero' | 'detail' | 'abstract', { url: string; loading: boolean; error: string | null; aspectRatio: string }>>({
-    hero: { url: '', loading: false, error: null, aspectRatio: '16:9' },
-    detail: { url: '', loading: false, error: null, aspectRatio: '1:1' },
-    abstract: { url: '', loading: false, error: null, aspectRatio: '16:9' }
-  });
-
-  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    const saved = localStorage.getItem('brand_surface_theme');
-    return (saved === 'light' || saved === 'dark') ? saved : 'dark';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('brand_surface_theme', theme);
-  }, [theme]);
+  // --- Komponér domæne-hooks (afhængigheder gives ind; offentlig API er uændret) ---
+  const { theme, setTheme } = useTheme();
+  const { copiedKey, handleCopyToClipboard } = useClipboard();
+  const { generatedImages, setGeneratedImages, handleGenerateImage, handleAspectChange } = useImageGeneration();
+  const {
+    externalText, setExternalText, humanizerResult, setHumanizerResult,
+    isHumanizing, handleHumanizeText,
+  } = useHumanizer({ setErrorMsg });
+  const {
+    logoResult, setLogoResult, isGeneratingLogo, handleGenerateLogo,
+    isOptimizingLogoPrompt, handleOptimizeLogoPrompt,
+  } = useLogo({ brief, setErrorMsg });
+  const {
+    culturalIntel, isScanning, handleCulturalScan, handleClearCulturalIntel,
+    strategy, setStrategy, isGeneratingStrategy, handleGenerateStrategy, handleClearStrategy,
+    campaignPlatform, setCampaignPlatform, isGeneratingCampaign, handleGenerateBigIdea,
+    selectedTerritory, handleSelectTerritory, handleClearTerritory,
+    pressureTest, isSharpening, sharpeningTarget,
+    handleSharpenIdea, handleAdoptSharpened, handleClearPressureTest,
+    channelMatrix, setChannelMatrix, isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,
+    effectiveness, isGeneratingEffectiveness, handleGenerateEffectiveness, handleClearEffectiveness,
+  } = useCreativeFunnel({ brief, setLastUsage, setErrorMsg });
 
   const [customPresets, setCustomPresets] = useState<PresetBrief[]>(() => {
     const local = localStorage.getItem('brand_surface_presets');
@@ -338,15 +314,6 @@ export function useContentMachine() {
     setBrief({ ...preset.brief });
     setCviFileName(preset.brief.cviManual ? "Aktive CVI retningslinjer" : null);
     setErrorMsg(null);
-  };
-
-  const handleCopyToClipboard = (text: string, key: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
-    }).catch(err => {
-      console.warn("Kopiering mislykkedes, fallback:", err);
-    });
   };
 
   const handleExportSingleSection = (mode: 'all' | 'cvi' | 'case') => {
@@ -858,33 +825,6 @@ export function useContentMachine() {
     }
   };
 
-  const handleHumanizeText = async () => {
-    if (!externalText || !externalText.trim()) {
-      setErrorMsg("Indtast eller indsæt venligst en tekst først.");
-      return;
-    }
-    setIsHumanizing(true);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/humanize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: externalText })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const resData = await response.json();
-      setHumanizerResult(resData);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke gennemføre humanisering og AI-detektions bypass.');
-    } finally {
-      setIsHumanizing(false);
-    }
-  };
-
   const handleBrainstorm = async () => {
     if (!brief.client || !brief.project || !brief.description) {
       setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at køre Brainstorm.");
@@ -909,308 +849,6 @@ export function useContentMachine() {
       setErrorMsg(err.message || 'Kunne ikke gennemføre brainstorm.');
     } finally {
       setIsBrainstorming(false);
-    }
-  };
-
-  const handleGenerateStrategy = async () => {
-    if (!brief.client || !brief.project || !brief.description) {
-      setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at bygge strategi-fundamentet.");
-      return;
-    }
-    setIsGeneratingStrategy(true);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/strategy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, culturalIntel: culturalIntel ?? undefined })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const raw = await response.json();
-      const { _usage, ...foundation } = raw as any;
-      if (_usage) setLastUsage(_usage);
-      setStrategy(foundation as StrategyFoundation);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke bygge det strategiske fundament.');
-    } finally {
-      setIsGeneratingStrategy(false);
-    }
-  };
-
-  const handleClearStrategy = () => {
-    setStrategy(null);
-  };
-
-  const handleCulturalScan = async () => {
-    if (!brief.client || !brief.description) {
-      setErrorMsg('Udfyld mindst Kunde og Hvad lavede vi for at scanne kulturen.');
-      return;
-    }
-    setIsScanning(true);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/cultural-scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief }),
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const data = await response.json();
-      setCulturalIntel(data as CulturalScanResult);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kulturel scanning fejlede.');
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
-  const handleClearCulturalIntel = () => {
-    setCulturalIntel(null);
-  };
-
-  const handleGenerateBigIdea = async () => {
-    if (!brief.client || !brief.project || !brief.description) {
-      setErrorMsg("Udfyld venligst mindst Kunde, Projekt og Hvad lavede vi for at finde Den Store Idé.");
-      return;
-    }
-    setIsGeneratingCampaign(true);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/big-idea', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, strategy })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const raw = await response.json();
-      const { _usage, ...platform } = raw as any;
-      if (_usage) setLastUsage(_usage);
-      setCampaignPlatform(platform as CampaignPlatform);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke udvikle kampagne-platforme.');
-    } finally {
-      setIsGeneratingCampaign(false);
-    }
-  };
-
-  const handleSelectTerritory = (territory: CampaignTerritory) => {
-    setSelectedTerritory(prev => {
-      // Skift af rute gør en eksisterende matrix/effekt-lag forældet (forkert idé) — ryd dem.
-      if (!prev || prev.name !== territory.name || prev.bigIdea !== territory.bigIdea) {
-        setChannelMatrix(null);
-        setEffectiveness(null);
-      }
-      return territory;
-    });
-  };
-
-  const handleClearTerritory = () => {
-    setSelectedTerritory(null);
-    setChannelMatrix(null);
-    setEffectiveness(null);
-  };
-
-  const handleSharpenIdea = async (territory: CampaignTerritory) => {
-    setIsSharpening(true);
-    setSharpeningTarget(territory.name);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/sharpen-idea', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, territory, strategy: strategy ?? undefined }),
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const raw = await response.json();
-      const { _usage, ...result } = raw as any;
-      if (_usage) setLastUsage(_usage);
-      setPressureTest({ original: territory, result: result as IdeaDeliberationResult });
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke pres-teste ruten.');
-    } finally {
-      setIsSharpening(false);
-      setSharpeningTarget(null);
-    }
-  };
-
-  const handleAdoptSharpened = () => {
-    if (!pressureTest?.result?.sharpened) return;
-    const { original, result } = pressureTest;
-    const s = result.sharpened!;
-    // SharpenedTerritory → CampaignTerritory (dropper whatChanged).
-    const adopted: CampaignTerritory = {
-      name: s.name,
-      bigIdea: s.bigIdea,
-      tagline: s.tagline,
-      manifesto: s.manifesto,
-      strategicRoot: s.strategicRoot,
-      channelExpressions: s.channelExpressions,
-      toneDescriptor: s.toneDescriptor,
-      rationale: s.rationale,
-    };
-    // Erstat den oprindelige rute i platformen, så kortet afspejler den skærpede idé.
-    setCampaignPlatform(prev => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        territories: prev.territories.map(t =>
-          t.name === original.name && t.bigIdea === original.bigIdea ? adopted : t,
-        ),
-      };
-    });
-    setSelectedTerritory(adopted);
-    setChannelMatrix(null); // skærpet idé gør en eksisterende matrix forældet
-    setEffectiveness(null);
-    setPressureTest(null);
-  };
-
-  const handleClearPressureTest = () => {
-    setPressureTest(null);
-  };
-
-  const handleGenerateChannelMatrix = async () => {
-    if (!selectedTerritory) {
-      setErrorMsg("Vælg en kampagne-platform (rute) først for at skalere den til alle kanaler.");
-      return;
-    }
-    setIsGeneratingMatrix(true);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/channel-matrix', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, chosenIdea: selectedTerritory, strategy })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const raw = await response.json();
-      const { _usage, ...matrix } = raw as any;
-      if (_usage) setLastUsage(_usage);
-      setChannelMatrix(matrix as ChannelMatrix);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke skalere idéen til kanaler.');
-    } finally {
-      setIsGeneratingMatrix(false);
-    }
-  };
-
-  const handleClearChannelMatrix = () => {
-    setChannelMatrix(null);
-  };
-
-  const handleGenerateEffectiveness = async () => {
-    if (!selectedTerritory) {
-      setErrorMsg("Vælg en kampagne-platform (rute) først for at bygge effekt-laget.");
-      return;
-    }
-    setIsGeneratingEffectiveness(true);
-    setErrorMsg(null);
-    try {
-      const channels = channelMatrix?.channels?.map(c => c.channel).filter(Boolean) ?? brief.channels;
-      const response = await fetch('/api/effectiveness', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, chosenIdea: selectedTerritory, strategy: strategy ?? undefined, channels })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const raw = await response.json();
-      const { _usage, ...framework } = raw as any;
-      if (_usage) setLastUsage(_usage);
-      setEffectiveness(framework as EffectivenessFramework);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke bygge effekt-laget.');
-    } finally {
-      setIsGeneratingEffectiveness(false);
-    }
-  };
-
-  const handleClearEffectiveness = () => {
-    setEffectiveness(null);
-  };
-
-  const handleGenerateLogo = async (
-    prompt: string,
-    style: string,
-    colors: Array<{ r: number; g: number; b: number }>,
-  ) => {
-    if (!prompt.trim()) {
-      setErrorMsg("Indtast en logo-beskrivelse for at generere logo.");
-      return;
-    }
-    setIsGeneratingLogo(true);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/generate-logo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt.trim(), style: style || undefined, colors })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const data = await response.json();
-      if (!data.imageUrl) throw new Error('Forkert svar-format fra logo-API.');
-      setLogoResult({ imageUrl: data.imageUrl, contentType: data.contentType, svg: data.svg, prompt, style });
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke generere logo.');
-    } finally {
-      setIsGeneratingLogo(false);
-    }
-  };
-
-  const handleOptimizeLogoPrompt = async (
-    currentPrompt: string,
-    mode: 'translate' | 'refine',
-  ): Promise<string | null> => {
-    if (mode === 'refine' && !currentPrompt.trim()) {
-      setErrorMsg("Skriv en prompt først, før den kan forfines.");
-      return null;
-    }
-    setIsOptimizingLogoPrompt(true);
-    setErrorMsg(null);
-    try {
-      const response = await fetch('/api/logo-prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, currentPrompt, mode })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const data = await response.json();
-      return (data.prompt as string) || null;
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || 'Kunne ikke optimere logo-prompten.');
-      return null;
-    } finally {
-      setIsOptimizingLogoPrompt(false);
     }
   };
 
@@ -1375,34 +1013,6 @@ export function useContentMachine() {
       }
       return prev;
     });
-  };
-
-  const handleGenerateImage = async (key: 'hero' | 'detail' | 'abstract', promptText: string) => {
-    setGeneratedImages(prev => ({ ...prev, [key]: { ...prev[key], loading: true, error: null } }));
-    try {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText, aspectRatio: generatedImages[key]?.aspectRatio || '16:9' })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(httpErrorMessage(response.status, errData.error));
-      }
-      const data = await response.json();
-      if (!data.imageUrl) throw new Error('Forkert svar-format fra API.');
-      setGeneratedImages(prev => ({ ...prev, [key]: { ...prev[key], url: data.imageUrl, loading: false, error: null } }));
-    } catch (err: any) {
-      console.error("Fejl i handleGenerateImage:", err);
-      setGeneratedImages(prev => ({
-        ...prev,
-        [key]: { ...prev[key], loading: false, error: err.message || 'Der opstod en uventet fejl under billedgenereringen.' }
-      }));
-    }
-  };
-
-  const handleAspectChange = (key: 'hero' | 'detail' | 'abstract', ratio: string) => {
-    setGeneratedImages(prev => ({ ...prev, [key]: { ...prev[key], aspectRatio: ratio } }));
   };
 
   const handleExecuteTerminalCommand = (e: FormEvent) => {
