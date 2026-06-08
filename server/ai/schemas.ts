@@ -652,6 +652,99 @@ export const sharpenedTerritoryTool: Anthropic.Tool = {
   },
 };
 
+// --- /api/effectiveness (Effekt-lag) -----------------------------------------
+
+export const effectivenessTool: Anthropic.Tool = {
+  name: 'submit_effectiveness_framework',
+  description: 'Aflever effekt-laget (mål-hierarki, KPI\'er, kort/lang-balance og måleplan) som struktureret data.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      businessObjective: {
+        type: 'string',
+        description: 'Det overordnede forretningsmål kampagnen i sidste ende skal flytte (1-2 sætninger, helst kvantificeret).',
+      },
+      objectives: {
+        type: 'array',
+        description: '3-5 mål i et hierarki fra forretning → adfærd → kommunikation, hver med en målbar KPI.',
+        items: {
+          type: 'object',
+          properties: {
+            level: {
+              type: 'string',
+              description: 'Niveau i mål-hierarkiet: "Forretning", "Adfærd" eller "Kommunikation".',
+            },
+            objective: { type: 'string', description: 'Selve målet på dette niveau.' },
+            kpi: { type: 'string', description: 'Den konkrete, målbare KPI for målet.' },
+            target: { type: 'string', description: 'Et realistisk, ambitiøst måltal (med enhed eller %).' },
+            benchmark: { type: 'string', description: 'Branche-/baseline-benchmark KPI\'en holdes op imod.' },
+            measurementMethod: { type: 'string', description: 'Hvordan måles det konkret (værktøj eller metode)?' },
+          },
+          required: ['level', 'objective', 'kpi', 'target', 'benchmark', 'measurementMethod'],
+        },
+      },
+      channelKpis: {
+        type: 'array',
+        description: 'Pr. kanal: den primære succes-metrik (undgå vanity metrics) og hvordan den måles.',
+        items: {
+          type: 'object',
+          properties: {
+            channel: { type: 'string', description: 'Kanalen.' },
+            primaryMetric: { type: 'string', description: 'Den vigtigste metrik for kanalen.' },
+            target: { type: 'string', description: 'Realistisk måltal.' },
+            measurementTool: { type: 'string', description: 'Værktøj/kilde til måling.' },
+          },
+          required: ['channel', 'primaryMetric', 'target', 'measurementTool'],
+        },
+      },
+      balance: {
+        type: 'object',
+        description: 'Balancen mellem kortsigtet aktivering og langsigtet brand-opbygning (Binet & Field).',
+        properties: {
+          shortTermActivation: { type: 'string', description: 'Hvad driver kortsigtet respons/salg nu.' },
+          longTermBrand: { type: 'string', description: 'Hvad bygger langsigtet brand-styrke.' },
+          recommendedSplit: { type: 'string', description: 'Anbefalet budget-/fokus-split, fx "60% brand / 40% aktivering".' },
+        },
+        required: ['shortTermActivation', 'longTermBrand', 'recommendedSplit'],
+      },
+      leadingIndicators: {
+        type: 'array',
+        description: '2-4 tidlige signaler der indikerer at kampagnen virker (måles tidligt).',
+        items: { type: 'string' },
+      },
+      laggingIndicators: {
+        type: 'array',
+        description: '2-4 outcome-metrikker der bekræfter effekt (måles senere).',
+        items: { type: 'string' },
+      },
+      successScenario: {
+        type: 'string',
+        description: 'Et realistisk succes-scenarie: hvad ser vi hvis kampagnen lykkes (3-5 sætninger, konkret og kvantificeret).',
+      },
+      risks: {
+        type: 'array',
+        description: '2-3 antagelser eller risici der kan underminere effekten.',
+        items: { type: 'string' },
+      },
+      measurementCadence: {
+        type: 'string',
+        description: 'Måle-kadence: hvad tracker vi hvornår (fx baseline før launch, ugentligt under, post-kampagne-evaluering).',
+      },
+    },
+    required: [
+      'businessObjective',
+      'objectives',
+      'channelKpis',
+      'balance',
+      'leadingIndicators',
+      'laggingIndicators',
+      'successScenario',
+      'risks',
+      'measurementCadence',
+    ],
+  },
+};
+
 // --- /api/strategy -----------------------------------------------------------
 
 export const strategyTool: Anthropic.Tool = {

@@ -54,6 +54,7 @@ import { BrainstormPanel } from './components/BrainstormPanel';
 import { CampaignPanel } from './components/CampaignPanel';
 import { CulturalAntennaPanel } from './components/CulturalAntennaPanel';
 import { IdeaPressureTestPanel } from './components/IdeaPressureTestPanel';
+import { EffectivenessPanel } from './components/EffectivenessPanel';
 import { StrategyPanel } from './components/StrategyPanel';
 import { ChannelMatrixPanel } from './components/ChannelMatrixPanel';
 import { LogoPanel } from './components/LogoPanel';
@@ -100,6 +101,8 @@ export default function App() {
     handleSharpenIdea, handleAdoptSharpened, handleClearPressureTest,
     channelMatrix,
     isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,
+    effectiveness, isGeneratingEffectiveness,
+    handleGenerateEffectiveness, handleClearEffectiveness,
     logoResult, setLogoResult,
     isGeneratingLogo, handleGenerateLogo,
     isOptimizingLogoPrompt, handleOptimizeLogoPrompt,
@@ -190,6 +193,8 @@ export default function App() {
            hasSelectedTerritory={!!selectedTerritory}
            handleGenerateChannelMatrix={handleGenerateChannelMatrix}
            isGeneratingMatrix={isGeneratingMatrix}
+           handleGenerateEffectiveness={handleGenerateEffectiveness}
+           isGeneratingEffectiveness={isGeneratingEffectiveness}
            errorMsg={errorMsg}
            generationStep={generationStep}
          />
@@ -269,6 +274,18 @@ export default function App() {
               onClose={handleClearChannelMatrix}
               onRegenerate={handleGenerateChannelMatrix}
               isGenerating={isGeneratingMatrix}
+              copiedKey={copiedKey}
+              onCopy={handleCopyToClipboard}
+            />
+          )}
+
+          {/* EFFECTIVENESS PANEL (Effekt-lag) */}
+          {effectiveness && (
+            <EffectivenessPanel
+              framework={effectiveness}
+              onClose={handleClearEffectiveness}
+              onRegenerate={handleGenerateEffectiveness}
+              isGenerating={isGeneratingEffectiveness}
               copiedKey={copiedKey}
               onCopy={handleCopyToClipboard}
             />
@@ -821,7 +838,7 @@ export default function App() {
             <span>
               Content Machine by{' '}
               <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.14.0
+              {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.15.0
             </span>
             <div className="flex items-center space-x-4">
               {lastUsage && <UsageBadge usage={lastUsage} />}

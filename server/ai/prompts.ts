@@ -684,6 +684,59 @@ Skalér nu den valgte store idé til en komplet omni-channel matrix — én prod
 }
 
 // ---------------------------------------------------------------------------
+// /api/effectiveness — Effekt-lag: mål-hierarki, KPI'er og måleplan
+// ---------------------------------------------------------------------------
+
+export const EFFECTIVENESS_SYSTEM_ROLE = `Du er Head of Effectiveness (Effektivitetsdirektør) i et reklamebureau i verdensklasse — skolet i IPA's effektivitets-tænkning og Les Binet & Peter Fields arbejde om kort- vs. langsigtet effekt.
+
+Din opgave er at omsætte ÉN valgt kampagne-platform til et stringent, troværdigt effekt-lag, så kampagnen kan sælges — og bevises — på effekt, ikke kun på kreativitet.
+
+Principper:
+1. Mål-hierarki: byg en klar ladder fra forretningsmål → adfærdsmål → kommunikationsmål. Hvert niveau skal have en målbar KPI, et realistisk måltal og et benchmark.
+2. Realisme over fantasi: måltal skal være ambitiøse men troværdige og forankret i branche-benchmarks — ikke ønsketænkning. Vær konkret om enheder og procenter.
+3. Ingen vanity metrics: prioritér metrikker der knytter sig til reel forretningsværdi (ikke bare likes/visninger uden kontekst).
+4. Balancér kort og lang: anvend Binet & Field — adskil kortsigtet aktivering (salg nu) fra langsigtet brand-opbygning (fremtidig efterspørgsel), og anbefal et split.
+5. Leading vs. lagging: angiv tidlige signaler (måles hurtigt) OG outcome-metrikker (bekræfter effekt senere).
+6. Måleplan: konkret kadence (baseline, løbende, post-kampagne) og værktøjer pr. kanal.
+7. Vær ærlig om risici og antagelser der kan underminere effekten.
+
+Aflever hele effekt-laget via det angivne værktøj, præcist som skemaet kræver.`;
+
+/**
+ * Byg effekt-laget for en valgt kampagne-platform. Trådes med både den store idé
+ * (hvad måler vi på), strategi-fundamentet (ønsket respons/forretningskontekst) og
+ * de faktiske kanaler (måleplan pr. kanal).
+ */
+export function buildEffectiveness(
+  brief: Brief,
+  chosenIdea: ChosenIdea,
+  strategy?: StrategyFoundation | null,
+  channels?: string[],
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const system = cacheableSystem([EFFECTIVENESS_SYSTEM_ROLE, cviSectionText(brief)]);
+  const platform = campaignContextText(chosenIdea);
+  const foundation = strategy ? strategyContextText(strategy) : '';
+  const channelList =
+    (Array.isArray(channels) && channels.length ? channels : brief.channels || []).join(', ') ||
+    'N/A';
+
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Sprog: ${brief.language || 'Dansk'}
+
+${platform || 'INGEN valgt platform — vælg en kreativ rute først.'}
+${foundation ? `\n${foundation}\n` : ''}
+KANALER AT MÅLE: ${channelList}
+
+Byg nu effekt-laget for denne kampagne: et mål-hierarki (forretning → adfærd → kommunikation) med målbare KPI'er, benchmarks og realistiske måltal; en KPI pr. kanal; kort- vs. langsigtet balance (Binet & Field) med anbefalet split; leading- og lagging-indikatorer; et realistisk succes-scenarie; risici; og en måle-kadence. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (metrik-navne må gerne være engelske hvor det er mest naturligt).`;
+
+  return { system, user };
+}
+
+// ---------------------------------------------------------------------------
 // /api/logo-prompt — optimér/oversæt logo-prompt til Recraft text-to-vector
 // ---------------------------------------------------------------------------
 

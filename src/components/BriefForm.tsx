@@ -5,7 +5,7 @@
 
 import { Dispatch, SetStateAction, ChangeEvent } from 'react';
 import {
-  AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint,
+  AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint, Gauge,
   Layers, Lightbulb, Loader2, Palette, Pin, Radio, Rocket, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
 } from 'lucide-react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief } from '../types';
@@ -45,6 +45,8 @@ interface BriefFormProps {
   hasSelectedTerritory: boolean;
   handleGenerateChannelMatrix: () => void;
   isGeneratingMatrix: boolean;
+  handleGenerateEffectiveness: () => void;
+  isGeneratingEffectiveness: boolean;
   errorMsg: string | null;
   generationStep: string;
 }
@@ -61,6 +63,7 @@ export function BriefForm({
   handleGenerateStrategy, isGeneratingStrategy, hasStrategy,
   handleGenerateBigIdea, isGeneratingCampaign, hasSelectedTerritory,
   handleGenerateChannelMatrix, isGeneratingMatrix,
+  handleGenerateEffectiveness, isGeneratingEffectiveness,
   errorMsg, generationStep,
 }: BriefFormProps) {
   return (
@@ -568,6 +571,25 @@ export function BriefForm({
                     <>
                       <Layers className="w-4 h-4 text-emerald-300 shrink-0" />
                       <span>Skalér til omni-channel matrix</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateEffectiveness}
+                  disabled={isGenerating || isGeneratingEffectiveness}
+                  className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-indigo-600/15 to-blue-600/10 border border-indigo-500/40 hover:border-indigo-400/60 hover:from-indigo-600/25 text-indigo-100 hover:text-white font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  title="Byg et effekt-lag: mål-hierarki, KPI'er, kort/lang-balance og måleplan — så kampagnen kan sælges på effekt"
+                >
+                  {isGeneratingEffectiveness ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-indigo-300 animate-spin shrink-0" />
+                      <span>Bygger effekt-lag...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Gauge className="w-4 h-4 text-indigo-300 shrink-0" />
+                      <span>Byg effekt-lag (KPI & måling)</span>
                     </>
                   )}
                 </button>

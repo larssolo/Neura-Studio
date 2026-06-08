@@ -224,6 +224,44 @@ export interface IdeaDeliberationResult {
   earlyStopped: boolean;
 }
 
+// ---------------------------------------------------------------------------
+// Effekt-lag (KPI/måling)
+// ---------------------------------------------------------------------------
+
+export interface EffectivenessObjective {
+  level: string;
+  objective: string;
+  kpi: string;
+  target: string;
+  benchmark: string;
+  measurementMethod: string;
+}
+
+export interface ChannelKpi {
+  channel: string;
+  primaryMetric: string;
+  target: string;
+  measurementTool: string;
+}
+
+export interface EffectivenessBalance {
+  shortTermActivation: string;
+  longTermBrand: string;
+  recommendedSplit: string;
+}
+
+export interface EffectivenessFramework {
+  businessObjective: string;
+  objectives: EffectivenessObjective[];
+  channelKpis: ChannelKpi[];
+  balance: EffectivenessBalance;
+  leadingIndicators: string[];
+  laggingIndicators: string[];
+  successScenario: string;
+  risks: string[];
+  measurementCadence: string;
+}
+
 export interface ChannelScriptBlock {
   label: string;
   content: string;

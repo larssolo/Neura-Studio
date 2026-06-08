@@ -21,6 +21,7 @@ import {
   buildStrategy,
   buildBigIdea,
   buildChannelMatrix,
+  buildEffectiveness,
   type Territory,
   buildLogoPrompt,
   ANALYZE_CVI_SYSTEM_ROLE,
@@ -36,6 +37,7 @@ import {
   strategyTool,
   campaignPlatformTool,
   channelMatrixTool,
+  effectivenessTool,
   logoPromptTool,
 } from './server/ai/schemas';
 import { runDeliberation } from './server/ai/deliberate';
@@ -486,6 +488,39 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under omni-channel matrix:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke skalere idéen til kanaler.' });
+    }
+  });
+
+  // Effekt-lag: mål-hierarki, KPI'er og måleplan for den valgte kampagne
+  app.post('/api/effectiveness', async (req, res) => {
+    try {
+      const { brief, chosenIdea, strategy, channels } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+      if (!chosenIdea || !chosenIdea.bigIdea) {
+        return res.status(400).json({ error: 'Vælg en kampagne-platform (rute) først for at bygge effekt-laget.' });
+      }
+
+      const { system, user } = buildEffectiveness(brief, chosenIdea, strategy || null, channels);
+      let usageInfo: any = null;
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: effectivenessTool,
+        model: config.model,
+        maxTokens: config.maxTokens,
+        onUsage: (u) => { usageInfo = u; },
+      });
+
+      if (!parsed || !parsed.businessObjective || !Array.isArray(parsed.objectives)) {
+        throw new Error('Ufuldstændigt output fra Claude. Prøv igen.');
+      }
+
+      res.json({ ...parsed, _usage: usageInfo });
+    } catch (error: any) {
+      console.error('Fejl under effekt-lag:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke bygge effekt-laget.' });
     }
   });
 

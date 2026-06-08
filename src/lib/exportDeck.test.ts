@@ -94,6 +94,34 @@ describe('buildDeckHtml', () => {
     expect(html).toContain('Kom i gang nu'); // best CTA
   });
 
+  it('includes an effectiveness slide when a framework is provided', () => {
+    const html = buildDeckHtml({
+      ...fullInput,
+      effectiveness: {
+        businessObjective: 'Øg markedsandel med 5%.',
+        objectives: [
+          { level: 'Forretning', objective: 'Salg', kpi: 'Omsætning', target: '+5%', benchmark: '+2%', measurementMethod: 'CRM' },
+        ],
+        channelKpis: [{ channel: 'Film', primaryMetric: 'VTR', target: '70%', measurementTool: 'YouTube' }],
+        balance: { shortTermActivation: 'Tilbud', longTermBrand: 'Kendskab', recommendedSplit: '60% brand / 40% aktivering' },
+        leadingIndicators: ['Søgevolumen'],
+        laggingIndicators: ['Markedsandel'],
+        successScenario: 'Vi når +5% markedsandel på 12 måneder.',
+        risks: ['Mediebudget'],
+        measurementCadence: 'Baseline + månedligt.',
+      },
+    });
+    expect(html).toContain('Sådan måler vi succes');
+    expect(html).toContain('Øg markedsandel med 5%.');
+    expect(html).toContain('60% brand / 40% aktivering');
+    expect(html).toContain('class="slide effectiveness"');
+  });
+
+  it('omits the effectiveness slide when no framework is provided', () => {
+    const html = buildDeckHtml(fullInput);
+    expect(html).not.toContain('class="slide effectiveness"');
+  });
+
   it('renders one slide per channel', () => {
     const html = buildDeckHtml(fullInput);
     expect(html).toContain('Billboard');

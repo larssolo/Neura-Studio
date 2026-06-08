@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation, ChannelMatrix, CulturalScanResult, IdeaDeliberationResult } from '../types';
+import { ProjectBrief, BrandSurfaceOutput, PresetBrief, HumanizerResult, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, LogoResult, CampaignPlatform, CampaignTerritory, StrategyFoundation, ChannelMatrix, CulturalScanResult, IdeaDeliberationResult, EffectivenessFramework } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
 import { downloadDeckFile } from '../lib/exportDeck';
@@ -135,6 +135,9 @@ export function useContentMachine() {
   const [channelMatrix, setChannelMatrix] = useState<ChannelMatrix | null>(() => loadSession()?.channelMatrix ?? null);
   const [isGeneratingMatrix, setIsGeneratingMatrix] = useState<boolean>(false);
 
+  const [effectiveness, setEffectiveness] = useState<EffectivenessFramework | null>(() => loadSession()?.effectiveness ?? null);
+  const [isGeneratingEffectiveness, setIsGeneratingEffectiveness] = useState<boolean>(false);
+
   const [logoResult, setLogoResult] = useState<LogoResult | null>(null);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState<boolean>(false);
   const [isOptimizingLogoPrompt, setIsOptimizingLogoPrompt] = useState<boolean>(false);
@@ -207,8 +210,8 @@ export function useContentMachine() {
 
   useEffect(() => {
     if (!output && !brief.client) return;
-    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix, culturalIntel });
-  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix, culturalIntel]);
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness]);
 
   const handleClearPresets = () => {
     setCustomPresets([]);
@@ -387,6 +390,7 @@ export function useContentMachine() {
         territory: selectedTerritory,
         strategy,
         channelMatrix,
+        effectiveness,
         output,
         logoSrc: logoResult?.imageUrl,
         logoSvg: logoResult?.svg,
@@ -1003,9 +1007,10 @@ export function useContentMachine() {
 
   const handleSelectTerritory = (territory: CampaignTerritory) => {
     setSelectedTerritory(prev => {
-      // Skift af rute gør en eksisterende matrix forældet (forkert idé) — ryd den.
+      // Skift af rute gør en eksisterende matrix/effekt-lag forældet (forkert idé) — ryd dem.
       if (!prev || prev.name !== territory.name || prev.bigIdea !== territory.bigIdea) {
         setChannelMatrix(null);
+        setEffectiveness(null);
       }
       return territory;
     });
@@ -1014,6 +1019,7 @@ export function useContentMachine() {
   const handleClearTerritory = () => {
     setSelectedTerritory(null);
     setChannelMatrix(null);
+    setEffectiveness(null);
   };
 
   const handleSharpenIdea = async (territory: CampaignTerritory) => {
@@ -1070,6 +1076,7 @@ export function useContentMachine() {
     });
     setSelectedTerritory(adopted);
     setChannelMatrix(null); // skærpet idé gør en eksisterende matrix forældet
+    setEffectiveness(null);
     setPressureTest(null);
   };
 
@@ -1108,6 +1115,40 @@ export function useContentMachine() {
 
   const handleClearChannelMatrix = () => {
     setChannelMatrix(null);
+  };
+
+  const handleGenerateEffectiveness = async () => {
+    if (!selectedTerritory) {
+      setErrorMsg("Vælg en kampagne-platform (rute) først for at bygge effekt-laget.");
+      return;
+    }
+    setIsGeneratingEffectiveness(true);
+    setErrorMsg(null);
+    try {
+      const channels = channelMatrix?.channels?.map(c => c.channel).filter(Boolean) ?? brief.channels;
+      const response = await fetch('/api/effectiveness', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ brief, chosenIdea: selectedTerritory, strategy: strategy ?? undefined, channels })
+      });
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(httpErrorMessage(response.status, errData.error));
+      }
+      const raw = await response.json();
+      const { _usage, ...framework } = raw as any;
+      if (_usage) setLastUsage(_usage);
+      setEffectiveness(framework as EffectivenessFramework);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg(err.message || 'Kunne ikke bygge effekt-laget.');
+    } finally {
+      setIsGeneratingEffectiveness(false);
+    }
+  };
+
+  const handleClearEffectiveness = () => {
+    setEffectiveness(null);
   };
 
   const handleGenerateLogo = async (
@@ -1438,6 +1479,9 @@ export function useContentMachine() {
     // Omni-channel matrix
     channelMatrix, setChannelMatrix,
     isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,
+    // Effekt-lag
+    effectiveness, isGeneratingEffectiveness,
+    handleGenerateEffectiveness, handleClearEffectiveness,
     // Logo
     logoResult, setLogoResult,
     isGeneratingLogo,

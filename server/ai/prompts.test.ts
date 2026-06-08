@@ -8,6 +8,7 @@ import {
   buildBigIdea,
   buildStrategy,
   buildChannelMatrix,
+  buildEffectiveness,
   buildTerritoryCritique,
   buildTerritorySharpen,
   territoryFullText,
@@ -56,6 +57,40 @@ describe('buildTerritoryCritique', () => {
       singleMindedProposition: 'Vi gør det enkelt.',
       audienceTruth: 'De er overset.',
     } as any);
+    expect(user).toContain('Vi gør det enkelt.');
+  });
+});
+
+describe('buildEffectiveness', () => {
+  it('includes the effectiveness role, the chosen idea and the channels to measure', () => {
+    const { system, user } = buildEffectiveness(
+      { client: 'Acme', project: 'Launch', language: 'Dansk' },
+      { name: 'Rute Alfa', bigIdea: 'En knivskarp idé', tagline: 'Slagkraftig' },
+      null,
+      ['Film', 'OOH', 'Social'],
+    );
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Head of Effectiveness');
+    expect(systemText).toContain('Binet'); // Binet & Field
+    expect(user).toContain('En knivskarp idé');
+    expect(user).toContain('Film, OOH, Social');
+    expect(user).toContain('Acme');
+  });
+
+  it('falls back to brief channels when no explicit channels given', () => {
+    const { user } = buildEffectiveness(
+      { client: 'Acme', channels: ['Radio'] },
+      { bigIdea: 'x', tagline: 'y' },
+    );
+    expect(user).toContain('Radio');
+  });
+
+  it('threads strategy foundation when provided', () => {
+    const { user } = buildEffectiveness(
+      { client: 'Acme' },
+      { bigIdea: 'x', tagline: 'y' },
+      { singleMindedProposition: 'Vi gør det enkelt.', audienceTruth: 'De er overset.' } as any,
+    );
     expect(user).toContain('Vi gør det enkelt.');
   });
 });

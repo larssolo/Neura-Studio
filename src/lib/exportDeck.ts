@@ -7,6 +7,7 @@ import type {
   BrandSurfaceOutput,
   ChannelMatrix,
   CampaignTerritory,
+  EffectivenessFramework,
   ProjectBrief,
   StrategyFoundation,
 } from '../types';
@@ -21,6 +22,7 @@ export interface DeckInput {
   territory: CampaignTerritory;
   strategy?: StrategyFoundation | null;
   channelMatrix?: ChannelMatrix | null;
+  effectiveness?: EffectivenessFramework | null;
   output?: BrandSurfaceOutput | null;
   /** Resolved logo-billed-src (data-URI eller URL). */
   logoSrc?: string | null;
@@ -59,7 +61,7 @@ function slide(label: string, body: string, extraClass = '', style = ''): string
  * alle billed-srcs forventes allerede opløst (data-URI eller URL).
  */
 export function buildDeckHtml(input: DeckInput): string {
-  const { brief, territory, strategy, channelMatrix, output, logoSrc, logoSvg, images } = input;
+  const { brief, territory, strategy, channelMatrix, effectiveness, output, logoSrc, logoSvg, images } = input;
 
   const colors = output?.cviSuggestion?.brandColors ?? [];
   const primary = safeHex(colors[0]?.hex) ?? FALLBACK_PRIMARY;
@@ -207,7 +209,31 @@ export function buildDeckHtml(input: DeckInput): string {
     );
   }
 
-  // N+2. Hvorfor det vinder + CTA
+  // N+2. Sådan måler vi succes (effekt-lag)
+  if (effectiveness) {
+    const objectives = (effectiveness.objectives || [])
+      .slice(0, 4)
+      .map(
+        (o) =>
+          `<div class="script-row"><span class="script-label">${esc(o.level)}</span><span class="script-content"><strong>${esc(o.kpi)}</strong> — mål: ${esc(o.target)}</span></div>`,
+      )
+      .join('');
+    const split = effectiveness.balance?.recommendedSplit
+      ? `<p class="sub"><strong>Balance:</strong> ${esc(effectiveness.balance.recommendedSplit)}</p>`
+      : '';
+    slides.push(
+      slide(
+        'Sådan måler vi succes',
+        `<h2 class="big">${esc(effectiveness.businessObjective)}</h2>
+        ${objectives ? `<div class="script">${objectives}</div>` : ''}
+        ${split}
+        ${effectiveness.successScenario ? `<p class="sub">${esc(effectiveness.successScenario)}</p>` : ''}`,
+        'effectiveness',
+      ),
+    );
+  }
+
+  // N+3. Hvorfor det vinder + CTA
   const bestCta = output?.directUsable?.bestCta || territory.tagline;
   slides.push(
     slide(
