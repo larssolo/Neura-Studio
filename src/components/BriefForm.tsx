@@ -5,8 +5,9 @@
 
 import { Dispatch, SetStateAction, ChangeEvent } from 'react';
 import {
-  AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint,
-  Layers, Lightbulb, Loader2, Palette, Pin, Rocket, RotateCcw, Sparkles, Trash2, UploadCloud, Users,
+  AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint, Gauge,
+  Layers, Lightbulb, Loader2, Palette, Pin, Radio, Rocket, RotateCcw, ShieldCheck,
+  Sparkles, Swords, Target, Trash2, UploadCloud, Users, Wallet,
 } from 'lucide-react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief } from '../types';
 
@@ -34,6 +35,9 @@ interface BriefFormProps {
   handleVisualDevelop: () => void;
   handleBrainstorm: () => void;
   isBrainstorming: boolean;
+  handleCulturalScan: () => void;
+  isScanning: boolean;
+  hasCulturalIntel: boolean;
   handleGenerateStrategy: () => void;
   isGeneratingStrategy: boolean;
   hasStrategy: boolean;
@@ -42,6 +46,8 @@ interface BriefFormProps {
   hasSelectedTerritory: boolean;
   handleGenerateChannelMatrix: () => void;
   isGeneratingMatrix: boolean;
+  handleGenerateEffectiveness: () => void;
+  isGeneratingEffectiveness: boolean;
   errorMsg: string | null;
   generationStep: string;
 }
@@ -54,9 +60,11 @@ export function BriefForm({
   handleCviUpload, handleRemoveCvi, handlePinCurrentBrief,
   handleClearPresets, handleRestorePresets,
   handleGenerateAll, handleVisualDevelop, handleBrainstorm, isBrainstorming,
+  handleCulturalScan, isScanning, hasCulturalIntel,
   handleGenerateStrategy, isGeneratingStrategy, hasStrategy,
   handleGenerateBigIdea, isGeneratingCampaign, hasSelectedTerritory,
   handleGenerateChannelMatrix, isGeneratingMatrix,
+  handleGenerateEffectiveness, isGeneratingEffectiveness,
   errorMsg, generationStep,
 }: BriefFormProps) {
   return (
@@ -414,6 +422,82 @@ export function BriefForm({
               />
             </div>
 
+            {/* STRATEGIC INTAKE (rigere brief — fodrer strategi, idé, pres-test & effekt-lag) */}
+            <div className="bg-slate-900/40 rounded-xl p-4 border border-slate-800/80 space-y-3">
+              <div className="flex items-center space-x-2">
+                <Target className="w-4 h-4 text-sky-400" />
+                <span className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase">Strategisk intake</span>
+                <span className="text-[10px] text-slate-500 font-mono">valgfrit · skærper alle AI-trin</span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Jo mere præcis kontekst, jo skarpere strategi, idéer, KPI'er og pitch. Udfyld det du har — felterne fodrer alle led i kæden.
+              </p>
+
+              {/* Business goal & KPI */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <Target className="w-3 h-3 text-sky-500 shrink-0" />
+                  <span>Forretningsmål & KPI</span>
+                </label>
+                <input
+                  type="text"
+                  id="input_business_goal"
+                  value={brief.businessGoal ?? ''}
+                  onChange={(e) => handleBriefChange('businessGoal', e.target.value)}
+                  placeholder="f.eks. +5% markedsandel, +10pp kendskab, 200 leads"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-sky-500 focus:ring-1 focus:ring-sky-500 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 transition-all font-sans"
+                />
+              </div>
+
+              {/* Competitors */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <Swords className="w-3 h-3 text-rose-500 shrink-0" />
+                  <span>Konkurrenter</span>
+                </label>
+                <input
+                  type="text"
+                  id="input_competitors"
+                  value={brief.competitors ?? ''}
+                  onChange={(e) => handleBriefChange('competitors', e.target.value)}
+                  placeholder="f.eks. Brand A, Brand B — så vi undgår deres positioner"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 transition-all font-sans"
+                />
+              </div>
+
+              {/* Mandatories */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <ShieldCheck className="w-3 h-3 text-emerald-500 shrink-0" />
+                  <span>Mandatories (skal med / må ikke)</span>
+                </label>
+                <textarea
+                  id="input_mandatories"
+                  rows={2}
+                  value={brief.mandatories ?? ''}
+                  onChange={(e) => handleBriefChange('mandatories', e.target.value)}
+                  placeholder="f.eks. logo skal være med, payoff må ikke ændres, ingen humor om bæredygtighed"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 rounded-lg p-2.5 text-xs text-white placeholder:text-slate-600 leading-relaxed transition-all font-sans resize-y"
+                />
+              </div>
+
+              {/* Budget */}
+              <div>
+                <label className="text-[11px] font-medium text-slate-400 mb-1 flex items-center space-x-1.5">
+                  <Wallet className="w-3 h-3 text-amber-500 shrink-0" />
+                  <span>Budget-ramme</span>
+                </label>
+                <input
+                  type="text"
+                  id="input_budget"
+                  value={brief.budget ?? ''}
+                  onChange={(e) => handleBriefChange('budget', e.target.value)}
+                  placeholder="f.eks. 500k DKK produktion + 1M media — kalibrerer kanal-valg"
+                  className="w-full bg-slate-900 border border-slate-800 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 rounded-lg px-3 py-2 text-xs text-white placeholder:text-slate-600 transition-all font-sans"
+                />
+              </div>
+            </div>
+
             {/* DEEP MODE TOGGLE (REDAKTIONSMØDE) */}
             <button
               type="button"
@@ -438,6 +522,35 @@ export function BriefForm({
                 <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${deepMode ? 'translate-x-4' : ''}`} />
               </span>
             </button>
+
+            {/* CULTURAL ANTENNA BUTTON */}
+            <button
+              type="button"
+              onClick={handleCulturalScan}
+              disabled={isGenerating || isScanning}
+              className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-amber-600/15 to-orange-600/10 border border-amber-500/40 hover:border-amber-400/60 hover:from-amber-600/25 text-amber-100 hover:text-white font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+              title="Scan kulturen, konkurrenter og aktuelle trends via websøgning — grounder strategien i virkeligheden"
+            >
+              {isScanning ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-amber-300 animate-spin shrink-0" />
+                  <span>Scanner kultur & marked...</span>
+                </>
+              ) : (
+                <>
+                  <Radio className="w-4 h-4 text-amber-300 shrink-0" />
+                  <span>Skan kultur & marked</span>
+                </>
+              )}
+            </button>
+
+            {/* ACTIVE CULTURAL INTEL INDICATOR */}
+            {hasCulturalIntel && (
+              <div className="flex items-center space-x-1.5 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[11px] font-mono text-amber-200">
+                <Radio className="w-3 h-3 text-amber-300 shrink-0" />
+                <span>Strategi-fundamentet bygger på live kulturel scanning</span>
+              </div>
+            )}
 
             {/* STRATEGY FOUNDATION BUTTON (Strategi-fundament) */}
             <button
@@ -535,6 +648,25 @@ export function BriefForm({
                     <>
                       <Layers className="w-4 h-4 text-emerald-300 shrink-0" />
                       <span>Skalér til omni-channel matrix</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGenerateEffectiveness}
+                  disabled={isGenerating || isGeneratingEffectiveness}
+                  className="w-full py-2.5 px-4 rounded-lg bg-gradient-to-r from-indigo-600/15 to-blue-600/10 border border-indigo-500/40 hover:border-indigo-400/60 hover:from-indigo-600/25 text-indigo-100 hover:text-white font-display font-semibold text-xs flex items-center justify-center space-x-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                  title="Byg et effekt-lag: mål-hierarki, KPI'er, kort/lang-balance og måleplan — så kampagnen kan sælges på effekt"
+                >
+                  {isGeneratingEffectiveness ? (
+                    <>
+                      <Loader2 className="w-4 h-4 text-indigo-300 animate-spin shrink-0" />
+                      <span>Bygger effekt-lag...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Gauge className="w-4 h-4 text-indigo-300 shrink-0" />
+                      <span>Byg effekt-lag (KPI & måling)</span>
                     </>
                   )}
                 </button>

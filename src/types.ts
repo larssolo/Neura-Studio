@@ -26,6 +26,14 @@ export interface ProjectBrief {
   language: string;
   channels: string[];
   notes: string;
+  /** Strategisk intake — forretningsmål & KPI (fx "+5% salg, +10pp kendskab"). */
+  businessGoal?: string;
+  /** Navngivne konkurrenter, så scanning/strategi kan undgå deres positioner. */
+  competitors?: string;
+  /** Mandatories: ting der SKAL med, eller absolut ikke må bruges. */
+  mandatories?: string;
+  /** Budget-ramme, så kanal-valg og produktion kalibreres til virkeligheden. */
+  budget?: string;
   cviManual?: CviManual | null;
 }
 
@@ -157,6 +165,109 @@ export interface StrategyFoundation {
   desiredResponse: string;
   springboards: StrategySpringboard[];
   strategicSummary: string;
+}
+
+// ---------------------------------------------------------------------------
+// Kulturel efterretning (Kulturel antenne)
+// ---------------------------------------------------------------------------
+
+export interface CulturalTrend {
+  trend: string;
+  relevance: string;
+  actionableAngle: string;
+}
+
+export interface CompetitorSignal {
+  brand: string;
+  signal: string;
+  takeaway: string;
+}
+
+export interface CulturalMoment {
+  moment: string;
+  opportunity: string;
+}
+
+export interface CulturalScanResult {
+  trends: CulturalTrend[];
+  competitorSignals: CompetitorSignal[];
+  culturalMoments: CulturalMoment[];
+  timingContext: string;
+  openingQuestion: string;
+  groundingNarrative: string;
+  searchedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// ECD pres-test af Idéen
+// ---------------------------------------------------------------------------
+
+export interface TerritoryCritique {
+  distinctivenessScore: number;
+  truthScore: number;
+  elasticityScore: number;
+  memorabilityScore: number;
+  weaknesses: string[];
+  provocations: string[];
+  killCriterion: string;
+  verdict: string;
+}
+
+export interface SharpenedTerritory {
+  name: string;
+  bigIdea: string;
+  tagline: string;
+  manifesto: string;
+  strategicRoot: string;
+  channelExpressions: CampaignChannelExpression[];
+  toneDescriptor: string;
+  rationale: string;
+  whatChanged: string[];
+}
+
+export interface IdeaDeliberationResult {
+  critiqueBefore: TerritoryCritique;
+  sharpened?: SharpenedTerritory;
+  critiqueAfter?: TerritoryCritique;
+  earlyStopped: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Effekt-lag (KPI/måling)
+// ---------------------------------------------------------------------------
+
+export interface EffectivenessObjective {
+  level: string;
+  objective: string;
+  kpi: string;
+  target: string;
+  benchmark: string;
+  measurementMethod: string;
+}
+
+export interface ChannelKpi {
+  channel: string;
+  primaryMetric: string;
+  target: string;
+  measurementTool: string;
+}
+
+export interface EffectivenessBalance {
+  shortTermActivation: string;
+  longTermBrand: string;
+  recommendedSplit: string;
+}
+
+export interface EffectivenessFramework {
+  businessObjective: string;
+  objectives: EffectivenessObjective[];
+  channelKpis: ChannelKpi[];
+  balance: EffectivenessBalance;
+  leadingIndicators: string[];
+  laggingIndicators: string[];
+  successScenario: string;
+  risks: string[];
+  measurementCadence: string;
 }
 
 export interface ChannelScriptBlock {

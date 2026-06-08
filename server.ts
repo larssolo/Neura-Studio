@@ -21,6 +21,8 @@ import {
   buildStrategy,
   buildBigIdea,
   buildChannelMatrix,
+  buildEffectiveness,
+  type Territory,
   buildLogoPrompt,
   ANALYZE_CVI_SYSTEM_ROLE,
   cacheableSystem,
@@ -35,10 +37,13 @@ import {
   strategyTool,
   campaignPlatformTool,
   channelMatrixTool,
+  effectivenessTool,
   logoPromptTool,
 } from './server/ai/schemas';
 import { runDeliberation } from './server/ai/deliberate';
 import { runVisualDeliberation } from './server/ai/deliberateVisual';
+import { runCulturalScan } from './server/ai/culturalScan';
+import { runIdeaDeliberation } from './server/ai/deliberateIdea';
 import { getImageProvider } from './server/image/provider';
 import { generateLogoSvg } from './server/image/recraftVector';
 
@@ -331,14 +336,42 @@ async function startServer() {
   });
 
   // Strategi-fundament: indsigt der fodrer Den Store Idé-motor
-  app.post('/api/strategy', async (req, res) => {
+  // Kulturel antenne: web-grounding scan af branche, konkurrenter og kulturelle øjeblikke
+  app.post('/api/cultural-scan', async (req, res) => {
     try {
       const { brief } = req.body;
       if (!brief) {
         return res.status(400).json({ error: 'Brief er påkrævet.' });
       }
 
-      const { system, user } = buildStrategy(brief);
+      const signal = req.socket.destroyed
+        ? AbortSignal.abort()
+        : new AbortController().signal;
+
+      const result = await runCulturalScan(brief, signal);
+
+      if (!result || !result.groundingNarrative) {
+        throw new Error('Ufuldstændig scanning. Prøv igen.');
+      }
+
+      res.json(result);
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return res.status(499).json({ error: 'Annulleret.' });
+      }
+      console.error('Fejl under kulturel scanning:', error);
+      res.status(500).json({ error: error.message || 'Kulturel scanning fejlede.' });
+    }
+  });
+
+  app.post('/api/strategy', async (req, res) => {
+    try {
+      const { brief, culturalIntel } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+
+      const { system, user } = buildStrategy(brief, culturalIntel ?? null);
       let usageInfo: any = null;
       const parsed = await generateStructured<any>({
         system,
@@ -390,6 +423,41 @@ async function startServer() {
     }
   });
 
+  // ECD pres-test: pres-test og skærp én valgt kreativ rute
+  app.post('/api/sharpen-idea', async (req, res) => {
+    try {
+      const { brief, territory, strategy } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+      if (!territory || !territory.bigIdea) {
+        return res.status(400).json({ error: 'En kreativ rute (med en stor idé) er påkrævet.' });
+      }
+
+      let totalUsage: any = null;
+      const result = await runIdeaDeliberation({
+        brief,
+        territory: territory as Territory,
+        strategy: strategy || null,
+        onUsage: (u) => {
+          if (!totalUsage) {
+            totalUsage = { ...u };
+          } else {
+            totalUsage.inputTokens += u.inputTokens;
+            totalUsage.outputTokens += u.outputTokens;
+            totalUsage.cacheReadTokens += u.cacheReadTokens;
+            totalUsage.cacheWriteTokens += u.cacheWriteTokens;
+          }
+        },
+      });
+
+      res.json({ ...result, _usage: totalUsage });
+    } catch (error: any) {
+      console.error('Fejl under ECD pres-test:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke pres-teste ruten.' });
+    }
+  });
+
   // Omni-channel matrix: skalér den valgte store idé til en eksekvering pr. kanal
   app.post('/api/channel-matrix', async (req, res) => {
     try {
@@ -420,6 +488,39 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under omni-channel matrix:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke skalere idéen til kanaler.' });
+    }
+  });
+
+  // Effekt-lag: mål-hierarki, KPI'er og måleplan for den valgte kampagne
+  app.post('/api/effectiveness', async (req, res) => {
+    try {
+      const { brief, chosenIdea, strategy, channels } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+      if (!chosenIdea || !chosenIdea.bigIdea) {
+        return res.status(400).json({ error: 'Vælg en kampagne-platform (rute) først for at bygge effekt-laget.' });
+      }
+
+      const { system, user } = buildEffectiveness(brief, chosenIdea, strategy || null, channels);
+      let usageInfo: any = null;
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: effectivenessTool,
+        model: config.model,
+        maxTokens: config.maxTokens,
+        onUsage: (u) => { usageInfo = u; },
+      });
+
+      if (!parsed || !parsed.businessObjective || !Array.isArray(parsed.objectives)) {
+        throw new Error('Ufuldstændigt output fra Claude. Prøv igen.');
+      }
+
+      res.json({ ...parsed, _usage: usageInfo });
+    } catch (error: any) {
+      console.error('Fejl under effekt-lag:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke bygge effekt-laget.' });
     }
   });
 

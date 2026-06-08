@@ -8,11 +8,111 @@ import {
   buildBigIdea,
   buildStrategy,
   buildChannelMatrix,
+  buildEffectiveness,
+  buildTerritoryCritique,
+  buildTerritorySharpen,
+  territoryFullText,
   campaignContextText,
   strategyContextText,
+  briefIntakeText,
   refineInstruction,
   cacheableSystem,
 } from './prompts';
+
+const sampleTerritory = {
+  name: 'Rute Alfa',
+  bigIdea: 'En knivskarp idé',
+  tagline: 'Slagkraftig tagline',
+  manifesto: 'Mobiliserende manifest.',
+  strategicRoot: 'Bygger på en spænding.',
+  channelExpressions: [{ channel: 'Film', idea: '30-sek film' }],
+  toneDescriptor: 'Modig',
+  rationale: 'Den vinder.',
+};
+
+describe('territoryFullText', () => {
+  it('serialises all territory fields including channel expressions', () => {
+    const text = territoryFullText(sampleTerritory);
+    expect(text).toContain('En knivskarp idé');
+    expect(text).toContain('Slagkraftig tagline');
+    expect(text).toContain('Film: 30-sek film');
+    expect(text).toContain('Den vinder.');
+  });
+
+  it('does not crash when channelExpressions is missing', () => {
+    expect(() => territoryFullText({ bigIdea: 'x' } as any)).not.toThrow();
+  });
+});
+
+describe('buildTerritoryCritique', () => {
+  it('includes the CSO pressure-test role and the territory', () => {
+    const { system, user } = buildTerritoryCritique({ client: 'Acme' }, sampleTerritory);
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Chief Strategy Officer');
+    expect(user).toContain('En knivskarp idé');
+    expect(user).toContain('Acme');
+  });
+
+  it('injects strategy foundation when provided', () => {
+    const { user } = buildTerritoryCritique({ client: 'Acme' }, sampleTerritory, {
+      singleMindedProposition: 'Vi gør det enkelt.',
+      audienceTruth: 'De er overset.',
+    } as any);
+    expect(user).toContain('Vi gør det enkelt.');
+  });
+});
+
+describe('buildEffectiveness', () => {
+  it('includes the effectiveness role, the chosen idea and the channels to measure', () => {
+    const { system, user } = buildEffectiveness(
+      { client: 'Acme', project: 'Launch', language: 'Dansk' },
+      { name: 'Rute Alfa', bigIdea: 'En knivskarp idé', tagline: 'Slagkraftig' },
+      null,
+      ['Film', 'OOH', 'Social'],
+    );
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Head of Effectiveness');
+    expect(systemText).toContain('Binet'); // Binet & Field
+    expect(user).toContain('En knivskarp idé');
+    expect(user).toContain('Film, OOH, Social');
+    expect(user).toContain('Acme');
+  });
+
+  it('falls back to brief channels when no explicit channels given', () => {
+    const { user } = buildEffectiveness(
+      { client: 'Acme', channels: ['Radio'] },
+      { bigIdea: 'x', tagline: 'y' },
+    );
+    expect(user).toContain('Radio');
+  });
+
+  it('threads strategy foundation when provided', () => {
+    const { user } = buildEffectiveness(
+      { client: 'Acme' },
+      { bigIdea: 'x', tagline: 'y' },
+      { singleMindedProposition: 'Vi gør det enkelt.', audienceTruth: 'De er overset.' } as any,
+    );
+    expect(user).toContain('Vi gør det enkelt.');
+  });
+});
+
+describe('buildTerritorySharpen', () => {
+  it('threads the critique findings into the ECD sharpening prompt', () => {
+    const { system, user } = buildTerritorySharpen({ client: 'Acme' }, sampleTerritory, {
+      distinctivenessScore: 40,
+      weaknesses: ['For generisk'],
+      provocations: ['Hvad er det uventede?'],
+      killCriterion: 'Konkurrenten ejer allerede dette.',
+      verdict: 'Skal skærpes.',
+    });
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Executive Creative Director');
+    expect(user).toContain('For generisk');
+    expect(user).toContain('Hvad er det uventede?');
+    expect(user).toContain('Konkurrenten ejer allerede dette.');
+    expect(user).toContain('En knivskarp idé');
+  });
+});
 
 describe('cacheableSystem', () => {
   it('marks only the last block with cache_control and filters empty blocks', () => {
@@ -265,5 +365,48 @@ describe('buildSynthesize', () => {
     const badCritique = { clichesFound: 'a, b', evaluations: 'nej', overallReview: 'ok' } as any;
     const badCreative = { boldHeadlines: 'h', boldHooks: 'k', angles: 'v' } as any;
     expect(() => buildSynthesize(badDraft, badCritique, badCreative, { client: 'Acme' })).not.toThrow();
+  });
+});
+
+describe('briefIntakeText (rigere brief-intake)', () => {
+  it('renders only the filled structured fields', () => {
+    const text = briefIntakeText({ businessGoal: '+5% markedsandel', budget: '1M media' });
+    expect(text).toContain('STRATEGISK INTAKE');
+    expect(text).toContain('+5% markedsandel');
+    expect(text).toContain('1M media');
+    // Unfilled fields are omitted entirely (no empty "N/A" noise)
+    expect(text).not.toContain('Konkurrenter');
+    expect(text).not.toContain('Mandatories');
+  });
+
+  it('returns an empty string when no intake fields are set', () => {
+    expect(briefIntakeText({ client: 'Acme' })).toBe('');
+    expect(briefIntakeText({ businessGoal: '   ' })).toBe('');
+  });
+
+  it('labels competitors and mandatories with their strategic intent', () => {
+    const text = briefIntakeText({ competitors: 'Brand A, Brand B', mandatories: 'logo skal med' });
+    expect(text).toContain('Konkurrenter (undgå deres positioner): Brand A, Brand B');
+    expect(text).toContain('Mandatories (skal med / må ikke bruges): logo skal med');
+  });
+
+  it('flows into the strategy prompt so the foundation is grounded in client KPIs', () => {
+    const { user } = buildStrategy({ client: 'Acme', businessGoal: '+10pp kendskab', competitors: 'Rival' });
+    expect(user).toContain('STRATEGISK INTAKE');
+    expect(user).toContain('+10pp kendskab');
+    expect(user).toContain('Rival');
+  });
+
+  it('flows into the effectiveness prompt so KPI targets can use real benchmarks', () => {
+    const { user } = buildEffectiveness(
+      { client: 'Acme', businessGoal: '200 leads pr. kvartal' },
+      { bigIdea: 'Stor idé', tagline: 'Tag' },
+    );
+    expect(user).toContain('200 leads pr. kvartal');
+  });
+
+  it('is omitted from prompts when the brief has no intake data', () => {
+    const { user } = buildStrategy({ client: 'Acme' });
+    expect(user).not.toContain('STRATEGISK INTAKE');
   });
 });

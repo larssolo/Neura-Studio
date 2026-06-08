@@ -26,8 +26,32 @@ export type Brief = {
   language?: string;
   channels?: string[];
   notes?: string;
+  businessGoal?: string;
+  competitors?: string;
+  mandatories?: string;
+  budget?: string;
   cviManual?: CviManual | null;
 };
+
+/**
+ * Render de strukturerede intake-felter (forretningsmål/KPI, konkurrenter,
+ * mandatories, budget) som en kompakt kontekst-blok. Kun de UDFYLDTE felter tages
+ * med, så prompten ikke fyldes med "N/A". Returnerer tom streng hvis intet er sat.
+ * Bruges på tværs af strategi, idé, brainstorm, pres-test og effekt-laget.
+ */
+export function briefIntakeText(brief: Brief): string {
+  const lines: string[] = [];
+  if (brief.businessGoal && brief.businessGoal.trim())
+    lines.push(`- Forretningsmål & KPI: ${brief.businessGoal.trim()}`);
+  if (brief.competitors && brief.competitors.trim())
+    lines.push(`- Konkurrenter (undgå deres positioner): ${brief.competitors.trim()}`);
+  if (brief.mandatories && brief.mandatories.trim())
+    lines.push(`- Mandatories (skal med / må ikke bruges): ${brief.mandatories.trim()}`);
+  if (brief.budget && brief.budget.trim())
+    lines.push(`- Budget-ramme: ${brief.budget.trim()}`);
+  if (!lines.length) return '';
+  return `STRATEGISK INTAKE (præcis kontekst fra kunden — brug aktivt, overhold mandatories):\n${lines.join('\n')}`;
+}
 
 /**
  * Konvertér tekstblokke til system-blokke og markér den SIDSTE som cache-grænse
@@ -81,6 +105,7 @@ Retningslinjer:
 Aflever hele resultatet via det angivne værktøj, præcist som beskrevet af værktøjets skema.`;
 
 export function generateUserText(brief: Brief): string {
+  const intake = briefIntakeText(brief);
   return `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -91,7 +116,7 @@ export function generateUserText(brief: Brief): string {
 - Sprog: ${brief.language || 'Dansk'}
 - Hvor det bruges: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-
+${intake ? `\n${intake}\n` : ''}
 Sørg for at alle tekster (undtagen de engelske felter og de engelske billedprompts) er skrevet på det angivne sprog, som er ${brief.language || 'Dansk'}.`;
 }
 
@@ -355,11 +380,36 @@ Et stærkt strategisk fundament:
 
 Vær skarp og konkret. Ingen floskler, ingen tom marketing-luft. Aflever hele fundamentet via det angivne værktøj, præcist som skemaet kræver.`;
 
-export function buildStrategy(brief: Brief): {
+export function buildStrategy(
+  brief: Brief,
+  culturalIntel?: import('./culturalScan').CulturalScanResult | null,
+): {
   system: Anthropic.TextBlockParam[];
   user: string;
 } {
   const system = cacheableSystem([STRATEGY_SYSTEM_ROLE, cviSectionText(brief)]);
+  const culturalBlock = culturalIntel
+    ? (() => {
+        // Inline serialisation (same structure as culturalContextText but avoids circular dep)
+        const trends = (culturalIntel.trends || [])
+          .map((t: any) => `  · ${t.trend} → ${t.actionableAngle}`)
+          .join('\n');
+        const competitors = (culturalIntel.competitorSignals || [])
+          .map((c: any) => `  · ${c.brand}: ${c.signal} (${c.takeaway})`)
+          .join('\n');
+        const moments = (culturalIntel.culturalMoments || [])
+          .map((m: any) => `  · ${m.moment} → ${m.opportunity}`)
+          .join('\n');
+        return `\nKULTUREL EFTERRETNING (brug som virkelighedsgrundlag — strategien SKAL besvare åbningsspørgsmålet):
+Landskab: ${culturalIntel.groundingNarrative || 'N/A'}
+Trends:\n${trends || '  · N/A'}
+Konkurrenter:\n${competitors || '  · N/A'}
+Kulturelle øjeblikke:\n${moments || '  · N/A'}
+Timing: ${culturalIntel.timingContext || 'N/A'}
+Åbningsspørgsmål: ${culturalIntel.openingQuestion || 'N/A'}\n`;
+      })()
+    : '';
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -370,7 +420,7 @@ export function buildStrategy(brief: Brief): {
 - Sprog: ${brief.language || 'Dansk'}
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-
+${intake ? `\n${intake}\n` : ''}${culturalBlock}
 Udvikl nu det strategiske fundament for dette projekt: målgruppe-indsigt, central spænding, konkurrence-kontekst, det enkelt-mindede løfte, reasons-to-believe, ønsket respons og 2-3 strategiske afsæt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
 
   return { system, user };
@@ -441,6 +491,7 @@ export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null)
 } {
   const system = cacheableSystem([BIG_IDEA_SYSTEM_ROLE, cviSectionText(brief)]);
   const foundation = strategy ? strategyContextText(strategy) : '';
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -451,7 +502,7 @@ export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null)
 - Sprog: ${brief.language || 'Dansk'}
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-${foundation ? `\n${foundation}\n` : ''}
+${intake ? `\n${intake}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
 Udvikl nu TRE konkurrerende kreative ruter (kampagne-platforme) for dette projekt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-navne må gerne være på engelsk hvis det er mest naturligt).`;
 
   return { system, user };
@@ -483,6 +534,126 @@ export function campaignContextText(idea: ChosenIdea): string {
 ${idea.manifesto ? `- Manifest: ${idea.manifesto}` : ''}
 
 Alt indhold (case-tekster, LinkedIn, nyhedsbrev, overskrifter, CTA m.m.) skal være en tydelig forlængelse af denne store idé og tagline — samme verden, samme tone, samme løfte.`;
+}
+
+// ---------------------------------------------------------------------------
+// /api/sharpen-idea — ECD pres-test: strategisk kritik + skærpning af én rute
+// ---------------------------------------------------------------------------
+
+/** En fuld kreativ rute der skal pres-testes/skærpes. */
+export type Territory = ChosenIdea & {
+  rationale?: string;
+};
+
+/** Render en fuld kreativ rute (alle felter) til pres-test/skærpning. */
+export function territoryFullText(t: Territory): string {
+  const channels = (Array.isArray(t?.channelExpressions) ? t.channelExpressions : [])
+    .map((c) => `  - ${c?.channel || 'Kanal'}: ${c?.idea || ''}`)
+    .join('\n');
+  return `KREATIV RUTE TIL VURDERING:
+- Navn: ${t.name || 'N/A'}
+- Den store idé: ${t.bigIdea || 'N/A'}
+- Tagline: ${t.tagline || 'N/A'}
+- Manifest: ${t.manifesto || 'N/A'}
+- Strategisk rod: ${t.strategicRoot || 'N/A'}
+- Tone: ${t.toneDescriptor || 'N/A'}
+- Kanal-udtryk:
+${channels || '  - N/A'}
+- Selvforklaring (hvorfor den vinder): ${t.rationale || 'N/A'}`;
+}
+
+export const TERRITORY_CRITIQUE_SYSTEM_ROLE = `Du er Chief Strategy Officer i et prisvindende reklamebureau i verdensklasse, og du leder den interne pres-test FØR idéen præsenteres for kunden.
+
+Din opgave er at pres-teste ÉN kreativ rute brutalt ærligt — som den skarpeste strateg i rummet der vil have idéen til at vinde awards og virke i markedet, ikke bare lyde godt i et mødelokale.
+
+Vurdér på fire akser (0-100):
+1. Distinkthed: er idéen uventet og umulig at forveksle med konkurrenten — eller er det en sikker kategori-kliché?
+2. Sandhed: står den på en reel strategisk indsigt eller kulturel spænding — eller er den ud af det blå?
+3. Elasticitet: kan den bære indhold på tværs af kanaler og over tid — eller er det en engangs-eksekvering forklædt som platform?
+4. Mindeværdighed: er den menneskelig, delbar og mindeværdig — eller glemt i morgen?
+
+Vær konkret og kompromisløs:
+- Peg på de PRÆCISE svagheder — hvor er den generisk, derivativ, uklar eller risikabel?
+- Stil de skarpe spørgsmål den kreative direktør SKAL svare på.
+- Identificér det ene kill-kriterium: den største risiko der kan dræbe idéen.
+- Undgå høflig ros. En pres-test der kun roser er værdiløs.
+
+Aflever via det angivne værktøj.`;
+
+export function buildTerritoryCritique(
+  brief: Brief,
+  territory: Territory,
+  strategy?: StrategyFoundation | null,
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const system = cacheableSystem([TERRITORY_CRITIQUE_SYSTEM_ROLE, cviSectionText(brief)]);
+  const foundation = strategy ? strategyContextText(strategy) : '';
+  const intake = briefIntakeText(brief);
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Sprog: ${brief.language || 'Dansk'}
+${intake ? `\n${intake}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
+${territoryFullText(territory)}
+
+Pres-test nu denne rute brutalt ærligt på de fire akser, og lever konkrete svagheder, provokationer og kill-kriteriet. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
+  return { system, user };
+}
+
+export const TERRITORY_SHARPEN_SYSTEM_ROLE = `Du er Executive Creative Director i et reklamebureau i verdensklasse, og du har lige fået din strategs brutale pres-test af din egen rute.
+
+Din opgave er at SKÆRPE ruten — ikke kassere den, ikke lave en ny. Det er samme idé, hævet et niveau: mere distinkt, mere sand, mere elastisk og mere mindeværdig, og den skal svare direkte på pres-testens kritik.
+
+Principper:
+1. Behold rutens DNA — navn, strategisk kerne og verden. Skift ikke spor; skærp det eksisterende.
+2. Svar på provokationerne og lukket kill-kriteriet konkret i den skærpede idé.
+3. Gør den store idé skarpere og mere uventet — fjern det generiske, tilføj det specifikke og menneskelige.
+4. Hæv kanal-udtrykkene fra hensigtserklæringer til konkrete, modige eksekveringer.
+5. Ingen floskler. Hvert skærpet element skal være mærkbart bedre end før.
+
+Forklar til sidst præcist hvad du skærpede og hvordan det svarer på kritikken. Aflever via det angivne værktøj.`;
+
+export function buildTerritorySharpen(
+  brief: Brief,
+  territory: Territory,
+  critique: {
+    distinctivenessScore?: number;
+    truthScore?: number;
+    elasticityScore?: number;
+    memorabilityScore?: number;
+    weaknesses?: string[];
+    provocations?: string[];
+    killCriterion?: string;
+    verdict?: string;
+  },
+  strategy?: StrategyFoundation | null,
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const system = cacheableSystem([TERRITORY_SHARPEN_SYSTEM_ROLE, cviSectionText(brief)]);
+  const foundation = strategy ? strategyContextText(strategy) : '';
+  const weaknesses = (critique.weaknesses || []).map((w) => `  - ${w}`).join('\n');
+  const provocations = (critique.provocations || []).map((p) => `  - ${p}`).join('\n');
+  const critiqueText = `STRATEGENS PRES-TEST (skal besvares i skærpningen):
+- Scorer: Distinkthed ${critique.distinctivenessScore ?? '?'}/100, Sandhed ${critique.truthScore ?? '?'}/100, Elasticitet ${critique.elasticityScore ?? '?'}/100, Mindeværdighed ${critique.memorabilityScore ?? '?'}/100
+- Svagheder:
+${weaknesses || '  - N/A'}
+- Provokationer at svare på:
+${provocations || '  - N/A'}
+- Kill-kriterium: ${critique.killCriterion || 'N/A'}
+- Dom: ${critique.verdict || 'N/A'}`;
+
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Sprog: ${brief.language || 'Dansk'}
+${foundation ? `\n${foundation}\n` : ''}
+${territoryFullText(territory)}
+
+${critiqueText}
+
+Skærp nu ruten så den svarer på pres-testen — samme rute, hævet et niveau. Aflever den skærpede rute (alle felter) + hvad du ændrede, via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
+  return { system, user };
 }
 
 // ---------------------------------------------------------------------------
@@ -522,6 +693,7 @@ export function buildChannelMatrix(
   const platform = campaignContextText(chosenIdea);
   const seeds = channelSeedsText(chosenIdea);
   const foundation = strategy ? strategyContextText(strategy) : '';
+  const intake = briefIntakeText(brief);
 
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
@@ -532,10 +704,64 @@ export function buildChannelMatrix(
 - Tone: ${brief.tone || 'Professionel, menneskelig, kreativ'}
 - Sprog: ${brief.language || 'Dansk'}
 - Briefets kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
-
+${intake ? `\n${intake}\n` : ''}
 ${platform || 'INGEN valgt platform — vælg en kreativ rute først.'}
 ${seeds ? `\n${seeds}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
 Skalér nu den valgte store idé til en komplet omni-channel matrix — én produktionsklar eksekvering pr. kanal (fold kanal-frøene ud, og dæk briefets kanaler). Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-/format-navne må gerne være engelske hvor det er mest naturligt).`;
+
+  return { system, user };
+}
+
+// ---------------------------------------------------------------------------
+// /api/effectiveness — Effekt-lag: mål-hierarki, KPI'er og måleplan
+// ---------------------------------------------------------------------------
+
+export const EFFECTIVENESS_SYSTEM_ROLE = `Du er Head of Effectiveness (Effektivitetsdirektør) i et reklamebureau i verdensklasse — skolet i IPA's effektivitets-tænkning og Les Binet & Peter Fields arbejde om kort- vs. langsigtet effekt.
+
+Din opgave er at omsætte ÉN valgt kampagne-platform til et stringent, troværdigt effekt-lag, så kampagnen kan sælges — og bevises — på effekt, ikke kun på kreativitet.
+
+Principper:
+1. Mål-hierarki: byg en klar ladder fra forretningsmål → adfærdsmål → kommunikationsmål. Hvert niveau skal have en målbar KPI, et realistisk måltal og et benchmark.
+2. Realisme over fantasi: måltal skal være ambitiøse men troværdige og forankret i branche-benchmarks — ikke ønsketænkning. Vær konkret om enheder og procenter.
+3. Ingen vanity metrics: prioritér metrikker der knytter sig til reel forretningsværdi (ikke bare likes/visninger uden kontekst).
+4. Balancér kort og lang: anvend Binet & Field — adskil kortsigtet aktivering (salg nu) fra langsigtet brand-opbygning (fremtidig efterspørgsel), og anbefal et split.
+5. Leading vs. lagging: angiv tidlige signaler (måles hurtigt) OG outcome-metrikker (bekræfter effekt senere).
+6. Måleplan: konkret kadence (baseline, løbende, post-kampagne) og værktøjer pr. kanal.
+7. Vær ærlig om risici og antagelser der kan underminere effekten.
+
+Aflever hele effekt-laget via det angivne værktøj, præcist som skemaet kræver.`;
+
+/**
+ * Byg effekt-laget for en valgt kampagne-platform. Trådes med både den store idé
+ * (hvad måler vi på), strategi-fundamentet (ønsket respons/forretningskontekst) og
+ * de faktiske kanaler (måleplan pr. kanal).
+ */
+export function buildEffectiveness(
+  brief: Brief,
+  chosenIdea: ChosenIdea,
+  strategy?: StrategyFoundation | null,
+  channels?: string[],
+): { system: Anthropic.TextBlockParam[]; user: string } {
+  const system = cacheableSystem([EFFECTIVENESS_SYSTEM_ROLE, cviSectionText(brief)]);
+  const platform = campaignContextText(chosenIdea);
+  const foundation = strategy ? strategyContextText(strategy) : '';
+  const channelList =
+    (Array.isArray(channels) && channels.length ? channels : brief.channels || []).join(', ') ||
+    'N/A';
+
+  const intake = briefIntakeText(brief);
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Hvad lavede vi (Beskrivelse): ${brief.description || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Sprog: ${brief.language || 'Dansk'}
+${intake ? `\n${intake}\n` : ''}
+${platform || 'INGEN valgt platform — vælg en kreativ rute først.'}
+${foundation ? `\n${foundation}\n` : ''}
+KANALER AT MÅLE: ${channelList}
+
+Byg nu effekt-laget for denne kampagne: et mål-hierarki (forretning → adfærd → kommunikation) med målbare KPI'er, benchmarks og realistiske måltal; en KPI pr. kanal; kort- vs. langsigtet balance (Binet & Field) med anbefalet split; leading- og lagging-indikatorer; et realistisk succes-scenarie; risici; og en måle-kadence. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (metrik-navne må gerne være engelske hvor det er mest naturligt).`;
 
   return { system, user };
 }
@@ -619,6 +845,7 @@ export function buildBrainstorm(brief: Brief): {
   system: Anthropic.TextBlockParam[];
   user: string;
 } {
+  const intake = briefIntakeText(brief);
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -629,7 +856,7 @@ export function buildBrainstorm(brief: Brief): {
 - Sprog: ${brief.language || 'Dansk'}
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
-
+${intake ? `\n${intake}\n` : ''}
 Lav nu en kreativ brainstorm: identificér kernehistorien, foreslå 4 distinkte kreative retninger (med overskrift og LinkedIn-krog for hver), nøgle-differentiatorerne, målgruppeinsigter, et skærpende spørgsmål og brief-mangler. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'}.`;
 
   return { system: cacheableSystem([BRAINSTORM_SYSTEM_ROLE]), user };
