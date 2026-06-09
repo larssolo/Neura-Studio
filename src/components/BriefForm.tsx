@@ -5,9 +5,9 @@
 
 import { Dispatch, SetStateAction, ChangeEvent } from 'react';
 import {
-  AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint, Gauge,
-  Layers, Lightbulb, Loader2, Palette, Pin, Radio, Rocket, RotateCcw, ShieldCheck,
-  Sparkles, Swords, Target, Trash2, UploadCloud, Users, Wallet,
+  AlertTriangle, Check, ChevronRight, Compass, FileText, Fingerprint,
+  Lightbulb, Loader2, Palette, Pin, RotateCcw, ShieldCheck,
+  Swords, Target, Trash2, UploadCloud, Users, Wallet,
 } from 'lucide-react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief } from '../types';
 import { ProcessStepper } from './ProcessStepper';
