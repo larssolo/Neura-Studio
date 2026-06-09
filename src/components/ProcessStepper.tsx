@@ -119,11 +119,17 @@ export function ProcessStepper(props: ProcessStepperProps) {
 
       {steps.map((step) => <StepRow key={step.n} step={step} isGenerating={isGenerating} />)}
 
+      <div className="flex items-center gap-2 pt-1.5 pb-0.5" aria-hidden="true">
+        <span className="h-px flex-1 bg-slate-800" />
+        <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-slate-400">Producér</span>
+        <span className="h-px flex-1 bg-slate-800" />
+      </div>
+
       <button
         type="button"
         onClick={onGenerateAll}
         disabled={isGenerating}
-        className={`w-full mt-1 py-3.5 px-4 rounded-xl font-display font-bold text-sm text-white flex items-center justify-center gap-2 transition-all select-none active:scale-[0.98] shadow-sm ${
+        className={`w-full py-3.5 px-4 rounded-xl font-display font-bold text-sm text-white flex items-center justify-center gap-2 transition-all select-none active:scale-[0.98] shadow-sm ${
           isGenerating ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-brand-orange-600 hover:bg-brand-orange-500 cursor-pointer'
         }`}
       >
