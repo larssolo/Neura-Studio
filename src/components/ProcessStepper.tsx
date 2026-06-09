@@ -120,7 +120,6 @@ export function ProcessStepper(props: ProcessStepperProps) {
         type="button"
         onClick={onGenerateAll}
         disabled={isGenerating}
-        id="generate_all_btn"
         className={`w-full mt-1 py-3.5 px-4 rounded-xl font-display font-bold text-sm text-white flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-sm ${
           isGenerating ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-brand-orange-600 hover:bg-brand-orange-500 cursor-pointer'
         }`}
