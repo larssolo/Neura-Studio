@@ -52,6 +52,8 @@ interface BriefFormProps {
   isGeneratingMatrix: boolean;
   handleGenerateEffectiveness: () => void;
   isGeneratingEffectiveness: boolean;
+  isSharpening: boolean;
+  onSharpenIdea: () => void;
   errorMsg: string | null;
   generationStep: string;
 }
@@ -70,6 +72,7 @@ export function BriefForm({
   hasPressureTest, hasChannelMatrix, hasEffectiveness,
   handleGenerateChannelMatrix, isGeneratingMatrix,
   handleGenerateEffectiveness, isGeneratingEffectiveness,
+  isSharpening, onSharpenIdea,
   errorMsg, generationStep,
 }: BriefFormProps) {
   return (
@@ -524,6 +527,8 @@ export function BriefForm({
               onGenerateBigIdea={handleGenerateBigIdea}
               onGenerateChannelMatrix={handleGenerateChannelMatrix}
               onGenerateEffectiveness={handleGenerateEffectiveness}
+              isSharpening={isSharpening}
+              onSharpenIdea={onSharpenIdea}
               onGenerateAll={handleGenerateAll}
             />
 

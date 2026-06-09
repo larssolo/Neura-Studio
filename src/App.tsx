@@ -175,6 +175,8 @@ export default function App() {
             isGeneratingMatrix={isGeneratingMatrix}
             handleGenerateEffectiveness={handleGenerateEffectiveness}
             isGeneratingEffectiveness={isGeneratingEffectiveness}
+            isSharpening={isSharpening}
+            onSharpenIdea={() => { if (selectedTerritory) handleSharpenIdea(selectedTerritory); }}
             errorMsg={errorMsg}
             generationStep={generationStep}
           />

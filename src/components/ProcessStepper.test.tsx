@@ -9,6 +9,7 @@ const baseProps = {
   isGeneratingMatrix: false, isGeneratingEffectiveness: false,
   hasCulturalIntel: false, hasStrategy: false, hasSelectedTerritory: false,
   hasPressureTest: false, hasChannelMatrix: false, hasEffectiveness: false,
+  isSharpening: false, onSharpenIdea: () => {},
   onCulturalScan: () => {}, onGenerateStrategy: () => {}, onGenerateBigIdea: () => {},
   onGenerateChannelMatrix: () => {}, onGenerateEffectiveness: () => {}, onGenerateAll: () => {},
 };
@@ -61,5 +62,19 @@ describe('ProcessStepper', () => {
     render(<ProcessStepper {...baseProps} isScanning={true} onCulturalScan={onCulturalScan} />);
     fireEvent.click(screen.getByText('Skan kultur & marked'));
     expect(onCulturalScan).not.toHaveBeenCalled();
+  });
+
+  it('fires onSharpenIdea when step 4 is clicked and an idea is selected', () => {
+    const onSharpenIdea = vi.fn();
+    render(<ProcessStepper {...baseProps} hasSelectedTerritory={true} onSharpenIdea={onSharpenIdea} />);
+    fireEvent.click(screen.getByText('Skærp idé'));
+    expect(onSharpenIdea).toHaveBeenCalledOnce();
+  });
+
+  it('does not fire onSharpenIdea when no idea is selected (step 4 locked)', () => {
+    const onSharpenIdea = vi.fn();
+    render(<ProcessStepper {...baseProps} hasSelectedTerritory={false} onSharpenIdea={onSharpenIdea} />);
+    fireEvent.click(screen.getByText('Skærp idé'));
+    expect(onSharpenIdea).not.toHaveBeenCalled();
   });
 });
