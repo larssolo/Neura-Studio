@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lora", Georgia, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   
   --color-brand-orange-50: #fffaf0;
@@ -49,6 +49,13 @@
 }
 .light-mode .text-white {
   /* Guard text-white inside buttons which have white text on brand colored background */
+}
+/* Form fields use text-white for the dark theme; force dark ink in light mode so
+   typed text is legible against the near-white field background. */
+.light-mode input,
+.light-mode textarea,
+.light-mode select {
+  color: #0f172a !important;
 }
 .light-mode button.text-slate-350:hover,
 .light-mode button.text-slate-400:hover {
