@@ -168,10 +168,15 @@ export default function App() {
             handleGenerateBigIdea={handleGenerateBigIdea}
             isGeneratingCampaign={isGeneratingCampaign}
             hasSelectedTerritory={!!selectedTerritory}
+            hasPressureTest={!!pressureTest}
+            hasChannelMatrix={!!channelMatrix}
+            hasEffectiveness={!!effectiveness}
             handleGenerateChannelMatrix={handleGenerateChannelMatrix}
             isGeneratingMatrix={isGeneratingMatrix}
             handleGenerateEffectiveness={handleGenerateEffectiveness}
             isGeneratingEffectiveness={isGeneratingEffectiveness}
+            isSharpening={isSharpening}
+            onSharpenIdea={() => { if (selectedTerritory) handleSharpenIdea(selectedTerritory); }}
             errorMsg={errorMsg}
             generationStep={generationStep}
           />
@@ -337,7 +342,7 @@ export default function App() {
               <span>
                 Neura Studio by{' '}
                 <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.17.0
+                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.18.0
               </span>
               <div className="flex items-center space-x-4">
                 {lastUsage && <UsageBadge usage={lastUsage} />}
