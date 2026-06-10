@@ -14,6 +14,7 @@ import { UsageBadge } from './components/UsageBadge';
 import { LogoPanel } from './components/LogoPanel';
 import { ImagePanel } from './components/ImagePanel';
 import { VideoPanel } from './components/VideoPanel';
+import { AvatarPanel } from './components/AvatarPanel';
 import { FunnelPanels } from './components/FunnelPanels';
 import { BlankState } from './components/BlankState';
 import { OutputWorkspace } from './components/OutputWorkspace';
@@ -94,6 +95,7 @@ export default function App() {
     handleAspectChange,
     isOptimizingImagePrompt, handleOptimizeImagePrompt,
     videoResult, handleGenerateVideo,
+    speechResult, avatarResult, handleGenerateSpeech, handleGenerateAvatar,
     handleExecuteTerminalCommand,
   } = useContentMachine();
 
@@ -109,7 +111,7 @@ export default function App() {
             isAnalyzingCvi || isBrainstorming || isScanning || isGeneratingStrategy ||
             isGeneratingCampaign || isSharpening || isGeneratingMatrix ||
             isGeneratingEffectiveness || isGeneratingLogo || isOptimizingLogoPrompt ||
-            isOptimizingImagePrompt || videoResult.loading
+            isOptimizingImagePrompt || videoResult.loading || speechResult.loading || avatarResult.loading
           }
           title={
             isVisualDeveloping ? 'Visuel udvikling' :
@@ -126,6 +128,8 @@ export default function App() {
             isOptimizingLogoPrompt ? 'Logo-prompt' :
             isOptimizingImagePrompt ? 'Optimerer billed-prompt' :
             videoResult.loading ? 'Genererer video' :
+            speechResult.loading ? 'Genererer tale' :
+            avatarResult.loading ? 'Genererer avatar' :
             isRefining ? 'Forfiner' :
             isAnalyzing ? 'Analyserer' :
             deepMode ? 'Redaktionsmøde' : 'Genererer'
@@ -337,6 +341,14 @@ export default function App() {
                 onGenerate={handleGenerateVideo}
               />
 
+              <AvatarPanel
+                generatedImageUrl={generatedImages.custom.url}
+                speech={speechResult}
+                avatar={avatarResult}
+                onGenerateSpeech={handleGenerateSpeech}
+                onGenerateAvatar={handleGenerateAvatar}
+              />
+
               <LogoPanel
                 brief={brief}
                 logoResult={logoResult}
@@ -367,7 +379,7 @@ export default function App() {
               <span>
                 Neura Studio by{' '}
                 <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.21.0
+                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.22.0
               </span>
               <div className="flex items-center space-x-4">
                 {lastUsage && <UsageBadge usage={lastUsage} />}
