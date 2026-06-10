@@ -48,6 +48,7 @@ import { runCulturalScan } from './server/ai/culturalScan';
 import { runIdeaDeliberation } from './server/ai/deliberateIdea';
 import { getImageProvider } from './server/image/provider';
 import { generateLogoSvg } from './server/image/recraftVector';
+import { generateVideo } from './server/video/kling';
 
 async function startServer() {
   const app = express();
@@ -688,6 +689,23 @@ async function startServer() {
       res
         .status(500)
         .json({ error: error.message || 'Kunne ikke generere billede. Kontroller din API konfiguration.' });
+    }
+  });
+
+  // Video-generering via Kling image-to-video (fal.ai)
+  app.post('/api/generate-video', async (req, res) => {
+    try {
+      const { imageUrl, prompt, negativePrompt, duration, cfgScale, tailImageUrl } = req.body;
+      if (!prompt || !imageUrl) {
+        return res.status(400).json({ error: 'Både prompt og et inputbillede er påkrævet.' });
+      }
+      const safeDuration = duration === '10' ? '10' : '5';
+      const safeCfgScale = Math.min(1, Math.max(0, Number(cfgScale)) || 0.5);
+      const { videoUrl } = await generateVideo({ imageUrl, prompt, negativePrompt, duration: safeDuration, cfgScale: safeCfgScale, tailImageUrl });
+      res.json({ videoUrl });
+    } catch (error: any) {
+      console.error('Fejl under video-generering:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke generere video. Kontroller din API konfiguration.' });
     }
   });
 

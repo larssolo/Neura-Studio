@@ -15,6 +15,7 @@ import { httpErrorMessage } from './httpError';
 import { useTheme } from './useTheme';
 import { useClipboard } from './useClipboard';
 import { useImageGeneration } from './useImageGeneration';
+import { useVideoGeneration } from './useVideoGeneration';
 import { useHumanizer } from './useHumanizer';
 import { useLogo } from './useLogo';
 import { useCreativeFunnel } from './useCreativeFunnel';
@@ -123,6 +124,7 @@ export function useContentMachine() {
   const { theme, setTheme } = useTheme();
   const { copiedKey, handleCopyToClipboard } = useClipboard();
   const { generatedImages, setGeneratedImages, handleGenerateImage, handleAspectChange, isOptimizingImagePrompt, handleOptimizeImagePrompt } = useImageGeneration();
+  const { videoResult, setVideoResult, handleGenerateVideo } = useVideoGeneration();
   const {
     externalText, setExternalText, humanizerResult, setHumanizerResult,
     isHumanizing, handleHumanizeText,
@@ -1106,6 +1108,8 @@ export function useContentMachine() {
     generatedImages,
     isOptimizingImagePrompt,
     handleOptimizeImagePrompt,
+    // Video
+    videoResult, setVideoResult, handleGenerateVideo,
     // Theme
     theme, setTheme,
     // Presets
