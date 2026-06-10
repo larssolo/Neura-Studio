@@ -26,13 +26,13 @@ export function useImageGeneration() {
 
   const [isOptimizingImagePrompt, setIsOptimizingImagePrompt] = useState(false);
 
-  const handleGenerateImage = async (key: GeneratedImageKey, promptText: string) => {
+  const handleGenerateImage = async (key: GeneratedImageKey, promptText: string, model?: string) => {
     setGeneratedImages(prev => ({ ...prev, [key]: { ...prev[key], loading: true, error: null } }));
     try {
       const response = await fetch('/api/generate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: promptText, aspectRatio: generatedImages[key]?.aspectRatio || '16:9' })
+        body: JSON.stringify({ prompt: promptText, aspectRatio: generatedImages[key]?.aspectRatio || '16:9', model: model || 'flux' })
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));

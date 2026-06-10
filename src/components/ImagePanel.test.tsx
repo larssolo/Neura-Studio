@@ -25,7 +25,34 @@ describe('ImagePanel', () => {
     render(<ImagePanel image={baseImage} onGenerate={onGenerate} onAspectChange={() => {}} onOptimize={() => Promise.resolve(null)} isOptimizing={false} />);
     fireEvent.change(screen.getByPlaceholderText('Beskriv billedet du vil generere…'), { target: { value: 'en rød kat' } });
     fireEvent.click(screen.getByText('Generer billede'));
-    expect(onGenerate).toHaveBeenCalledWith('en rød kat');
+    expect(onGenerate).toHaveBeenCalledWith('en rød kat', 'flux');
+  });
+
+  it('genererer med den valgte model', () => {
+    const onGenerate = vi.fn();
+    render(<ImagePanel image={baseImage} onGenerate={onGenerate} onAspectChange={() => {}} onOptimize={() => Promise.resolve(null)} isOptimizing={false} />);
+    fireEvent.change(screen.getByPlaceholderText('Beskriv billedet du vil generere…'), { target: { value: 'a cat' } });
+    fireEvent.click(screen.getByText('Nano Banana Pro'));
+    fireEvent.click(screen.getByText('Generer billede'));
+    expect(onGenerate).toHaveBeenCalledWith('a cat', 'nano-banana-pro');
+  });
+
+  it('kalder onOptimize med refine-mode når Forfin klikkes', async () => {
+    const onOptimize = vi.fn().mockResolvedValue(null);
+    render(<ImagePanel image={baseImage} onGenerate={() => {}} onAspectChange={() => {}} onOptimize={onOptimize} isOptimizing={false} />);
+    fireEvent.change(screen.getByPlaceholderText('Beskriv billedet du vil generere…'), { target: { value: 'a cat' } });
+    fireEvent.click(screen.getByText('Forfin gennem AI'));
+    expect(onOptimize).toHaveBeenCalledWith('a cat', 'refine');
+  });
+
+  it('skriver det optimerede resultat tilbage i textarea', async () => {
+    const onOptimize = vi.fn().mockResolvedValue('a refined english prompt');
+    render(<ImagePanel image={baseImage} onGenerate={() => {}} onAspectChange={() => {}} onOptimize={onOptimize} isOptimizing={false} />);
+    const ta = screen.getByPlaceholderText('Beskriv billedet du vil generere…') as HTMLTextAreaElement;
+    fireEvent.change(ta, { target: { value: 'en kat' } });
+    fireEvent.click(screen.getByText('Oversæt til engelsk'));
+    await screen.findByDisplayValue('a refined english prompt');
+    expect(ta.value).toBe('a refined english prompt');
   });
 
   it('kalder onOptimize med translate-mode når Oversæt klikkes', async () => {

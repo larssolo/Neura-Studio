@@ -322,7 +322,7 @@ export default function App() {
 
               <ImagePanel
                 image={generatedImages.custom}
-                onGenerate={(p) => handleGenerateImage('custom', p)}
+                onGenerate={(p, model) => handleGenerateImage('custom', p, model)}
                 onAspectChange={(r) => handleAspectChange('custom', r)}
                 onOptimize={(p, mode) => handleOptimizeImagePrompt(brief, p, mode)}
                 isOptimizing={isOptimizingImagePrompt}
