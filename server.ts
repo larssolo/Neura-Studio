@@ -669,14 +669,17 @@ async function startServer() {
   // Generate image from prompt via the configured image provider (default: Flux/fal.ai)
   app.post('/api/generate-image', async (req, res) => {
     try {
-      const { prompt, aspectRatio } = req.body;
+      const { prompt, aspectRatio, model } = req.body;
       if (!prompt) {
         return res.status(400).json({ error: 'Prompt er påkrævet.' });
       }
+      const allowed = ['flux', 'nano-banana-pro', 'gpt-image-2'];
+      const safeModel = allowed.includes(model) ? model : 'flux';
 
       const { imageUrl } = await getImageProvider().generate({
         prompt,
         aspectRatio: aspectRatio || '16:9',
+        model: safeModel,
       });
 
       res.json({ imageUrl });
