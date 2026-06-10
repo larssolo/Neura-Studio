@@ -14,6 +14,7 @@ import { UsageBadge } from './components/UsageBadge';
 import { LogoPanel } from './components/LogoPanel';
 import { ImagePanel } from './components/ImagePanel';
 import { VideoPanel } from './components/VideoPanel';
+import { AvatarPanel } from './components/AvatarPanel';
 import { FunnelPanels } from './components/FunnelPanels';
 import { BlankState } from './components/BlankState';
 import { OutputWorkspace } from './components/OutputWorkspace';
@@ -94,6 +95,7 @@ export default function App() {
     handleAspectChange,
     isOptimizingImagePrompt, handleOptimizeImagePrompt,
     videoResult, handleGenerateVideo,
+    speechResult, avatarResult, handleGenerateSpeech, handleGenerateAvatar,
     handleExecuteTerminalCommand,
   } = useContentMachine();
 
@@ -109,7 +111,7 @@ export default function App() {
             isAnalyzingCvi || isBrainstorming || isScanning || isGeneratingStrategy ||
             isGeneratingCampaign || isSharpening || isGeneratingMatrix ||
             isGeneratingEffectiveness || isGeneratingLogo || isOptimizingLogoPrompt ||
-            isOptimizingImagePrompt || videoResult.loading
+            isOptimizingImagePrompt || videoResult.loading || speechResult.loading || avatarResult.loading
           }
           title={
             isVisualDeveloping ? 'Visuel udvikling' :
@@ -126,6 +128,8 @@ export default function App() {
             isOptimizingLogoPrompt ? 'Logo-prompt' :
             isOptimizingImagePrompt ? 'Optimerer billed-prompt' :
             videoResult.loading ? 'Genererer video' :
+            speechResult.loading ? 'Genererer tale' :
+            avatarResult.loading ? 'Genererer avatar' :
             isRefining ? 'Forfiner' :
             isAnalyzing ? 'Analyserer' :
             deepMode ? 'Redaktionsmøde' : 'Genererer'
@@ -335,6 +339,14 @@ export default function App() {
                 generatedImageUrl={generatedImages.custom.url}
                 video={videoResult}
                 onGenerate={handleGenerateVideo}
+              />
+
+              <AvatarPanel
+                generatedImageUrl={generatedImages.custom.url}
+                speech={speechResult}
+                avatar={avatarResult}
+                onGenerateSpeech={handleGenerateSpeech}
+                onGenerateAvatar={handleGenerateAvatar}
               />
 
               <LogoPanel
