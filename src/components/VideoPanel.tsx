@@ -77,7 +77,7 @@ export function VideoPanel({ generatedImageUrl, video, onGenerate }: VideoPanelP
         <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
           <span>cfg_scale (prompt-styrke)</span><span className="text-brand-orange-300">{cfgScale.toFixed(2)}</span>
         </div>
-        <input type="range" min={0} max={1} step={0.05} value={cfgScale} onChange={(e) => setCfgScale(parseFloat(e.target.value))} className="w-full accent-brand-orange-500" />
+        <input type="range" aria-label="cfg_scale (prompt-styrke)" min={0} max={1} step={0.05} value={cfgScale} onChange={(e) => setCfgScale(parseFloat(e.target.value))} className="w-full accent-brand-orange-500" />
       </div>
 
       <input type="text" value={tailUrl} onChange={(e) => setTailUrl(e.target.value)} placeholder="Slut-frame URL (valgfri)" className={inputCls} />
