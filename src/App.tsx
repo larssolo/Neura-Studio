@@ -13,6 +13,7 @@ import { Toolbar } from './components/Toolbar';
 import { UsageBadge } from './components/UsageBadge';
 import { LogoPanel } from './components/LogoPanel';
 import { ImagePanel } from './components/ImagePanel';
+import { VideoPanel } from './components/VideoPanel';
 import { FunnelPanels } from './components/FunnelPanels';
 import { BlankState } from './components/BlankState';
 import { OutputWorkspace } from './components/OutputWorkspace';
@@ -92,6 +93,7 @@ export default function App() {
     handleGenerateImage,
     handleAspectChange,
     isOptimizingImagePrompt, handleOptimizeImagePrompt,
+    videoResult, handleGenerateVideo,
     handleExecuteTerminalCommand,
   } = useContentMachine();
 
@@ -107,7 +109,7 @@ export default function App() {
             isAnalyzingCvi || isBrainstorming || isScanning || isGeneratingStrategy ||
             isGeneratingCampaign || isSharpening || isGeneratingMatrix ||
             isGeneratingEffectiveness || isGeneratingLogo || isOptimizingLogoPrompt ||
-            isOptimizingImagePrompt
+            isOptimizingImagePrompt || videoResult.loading
           }
           title={
             isVisualDeveloping ? 'Visuel udvikling' :
@@ -123,6 +125,7 @@ export default function App() {
             isGeneratingLogo ? 'Logo' :
             isOptimizingLogoPrompt ? 'Logo-prompt' :
             isOptimizingImagePrompt ? 'Optimerer billed-prompt' :
+            videoResult.loading ? 'Genererer video' :
             isRefining ? 'Forfiner' :
             isAnalyzing ? 'Analyserer' :
             deepMode ? 'Redaktionsmøde' : 'Genererer'
@@ -326,6 +329,12 @@ export default function App() {
                 onAspectChange={(r) => handleAspectChange('custom', r)}
                 onOptimize={(p, mode) => handleOptimizeImagePrompt(brief, p, mode)}
                 isOptimizing={isOptimizingImagePrompt}
+              />
+
+              <VideoPanel
+                generatedImageUrl={generatedImages.custom.url}
+                video={videoResult}
+                onGenerate={handleGenerateVideo}
               />
 
               <LogoPanel
