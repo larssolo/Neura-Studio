@@ -6,12 +6,12 @@
 import { useState } from 'react';
 import { httpErrorMessage } from './httpError';
 
-export type GeneratedImageKey = 'hero' | 'detail' | 'abstract';
+export type GeneratedImageKey = 'hero' | 'detail' | 'abstract' | 'custom';
 export type GeneratedImageState = { url: string; loading: boolean; error: string | null; aspectRatio: string };
 export type GeneratedImages = Record<GeneratedImageKey, GeneratedImageState>;
 
 /**
- * AI-billedgenerering pr. slot (hero/detail/abstract): aspekt-forhold og
+ * AI-billedgenerering pr. slot (hero/detail/abstract/custom): aspekt-forhold og
  * generering via /api/generate-image. Selvstændigt domæne — kun afhængig af
  * den fælles fejl-helper. setGeneratedImages eksponeres så session-gendannelse
  * kan fylde gemte billeder ind.
@@ -20,7 +20,8 @@ export function useImageGeneration() {
   const [generatedImages, setGeneratedImages] = useState<GeneratedImages>({
     hero: { url: '', loading: false, error: null, aspectRatio: '16:9' },
     detail: { url: '', loading: false, error: null, aspectRatio: '1:1' },
-    abstract: { url: '', loading: false, error: null, aspectRatio: '16:9' }
+    abstract: { url: '', loading: false, error: null, aspectRatio: '16:9' },
+    custom: { url: '', loading: false, error: null, aspectRatio: '1:1' }
   });
 
   const handleGenerateImage = async (key: GeneratedImageKey, promptText: string) => {

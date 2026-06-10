@@ -12,6 +12,7 @@ import { AppHeader } from './components/AppHeader';
 import { Toolbar } from './components/Toolbar';
 import { UsageBadge } from './components/UsageBadge';
 import { LogoPanel } from './components/LogoPanel';
+import { ImagePanel } from './components/ImagePanel';
 import { FunnelPanels } from './components/FunnelPanels';
 import { BlankState } from './components/BlankState';
 import { OutputWorkspace } from './components/OutputWorkspace';
@@ -312,18 +313,28 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* LOGO GENERATOR PANEL */}
-            <LogoPanel
-              brief={brief}
-              logoResult={logoResult}
-              isGeneratingLogo={isGeneratingLogo}
-              handleGenerateLogo={handleGenerateLogo}
-              isOptimizingLogoPrompt={isOptimizingLogoPrompt}
-              handleOptimizeLogoPrompt={handleOptimizeLogoPrompt}
-              onClearResult={() => setLogoResult(null)}
-              copiedKey={copiedKey}
-              onCopy={handleCopyToClipboard}
-            />
+            {/* ASSET GENERATORS (uafhængige af funnel) */}
+            <div className="space-y-3">
+              <span className="block text-[11px] font-mono font-bold tracking-wider uppercase text-slate-400">Assets · kræver ikke funnel</span>
+
+              <ImagePanel
+                image={generatedImages.custom}
+                onGenerate={(p) => handleGenerateImage('custom', p)}
+                onAspectChange={(r) => handleAspectChange('custom', r)}
+              />
+
+              <LogoPanel
+                brief={brief}
+                logoResult={logoResult}
+                isGeneratingLogo={isGeneratingLogo}
+                handleGenerateLogo={handleGenerateLogo}
+                isOptimizingLogoPrompt={isOptimizingLogoPrompt}
+                handleOptimizeLogoPrompt={handleOptimizeLogoPrompt}
+                onClearResult={() => setLogoResult(null)}
+                copiedKey={copiedKey}
+                onCopy={handleCopyToClipboard}
+              />
+            </div>
 
             {/* AI HUMANIZER & DETECTOR BYPASS PANEL */}
             <HumanizerPanel
@@ -342,7 +353,7 @@ export default function App() {
               <span>
                 Neura Studio by{' '}
                 <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.18.0
+                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.19.0
               </span>
               <div className="flex items-center space-x-4">
                 {lastUsage && <UsageBadge usage={lastUsage} />}
