@@ -32,7 +32,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
   const [strategy, setStrategy] = useState<StrategyFoundation | null>(() => loadSession()?.strategy ?? null);
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState<boolean>(false);
 
-  const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(null);
+  const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(() => loadSession()?.campaignPlatform ?? null);
   const [isGeneratingCampaign, setIsGeneratingCampaign] = useState<boolean>(false);
   const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => loadSession()?.selectedTerritory ?? null);
 

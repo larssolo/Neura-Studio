@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import type { ProjectBrief, BrandSurfaceOutput, CampaignTerritory, StrategyFoundation, ChannelMatrix, CulturalScanResult, EffectivenessFramework } from '../types';
+import type { ProjectBrief, BrandSurfaceOutput, CampaignPlatform, CampaignTerritory, StrategyFoundation, ChannelMatrix, CulturalScanResult, EffectivenessFramework } from '../types';
 
 const KEY = 'brand_surface_session';
 
@@ -16,6 +16,7 @@ export interface SavedSession {
   cviFileName?: string | null;
   activeTab?: string;
   lockedSections?: string[];
+  campaignPlatform?: CampaignPlatform | null;
   selectedTerritory?: CampaignTerritory | null;
   strategy?: StrategyFoundation | null;
   channelMatrix?: ChannelMatrix | null;

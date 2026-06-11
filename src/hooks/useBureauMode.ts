@@ -16,10 +16,14 @@ export interface BureauModeDeps {
   setErrorMsg: Dispatch<SetStateAction<string | null>>;
   setCulturalIntel: Dispatch<SetStateAction<CulturalScanResult | null>>;
   setStrategy: Dispatch<SetStateAction<StrategyFoundation | null>>;
+  strategy: StrategyFoundation | null;
   setCampaignPlatform: Dispatch<SetStateAction<CampaignPlatform | null>>;
   handleSelectTerritory: (t: CampaignTerritory) => void;
+  selectedTerritory: CampaignTerritory | null;
   setChannelMatrix: Dispatch<SetStateAction<ChannelMatrix | null>>;
+  channelMatrix: ChannelMatrix | null;
   setEffectiveness: Dispatch<SetStateAction<EffectivenessFramework | null>>;
+  effectiveness: EffectivenessFramework | null;
   setOutput: Dispatch<SetStateAction<BrandSurfaceOutput | null>>;
 }
 
@@ -95,8 +99,9 @@ async function readSse(
 export function useBureauMode(deps: BureauModeDeps) {
   const {
     brief, setLastUsage, setErrorMsg,
-    setCulturalIntel, setStrategy, setCampaignPlatform,
-    handleSelectTerritory, setChannelMatrix, setEffectiveness, setOutput,
+    setCulturalIntel, setStrategy, strategy, setCampaignPlatform,
+    handleSelectTerritory, selectedTerritory, setChannelMatrix, channelMatrix,
+    setEffectiveness, effectiveness, setOutput,
   } = deps;
 
   const [bureauModeActive, setBureauModeActive] = useState(false);
@@ -327,7 +332,15 @@ export function useBureauMode(deps: BureauModeDeps) {
   const handleGeneratePitch = useCallback(async () => {
     setIsGeneratingPitch(true);
     try {
-      const raw = await postJson<any>('/api/pitch', { brief });
+      const matrixSummary = channelMatrix?.channels?.slice(0, 3).map(c => `${c.channel}: ${c.headline}`).join('; ') || '';
+      const effectSummary = effectiveness ? `Business objective: ${effectiveness.businessObjective}. Success: ${effectiveness.successScenario}` : '';
+      const raw = await postJson<any>('/api/pitch', {
+        brief,
+        strategy,
+        bigIdea: selectedTerritory,
+        channelMatrixSummary: matrixSummary,
+        effectivenessSummary: effectSummary,
+      });
       const { _usage, ...pitchData } = raw;
       if (_usage) setLastUsage(_usage);
       setPitchResult(pitchData as PitchResult);
@@ -336,7 +349,7 @@ export function useBureauMode(deps: BureauModeDeps) {
     } finally {
       setIsGeneratingPitch(false);
     }
-  }, [brief, setLastUsage, setErrorMsg]);
+  }, [brief, strategy, selectedTerritory, channelMatrix, effectiveness, setLastUsage, setErrorMsg]);
 
   return {
     bureauModeActive, setBureauModeActive,

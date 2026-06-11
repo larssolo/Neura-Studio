@@ -171,10 +171,14 @@ export function useContentMachine() {
     setErrorMsg,
     setCulturalIntel,
     setStrategy,
+    strategy,
     setCampaignPlatform,
     handleSelectTerritory,
+    selectedTerritory,
     setChannelMatrix,
+    channelMatrix,
     setEffectiveness,
+    effectiveness,
     setOutput,
   });
 
@@ -222,8 +226,8 @@ export function useContentMachine() {
 
   useEffect(() => {
     if (!output && !brief.client) return;
-    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness });
-  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness]);
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, campaignPlatform, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, campaignPlatform, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness]);
 
   const handleClearPresets = () => {
     setCustomPresets([]);
