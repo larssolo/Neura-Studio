@@ -82,10 +82,12 @@ export async function generateStructured<T>(opts: StructuredOptions): Promise<T>
 
   // Validering og parsing — aldrig genprøvet.
   const u = (msg as any)?.usage;
-  console.log(
-    `[claude] ${model} ${opts.tool.name} in=${u?.input_tokens ?? '?'} out=${u?.output_tokens ?? '?'} ` +
-      `cache_read=${u?.cache_read_input_tokens ?? 0} cache_write=${u?.cache_creation_input_tokens ?? 0} stop=${msg!.stop_reason}`,
-  );
+  if (process.env.LOG_USAGE) {
+    console.log(
+      `[claude] ${model} ${opts.tool.name} in=${u?.input_tokens ?? '?'} out=${u?.output_tokens ?? '?'} ` +
+        `cache_read=${u?.cache_read_input_tokens ?? 0} cache_write=${u?.cache_creation_input_tokens ?? 0} stop=${msg!.stop_reason}`,
+    );
+  }
 
   if (opts.onUsage) {
     opts.onUsage({

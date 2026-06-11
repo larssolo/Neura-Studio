@@ -4,7 +4,7 @@
  */
 
 import type { BrandSurfaceOutput, ProjectBrief } from '../types';
-import { slugify } from './exportMarkdown';
+import { slugify, downloadTextFile } from './exportMarkdown';
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -138,13 +138,5 @@ ${sections.join('\n')}
 export function downloadHtmlFile(output: BrandSurfaceOutput, brief?: ProjectBrief): void {
   const html = buildHtml(output, brief);
   const slug = slugify(brief?.client || 'brand-surface');
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${slug}-case.html`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadTextFile(`${slug}-case.html`, html, 'text/html');
 }

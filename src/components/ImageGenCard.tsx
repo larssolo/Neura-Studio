@@ -67,9 +67,9 @@ export function ImageGenCard({
               <button
                 key={r}
                 onClick={() => onAspectChange(r)}
-                className={`px-2 py-0.5 text-[11px] font-mono rounded transition-colors ${
+                className={`px-2 py-0.5 text-[11px] font-mono rounded transition-all ${
                   image.aspectRatio === r
-                    ? 'bg-brand-orange-600 text-white'
+                    ? 'bg-violet-600/20 border border-violet-500/60 text-white'
                     : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
@@ -81,8 +81,8 @@ export function ImageGenCard({
 
         {image.loading ? (
           <div className="bg-slate-950 border border-slate-800 rounded-lg p-8 flex flex-col items-center justify-center space-y-3 min-h-[140px]">
-            <Loader2 className="w-6 h-6 text-brand-orange-500 animate-spin" />
-            <span className="text-[11px] text-slate-400">Genererer billede…</span>
+            <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+            <span className="text-[11px] text-slate-400 font-mono">Genererer billede…</span>
           </div>
         ) : image.error ? (
           <div className="bg-red-950/40 border border-red-900/40 text-red-400 rounded-lg p-3 text-[11px] space-y-2">
@@ -110,14 +110,14 @@ export function ImageGenCard({
                 <a
                   href={image.url}
                   download={`${downloadBase}_${image.aspectRatio.replace(':', 'x')}.jpg`}
-                  className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-brand-orange-500 hover:scale-110 transition-all shadow-md"
+                  className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-violet-600 hover:scale-110 transition-all shadow-md"
                   title="Download i fuld opløsning"
                 >
                   <Download className="w-4 h-4" />
                 </a>
                 <button
                   onClick={onGenerate}
-                  className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-brand-orange-500 hover:scale-110 transition-all shadow-md"
+                  className="p-2.5 bg-zinc-900 text-white rounded-full hover:bg-violet-600 hover:scale-110 transition-all shadow-md"
                   title="Generer nyt billede"
                 >
                   <RotateCcw className="w-4 h-4" />
@@ -129,7 +129,7 @@ export function ImageGenCard({
               <a
                 href={image.url}
                 download={`${downloadBase}.jpg`}
-                className="text-orange-400 hover:text-orange-300 font-medium flex items-center space-x-1"
+                className="text-violet-300 hover:text-violet-200 font-mono flex items-center space-x-1"
               >
                 <Download className="w-3 h-3" />
                 <span>Download</span>
@@ -140,8 +140,10 @@ export function ImageGenCard({
           <button
             onClick={onGenerate}
             disabled={disabled}
-            className={`w-full py-2 rounded-lg text-white font-medium text-[11px] shadow-sm transition-all flex items-center justify-center space-x-1.5 ${
-              disabled ? 'bg-slate-800 text-slate-500 cursor-not-allowed' : 'bg-brand-orange-600 hover:bg-brand-orange-500 cursor-pointer'
+            className={`w-full py-2.5 px-4 rounded-lg font-mono font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center space-x-1.5 ${
+              disabled
+                ? 'bg-slate-900 text-slate-500 border border-slate-800 cursor-not-allowed'
+                : 'bg-violet-600/15 hover:bg-violet-600/25 text-violet-200 hover:text-white border border-violet-500/40 active:scale-[0.99] cursor-pointer'
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -150,7 +152,7 @@ export function ImageGenCard({
         )}
       </div>
 
-      <div className="text-[11px] text-slate-500 mt-3 pt-2 border-t border-slate-800">{footer}</div>
+      <div className="text-[11px] text-slate-500 font-mono mt-3 pt-2 border-t border-slate-800">{footer}</div>
     </div>
   );
 }

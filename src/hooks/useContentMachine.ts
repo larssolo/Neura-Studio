@@ -66,6 +66,24 @@ export const PRESETS: PresetBrief[] = [
   }
 ];
 
+function applyLockedSections(
+  fresh: BrandSurfaceOutput,
+  locked: string[],
+  existing: BrandSurfaceOutput,
+): BrandSurfaceOutput {
+  if (locked.length === 0) return fresh;
+  const m = { ...fresh };
+  for (const key of locked) {
+    if (key === 'shortCaseText') m.shortCaseText = existing.shortCaseText;
+    else if (key === 'longCaseText') m.longCaseText = existing.longCaseText;
+    else if (key === 'linkedinPost') m.linkedinPost = existing.linkedinPost;
+    else if (key === 'creativeNewsletterSection' && m.production && existing.production) {
+      m.production = { ...m.production, newsletterSection: existing.production.newsletterSection };
+    }
+  }
+  return m;
+}
+
 export function useContentMachine() {
   const [brief, setBrief] = useState<ProjectBrief>({
     client: '',
@@ -299,7 +317,7 @@ export function useContentMachine() {
     }
   }, [activeTab]);
 
-  const handleBriefChange = (field: keyof ProjectBrief, value: any) => {
+  const handleBriefChange = <K extends keyof ProjectBrief>(field: K, value: ProjectBrief[K]) => {
     setBrief(prev => ({ ...prev, [field]: value }));
   };
 
@@ -606,20 +624,8 @@ export function useContentMachine() {
       if (_usage) setLastUsage(_usage);
       const data = outputData as BrandSurfaceOutput;
 
-      // Bevar låste sektioner fra det eksisterende output
-      const mergedData: BrandSurfaceOutput = lockedSections.length > 0 && output
-        ? (() => {
-            const m = { ...data };
-            for (const key of lockedSections) {
-              if (key === 'shortCaseText') m.shortCaseText = output.shortCaseText;
-              else if (key === 'longCaseText') m.longCaseText = output.longCaseText;
-              else if (key === 'linkedinPost') m.linkedinPost = output.linkedinPost;
-              else if (key === 'creativeNewsletterSection' && m.production && output.production) {
-                m.production = { ...m.production, newsletterSection: output.production.newsletterSection };
-              }
-            }
-            return m;
-          })()
+      const mergedData: BrandSurfaceOutput = output
+        ? applyLockedSections(data, lockedSections, output)
         : data;
 
       setOutput(mergedData);
@@ -694,19 +700,8 @@ export function useContentMachine() {
       const data: BrandSurfaceOutput = finalEvt.output;
       const draft: BrandSurfaceOutput = finalEvt.draft || data;
 
-      const mergedData: BrandSurfaceOutput = lockedSections.length > 0 && output
-        ? (() => {
-            const m = { ...data };
-            for (const key of lockedSections) {
-              if (key === 'shortCaseText') m.shortCaseText = output.shortCaseText;
-              else if (key === 'longCaseText') m.longCaseText = output.longCaseText;
-              else if (key === 'linkedinPost') m.linkedinPost = output.linkedinPost;
-              else if (key === 'creativeNewsletterSection' && m.production && output.production) {
-                m.production = { ...m.production, newsletterSection: output.production.newsletterSection };
-              }
-            }
-            return m;
-          })()
+      const mergedData: BrandSurfaceOutput = output
+        ? applyLockedSections(data, lockedSections, output)
         : data;
 
       setOutput(mergedData);
@@ -957,26 +952,7 @@ export function useContentMachine() {
         return { ...prev, [targetKey]: updatedList };
       });
       setActiveCompareIndex(prev => ({ ...prev, [targetKey]: null }));
-      setOutput(prev => {
-        if (!prev) return null;
-        const updated = { ...prev };
-        if (targetKey === 'shortCaseText') updated.shortCaseText = refinedText;
-        else if (targetKey === 'longCaseText') updated.longCaseText = refinedText;
-        else if (targetKey === 'linkedinPost') updated.linkedinPost = refinedText;
-        else if (isEnglishObj && updated.english) {
-          if (targetKey === 'englishShortCaseText') updated.english.shortCaseText = refinedText;
-          if (targetKey === 'englishLongCaseText') updated.english.longCaseText = refinedText;
-          if (targetKey === 'englishLinkedinPost') updated.english.linkedinPost = refinedText;
-        } else if (isProductionObj && updated.production) {
-          if (targetKey === 'creativeHeroVisual') updated.production.heroVisual = refinedText;
-          if (targetKey === 'creativeSomeFormat') updated.production.someFormat = refinedText;
-          if (targetKey === 'creativeNewsletterSection') updated.production.newsletterSection = refinedText;
-        }
-        if (targetKey === 'shortCaseText' && updated.directUsable) {
-          updated.directUsable.bestShortText = refinedText;
-        }
-        return updated;
-      });
+      applyLiveText(refinedText);
       setCustomRefinementPrompt('');
     } catch (err: any) {
       console.error(err);
@@ -1019,6 +995,13 @@ export function useContentMachine() {
     });
   };
 
+  const TAB_COMMANDS: Record<string, string> = {
+    '/case': 'case', '/linkedin': 'linkedin', '/newsletter': 'newsletter',
+    '/headlines': 'headlines', '/keywords': 'keywords', '/prompts': 'prompts',
+    '/english': 'english', '/cvi': 'cvi', '/production': 'production',
+    '/produktionsforslag': 'production',
+  };
+
   const handleExecuteTerminalCommand = (e: FormEvent) => {
     e.preventDefault();
     if (!terminalCommand.trim()) return;
@@ -1026,21 +1009,9 @@ export function useContentMachine() {
     const cmd = terminalCommand.trim().toLowerCase();
     setTerminalCommand('');
 
-    if (cmd === '/case') setActiveTab('case');
-    else if (cmd === '/linkedin') setActiveTab('linkedin');
-    else if (cmd === '/newsletter') setActiveTab('newsletter');
-    else if (cmd === '/headlines') setActiveTab('headlines');
-    else if (cmd === '/keywords') setActiveTab('keywords');
-    else if (cmd === '/prompts') setActiveTab('prompts');
-    else if (cmd === '/english') setActiveTab('english');
-    else if (cmd === '/cvi') setActiveTab('cvi');
-    else if (cmd === '/production' || cmd === '/produktionsforslag') setActiveTab('production');
-    else if (cmd === '/run' || cmd === '/generate') handleGenerateAll();
-    else if (cmd === '/shorten') handleRefine('/shorten', selectedTextKey);
-    else if (cmd === '/more-human') handleRefine('/more-human', selectedTextKey);
-    else if (cmd === '/more-business') handleRefine('/more-business', selectedTextKey);
-    else if (cmd.startsWith('/') && cmd.length > 2) handleRefine(terminalCommand, selectedTextKey);
-    else handleRefine(terminalCommand, selectedTextKey);
+    if (TAB_COMMANDS[cmd]) { setActiveTab(TAB_COMMANDS[cmd]); return; }
+    if (cmd === '/run' || cmd === '/generate') { handleGenerateAll(); return; }
+    handleRefine(terminalCommand, selectedTextKey);
   };
 
   return {

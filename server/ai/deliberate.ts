@@ -149,7 +149,7 @@ export async function runDeliberation(
       system: cp.system,
       userContent: [{ type: 'text', text: cp.user }],
       tool: creativeTool,
-      model: config.model,
+      model: config.fastModel,
       maxTokens: 4096,
     });
 

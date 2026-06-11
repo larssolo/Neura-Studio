@@ -349,9 +349,13 @@ async function startServer() {
         return res.status(400).json({ error: 'Brief er påkrævet.' });
       }
 
-      const signal = req.socket.destroyed
-        ? AbortSignal.abort()
-        : new AbortController().signal;
+      const ac = new AbortController();
+      if (req.socket.destroyed) {
+        ac.abort();
+      } else {
+        req.socket.once('close', () => ac.abort());
+      }
+      const signal = ac.signal;
 
       const result = await runCulturalScan(brief, signal);
 
@@ -448,10 +452,9 @@ async function startServer() {
           if (!totalUsage) {
             totalUsage = { ...u };
           } else {
-            totalUsage.inputTokens += u.inputTokens;
-            totalUsage.outputTokens += u.outputTokens;
-            totalUsage.cacheReadTokens += u.cacheReadTokens;
-            totalUsage.cacheWriteTokens += u.cacheWriteTokens;
+            for (const k of Object.keys(u) as (keyof typeof u)[]) {
+              totalUsage[k] = (totalUsage[k] ?? 0) + u[k];
+            }
           }
         },
       });
