@@ -224,10 +224,14 @@ export function useBureauMode(deps: BureauModeDeps) {
       // 6. Copy-pakke (generate-deep via SSE)
       try {
         updateStage('copy', { status: 'working' });
+        let copyStream = '';
         const payload = await readSse(
           '/api/generate-deep',
           { brief, chosenIdea: territory || null },
-          (delta) => updateStage('copy', { streamText: delta }),
+          (delta) => {
+            copyStream += delta;
+            updateStage('copy', { streamText: copyStream });
+          },
           abort.signal,
         );
         if (payload?.output) {
