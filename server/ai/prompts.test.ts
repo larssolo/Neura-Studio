@@ -18,6 +18,10 @@ import {
   refineInstruction,
   cacheableSystem,
   buildImagePrompt,
+  BUREAU_RUBRIC,
+  GENERATE_SYSTEM_ROLE,
+  buildCritique,
+  buildPitch,
 } from './prompts';
 
 const sampleTerritory = {
@@ -130,7 +134,7 @@ describe('buildGenerate', () => {
   it('includes the static role and the brief fields', () => {
     const { system, user } = buildGenerate(baseBrief);
     expect(system).toHaveLength(1);
-    expect(system[0].text).toContain('Neura Studio Produktionsassistent');
+    expect(system[0].text).toContain('Senior Tekstforfatter');
     expect(user).toContain('Acme');
     expect(user).toContain('Launch');
     expect(user).toContain('Dansk');
@@ -342,7 +346,7 @@ describe('buildSynthesize', () => {
     const { system, user } = buildSynthesize(draft, critique, creative, { client: 'Acme', project: 'Launch', language: 'Dansk' });
     const systemText = system.map((b) => b.text).join('\n');
     expect(systemText).toContain('Chefredaktør');
-    expect(systemText).toContain('Produktionsassistent'); // GENERATE_SYSTEM_ROLE inherited
+    expect(systemText).toContain('Senior Tekstforfatter'); // GENERATE_SYSTEM_ROLE inherited
     expect(user).toContain('FØRSTEUDKAST');
     expect(user).toContain('REDAKTIONEL KRITIK');
     expect(user).toContain('KREATIVE ALTERNATIVER');
@@ -427,5 +431,81 @@ describe('buildImagePrompt', () => {
     const { user } = buildImagePrompt(brief, 'a blue car', 'refine');
     expect(user).toContain('a blue car');
     expect(user.toLowerCase()).toContain('forfin');
+  });
+});
+
+describe('BUREAU_RUBRIC', () => {
+  it('is a non-empty string', () => {
+    expect(typeof BUREAU_RUBRIC).toBe('string');
+    expect(BUREAU_RUBRIC.length).toBeGreaterThan(50);
+  });
+
+  it('contains all four criteria keywords', () => {
+    expect(BUREAU_RUBRIC).toContain('Skarphed');
+    expect(BUREAU_RUBRIC).toContain('Distinktivitet');
+    expect(BUREAU_RUBRIC).toContain('Bevisbyrde');
+    expect(BUREAU_RUBRIC).toContain('Dansk idiomatik');
+  });
+});
+
+describe('GENERATE_SYSTEM_ROLE', () => {
+  it('does not mention Produktionsassistent (legacy persona)', () => {
+    expect(GENERATE_SYSTEM_ROLE).not.toContain('Produktionsassistent');
+  });
+
+  it('references bureau rubric criteria', () => {
+    expect(GENERATE_SYSTEM_ROLE).toContain('Skarphed');
+  });
+});
+
+describe('buildCritique', () => {
+  it('includes the critiquing role in system', () => {
+    const { system, user } = buildCritique({
+      role: 'Chefstrateg',
+      artifact: 'Den Store Idé: "Alt begynder med...',
+      context: 'Strategisk fundament: ...',
+      language: 'Dansk',
+    });
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Chefstrateg');
+    expect(user).toContain('Den Store Idé');
+  });
+
+  it('includes BUREAU_RUBRIC criteria in system', () => {
+    const { system } = buildCritique({
+      role: 'Kreativ Direktør',
+      artifact: 'Copy-pakke...',
+      context: '',
+      language: 'Dansk',
+    });
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Skarphed');
+  });
+
+  it('does not crash with empty context', () => {
+    expect(() =>
+      buildCritique({ role: 'Kreativ Direktør', artifact: 'x', context: '', language: 'Dansk' }),
+    ).not.toThrow();
+  });
+});
+
+describe('buildPitch', () => {
+  it('includes Pitch role in system', () => {
+    const { system } = buildPitch({ brief: { client: 'Acme' } as any });
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).toContain('Pitch');
+  });
+
+  it('includes brief client name in user prompt', () => {
+    const { user } = buildPitch({ brief: { client: 'Acme', project: 'Test' } as any });
+    expect(user).toContain('Acme');
+  });
+
+  it('injects strategy context when provided', () => {
+    const { user } = buildPitch({
+      brief: { client: 'Acme' } as any,
+      strategy: { singleMindedProposition: 'Vi gør det enkelt.', audienceTruth: 'De er overset.' },
+    });
+    expect(user).toContain('Vi gør det enkelt.');
   });
 });

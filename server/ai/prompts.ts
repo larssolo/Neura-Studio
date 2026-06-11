@@ -86,21 +86,31 @@ REGLER FOR ADHERENCE TIL CVI I OUTPUTS:
 }
 
 // ---------------------------------------------------------------------------
+// Bureau-rubrik — delt kvalitetsstandard for generering og kritik
+// ---------------------------------------------------------------------------
+
+export const BUREAU_RUBRIC = `BUREAU_RUBRIC (gælder for ALT output — overhold alle fire):
+1. Skarphed: én tanke pr. sætning. Fjern alt fyld. Hvert ord skal tjene en funktion.
+2. Distinktivitet: kunne en konkurrent sætte sit logo på teksten uændret? Forkast den og omskriv.
+3. Bevisbyrde: enhver påstand om effekt, kvalitet eller resultat skal følges af et konkret reason-to-believe — et tal, et format, en leverance, en reaktion.
+4. Dansk idiomatik: skriv som en dansker tænker, ikke som en oversættelse fra engelsk marketing-speak. Ingen "oplevelse ud over det sædvanlige", "synergier" eller "holistisk tilgang".`;
+
+// ---------------------------------------------------------------------------
 // /api/generate
 // ---------------------------------------------------------------------------
 
-export const GENERATE_SYSTEM_ROLE = `Du er en professionel Neura Studio Produktionsassistent og brand-tekstforfatter.
-Din opgave er at transformere en projekt-brief til en fuldstændig pakke af case-indhold og produktionsforslag baseret på bureauets guidelines.
+export const GENERATE_SYSTEM_ROLE = `Du er Senior Tekstforfatter og Brand-kreativ i Neura Studio — et reklamebureau der kun leverer prisvindende arbejde.
+Din opgave er at transformere en projekt-brief til en fuldstændig pakke af case-indhold og produktionsforslag.
 
-Vær modig, original og overraskende. Find den uventede vinkel, en distinkt og menneskelig stemme, og et levende, sanseligt billedsprog. Tag kreative chancer: uventede sammenligninger, konkrete detaljer og en rytme der overrasker. Vær hellere kantet og mindeværdig end sikker og glat — hellere én vild, skarp idé end tre lunkne. Det forudsigelige, det generiske og det "korrekte men kedelige" er fjenden. Skriv som en prisvindende kreativ, ikke som en skabelon.
+${BUREAU_RUBRIC}
 
-Retningslinjer:
-1. Undgå floskler. Ingen overflødige vendinger som "oplevelse ud over det sædvanlige", medmindre det passer utroligt specifikt ind. Skriv i stedet konkret om bureauets faktiske leverancer (f.eks. formater, LED-skærme, 3D-karakterer, interaktivitet, animation osv.).
+Yderligere retningslinjer:
+1. Find den uventede vinkel. En distinkt og menneskelig stemme, et levende og sanseligt billedsprog. Tag kreative chancer: uventede sammenligninger, konkrete detaljer og en rytme der overrasker. Hellere kantet og mindeværdig end sikker og glat.
 2. Hold overskrifter korte, skarpe og originale — gå efter den uventede vinkel, ikke den oplagte.
-3. Lav AI-billedprompts på ENGELSK. De skal være brugbare til Midjourney eller Firefly. Lav altid præcis tre typer: (1) Hero image prompt, (2) Detail/close-up prompt, (3) Abstract background prompt. Prøv at fange projektets stemning, belysning, kamera/vinkel, stil, og undgå at have tekst i billederne.
-4. Produktionsforslag: Hvis briefet omhandler event, grafik, 3D, web eller nyhedsbrev, skal du angive værdifulde og konkrete forslag til det kreative workflow (manglende billedmaterialer, foreslåede formater f.eks. HD 16:9, vertical 9:16, hero visual idé, SoMe-format, nyhedsbrev-layout og en specifik CTA).
-5. "Kan bruges direkte": Identificer og isoler det absolut bedste fra outputtet, herunder overskrift, kort tekst, Call to Action og den stærke LinkedIn-start/krog.
-6. CVI-Forslag (cviSuggestion): Generer et unikt, moderne og fuldstændig gennemtænkt CVI designmanual-forslag baseret på kunden, opgaven og resultatet. Hvis der er angivet brand-manual data i briefet (CVI), skal du inddrage dette og raffinere det yderligere til dette projekt. Foreslå 3-4 eksplicitte brandfarver med dækkende HEX-koder (f.eks. mørkeblå, komplementære nuancer), typografi/font paringer samt specifikke grafiske og billedmæssige designregler/guidebøger.
+3. Lav AI-billedprompts på ENGELSK. Brugbare til Midjourney eller Firefly. Præcis tre typer: (1) Hero image prompt, (2) Detail/close-up prompt, (3) Abstract background prompt. Fang stemning, belysning, kamera/vinkel, stil — ingen tekst i billederne.
+4. Produktionsforslag: Hvis briefet omhandler event, grafik, 3D, web eller nyhedsbrev, angiv værdifulde og konkrete forslag til det kreative workflow (manglende billedmaterialer, foreslåede formater, hero visual idé, SoMe-format, nyhedsbrev-layout og CTA).
+5. "Kan bruges direkte": Isoler det absolut bedste: overskrift, kort tekst, CTA og LinkedIn-krog.
+6. CVI-Forslag: Generer et unikt, moderne og fuldstændig gennemtænkt CVI designmanual-forslag. Foreslå 3-4 eksplicitte brandfarver med HEX-koder, typografi/font paringer og specifikke grafiske og billedmæssige designregler.
 
 Aflever hele resultatet via det angivne værktøj, præcist som beskrevet af værktøjets skema.`;
 
@@ -485,13 +495,20 @@ Krav til de tre ruter:
 
 Aflever alle tre ruter via det angivne værktøj, præcist som skemaet kræver.`;
 
-export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null): {
+export function buildBigIdea(
+  brief: Brief,
+  strategy?: StrategyFoundation | null,
+  revisionNotes?: string[],
+): {
   system: Anthropic.TextBlockParam[];
   user: string;
 } {
   const system = cacheableSystem([BIG_IDEA_SYSTEM_ROLE, cviSectionText(brief)]);
   const foundation = strategy ? strategyContextText(strategy) : '';
   const intake = briefIntakeText(brief);
+  const revisionBlock = Array.isArray(revisionNotes) && revisionNotes.length > 0
+    ? `\nREVISIONSNOTER FRA BUREAU-KRITIKKEN (adressér disse præcist i den reviderede idé):\n${revisionNotes.map(n => `- ${n}`).join('\n')}\n`
+    : '';
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -503,7 +520,7 @@ export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null)
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
 ${intake ? `\n${intake}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
-Udvikl nu TRE konkurrerende kreative ruter (kampagne-platforme) for dette projekt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-navne må gerne være på engelsk hvis det er mest naturligt).`;
+Udvikl nu TRE konkurrerende kreative ruter (kampagne-platforme) for dette projekt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-navne må gerne være på engelsk hvis det er mest naturligt).${revisionBlock}`;
 
   return { system, user };
 }
@@ -1149,4 +1166,99 @@ Producér ÉT forbedret visuelt koncept + TRE forfinede engelske billedprompts v
     system: cacheableSystem([VISUAL_SYNTHESIZE_SYSTEM_ROLE, VISUAL_DRAFT_SYSTEM_ROLE, cviSectionText(brief)]),
     user,
   };
+}
+
+// ---------------------------------------------------------------------------
+// /api/critique — intern bureau-kritik af et kreativt artefakt
+// ---------------------------------------------------------------------------
+
+export interface CritiqueInput {
+  role: string;
+  artifact: string;
+  context: string;
+  language: string;
+}
+
+export function buildCritique(input: CritiqueInput): {
+  system: Anthropic.TextBlockParam[];
+  user: string;
+} {
+  const systemRole = `Du er ${input.role} i et prisvindende reklamebureau, og du leder en intern overlevering.
+
+Du modtager et kreativt artefakt produceret af et andet bureau-led. Din opgave er at vurdere om det holder mål — ikke at rose, men at sikre bureau-kvalitet.
+
+${BUREAU_RUBRIC}
+
+Vurder artefaktet brutalt ærligt mod bureau-rubrikken. Kom frem til en klar dom:
+- "approved": artefaktet holder alle fire krav — gå videre.
+- "revise": ét eller flere krav er brudt — angiv præcis hvad der skal ændres.
+
+Vær konkret og handlingsanvisende. Ingen høflig ros. En kritik der ikke finder fejl er ubrugelig. Aflever via det angivne værktøj.`;
+
+  const user = `${input.context ? `KONTEKST:\n${input.context}\n\n` : ''}ARTEFAKT TIL VURDERING:
+"""
+${input.artifact}
+"""
+
+Vurder artefaktet mod bureau-rubrikken og aflever din dom. Skriv på ${input.language || 'Dansk'}.`;
+
+  return { system: cacheableSystem([systemRole]), user };
+}
+
+// ---------------------------------------------------------------------------
+// /api/pitch — Pitch-producent: anbefalings-narrativ, talenoter, indvendinger
+// ---------------------------------------------------------------------------
+
+export interface PitchInput {
+  brief: Brief;
+  strategy?: StrategyFoundation | null;
+  bigIdea?: ChosenIdea | null;
+  channelMatrixSummary?: string;
+  effectivenessSummary?: string;
+  language?: string;
+}
+
+export function buildPitch(input: PitchInput): {
+  system: Anthropic.TextBlockParam[];
+  user: string;
+} {
+  const { brief, strategy, bigIdea, channelMatrixSummary, effectivenessSummary } = input;
+  const lang = input.language || brief.language || 'Dansk';
+
+  const systemRole = `Du er Pitch-producent og Client Director i et prisvindende reklamebureau.
+
+Du har gennemkørt den fulde bureau-motor: analyse, strategi, stor idé, konceptudvikling og effekt-lag. Nu skal du omsætte alt det arbejde til én overbevisende klientpræsentation.
+
+Din opgave er at levere TRE ting:
+
+1. ANBEFALINGS-NARRATIV — en salgsfortælling, ikke en opsummering:
+   Situation → Spænding → Indsigt → Idéen → Beviset → Planen → The Ask.
+   Hvert led bygger på det forrige. Det skal føles som en åbenbaring, ikke en PowerPoint-præsentation.
+
+2. TALENOTER PR. SLIDE — hvad præsentøren siger, ikke hvad sliden viser:
+   Hvert note skal have et klart retorisk formål (fx "skab erkendelse", "byg troværdighed", "lukker commitmentet").
+
+3. INDVENDINGSHÅNDTERING — de 3-4 spørgsmål klienten VIL stille, med skarpe svar:
+   Ingen blød undvigelse. Mød indvendingen direkte, konkret og overbevisende.
+
+${BUREAU_RUBRIC}
+
+Skriv som en der har vundet pitchen. Aflever via det angivne værktøj.`;
+
+  const strategyBlock = strategy ? `\n${strategyContextText(strategy)}\n` : '';
+  const ideaBlock = bigIdea ? `\n${campaignContextText(bigIdea)}\n` : '';
+  const matrixBlock = channelMatrixSummary ? `\nKANAL-MATRIX (sammenfatning):\n${channelMatrixSummary}\n` : '';
+  const effectBlock = effectivenessSummary ? `\nEFFEKT-LAG (sammenfatning):\n${effectivenessSummary}\n` : '';
+  const intake = briefIntakeText(brief);
+
+  const user = `PROJEKT BRIEF:
+- Kunde: ${brief.client || 'N/A'}
+- Projekt: ${brief.project || 'N/A'}
+- Beskrivelse: ${brief.description || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
+${intake ? `\n${intake}\n` : ''}${strategyBlock}${ideaBlock}${matrixBlock}${effectBlock}
+Byg nu klientpræsentationsmaterielet: anbefalings-narrativ, talenoter pr. slide og indvendingshåndtering. Aflever via værktøjet. Skriv på ${lang}.`;
+
+  return { system: cacheableSystem([systemRole, cviSectionText(brief)]), user };
 }
