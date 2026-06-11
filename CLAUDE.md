@@ -121,7 +121,7 @@ npm run dev            # starts Express dev server on port 3000
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | Yes | — | Claude API key |
 | `ANTHROPIC_MODEL` | No | `claude-sonnet-4-6` | Default generation model |
-| `ANTHROPIC_CREATIVE_MODEL` | No | `claude-sonnet-4-6` | Model for deep/editorial synthesis |
+| `ANTHROPIC_CREATIVE_MODEL` | No | `claude-opus-4-8` | Model for deep/editorial synthesis |
 | `ANTHROPIC_FAST_MODEL` | No | `claude-haiku-4-5` | Cheap model for `/api/refine` |
 | `ANTHROPIC_MAX_TOKENS` | No | `8000` | Max output tokens for `/api/generate` |
 | `IMAGE_PROVIDER` | No | `fal` | `fal` \| `openai` \| `stability` |

@@ -12,20 +12,20 @@ dotenv.config({ path: ['.env.local', '.env'] });
 /**
  * Centraliseret konfiguration for AI-laget.
  * Standardmodel er Sonnet 4.6 (god balance mellem kvalitet og pris); en billig
- * hurtig-model (Haiku) bruges til trivielle opgaver. Sæt ANTHROPIC_MODEL=
- * claude-opus-4-8 for højeste kvalitet (markant dyrere).
+ * hurtig-model (Haiku 4.5) bruges til trivielle opgaver; Opus 4.8 bruges til
+ * det kreative syntese-trin (redaktionsmødet). Overstyres via env-variabler.
  */
 export const config = {
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-  // Standard: Sonnet (balance kvalitet/pris). Sæt ANTHROPIC_MODEL for at skifte
-  // (fx 'claude-opus-4-8' for højeste kvalitet, dyrere).
+  // Standard: Sonnet 4.6 (balance kvalitet/pris). Sæt ANTHROPIC_MODEL for at
+  // skifte (fx 'claude-opus-4-8' for højeste kvalitet, dyrere).
   model: process.env.ANTHROPIC_MODEL ?? 'claude-sonnet-4-6',
-  // Billig/hurtig model til trivielle opgaver (fx /refine).
+  // Billig/hurtig model til trivielle opgaver (fx /refine, kreativt push).
   fastModel: process.env.ANTHROPIC_FAST_MODEL ?? 'claude-haiku-4-5',
-  // Model til syntese-trinet i redaktionsmødet. Default Sonnet (hurtig + robust
-  // på Render). Sæt ANTHROPIC_CREATIVE_MODEL=claude-opus-4-8 for mere kreativ
-  // forfinelse — men Opus er langsommere og kan droppe lange SSE-kald på Render.
-  creativeModel: process.env.ANTHROPIC_CREATIVE_MODEL ?? 'claude-sonnet-4-6',
+  // Nyeste og bedste Claude til syntese-trinet i redaktionsmødet.
+  // Sæt ANTHROPIC_CREATIVE_MODEL=claude-sonnet-4-6 for hurtigere/billigere
+  // forfinelse — fx hvis Opus er for langsom på Render.
+  creativeModel: process.env.ANTHROPIC_CREATIVE_MODEL ?? 'claude-opus-4-8',
   // Loft for output-tokens. Sænket fra 16000 → 8000 for at begrænse værste-falds
   // omkostning pr. kald; det fulde generate-output ligger typisk på ~5-6k.
   maxTokens: Number(process.env.ANTHROPIC_MAX_TOKENS ?? 8000),
