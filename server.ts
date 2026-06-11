@@ -25,6 +25,8 @@ import {
   type Territory,
   buildLogoPrompt,
   buildImagePrompt,
+  buildCritique,
+  buildPitch,
   ANALYZE_CVI_SYSTEM_ROLE,
   cacheableSystem,
 } from './server/ai/prompts';
@@ -41,6 +43,8 @@ import {
   effectivenessTool,
   logoPromptTool,
   imagePromptTool,
+  critiqueTool,
+  pitchTool,
 } from './server/ai/schemas';
 import { runDeliberation } from './server/ai/deliberate';
 import { runVisualDeliberation } from './server/ai/deliberateVisual';
@@ -405,12 +409,12 @@ async function startServer() {
   // Den Store Idé: tre konkurrerende kampagne-platforme ud fra briefet
   app.post('/api/big-idea', async (req, res) => {
     try {
-      const { brief, strategy } = req.body;
+      const { brief, strategy, revisionNotes } = req.body;
       if (!brief) {
         return res.status(400).json({ error: 'Brief er påkrævet.' });
       }
 
-      const { system, user } = buildBigIdea(brief, strategy || null);
+      const { system, user } = buildBigIdea(brief, strategy || null, revisionNotes || []);
       let usageInfo: any = null;
       const parsed = await generateStructured<any>({
         system,
@@ -463,6 +467,66 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under ECD pres-test:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke pres-teste ruten.' });
+    }
+  });
+
+  // Bureau-kritik: intern overlevering-kritik af et kreativt artefakt
+  app.post('/api/critique', async (req, res) => {
+    try {
+      const { role, artifact, context, language } = req.body;
+      if (!role || !artifact) {
+        return res.status(400).json({ error: 'role og artifact er påkrævet.' });
+      }
+
+      const { system, user } = buildCritique({ role, artifact, context: context || '', language: language || 'Dansk' });
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: critiqueTool,
+        model: config.creativeModel,
+        maxTokens: 2048,
+      });
+
+      res.json(parsed);
+    } catch (error: any) {
+      console.error('Fejl under bureau-kritik:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke gennemføre bureau-kritikken.' });
+    }
+  });
+
+  // Pitch-afdeling: anbefalings-narrativ, talenoter og indvendingshåndtering
+  app.post('/api/pitch', async (req, res) => {
+    try {
+      const { brief, strategy, bigIdea, channelMatrixSummary, effectivenessSummary } = req.body;
+      if (!brief) {
+        return res.status(400).json({ error: 'Brief er påkrævet.' });
+      }
+
+      const { system, user } = buildPitch({
+        brief,
+        strategy: strategy || null,
+        bigIdea: bigIdea || null,
+        channelMatrixSummary: channelMatrixSummary || '',
+        effectivenessSummary: effectivenessSummary || '',
+      });
+      let usageInfo: any = null;
+      const parsed = await generateStructured<any>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: pitchTool,
+        model: config.creativeModel,
+        maxTokens: 4096,
+        onUsage: (u) => { usageInfo = u; },
+      });
+
+      if (!parsed || !parsed.narrative) {
+        throw new Error('Ufuldstændigt pitch-output fra Claude. Prøv igen.');
+      }
+
+      res.json({ ...parsed, _usage: usageInfo });
+    } catch (error: any) {
+      console.error('Fejl under pitch-generering:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke generere pitch-materialet.' });
     }
   });
 

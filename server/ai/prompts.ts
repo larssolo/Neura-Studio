@@ -495,13 +495,20 @@ Krav til de tre ruter:
 
 Aflever alle tre ruter via det angivne værktøj, præcist som skemaet kræver.`;
 
-export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null): {
+export function buildBigIdea(
+  brief: Brief,
+  strategy?: StrategyFoundation | null,
+  revisionNotes?: string[],
+): {
   system: Anthropic.TextBlockParam[];
   user: string;
 } {
   const system = cacheableSystem([BIG_IDEA_SYSTEM_ROLE, cviSectionText(brief)]);
   const foundation = strategy ? strategyContextText(strategy) : '';
   const intake = briefIntakeText(brief);
+  const revisionBlock = Array.isArray(revisionNotes) && revisionNotes.length > 0
+    ? `\nREVISIONSNOTER FRA BUREAU-KRITIKKEN (adressér disse præcist i den reviderede idé):\n${revisionNotes.map(n => `- ${n}`).join('\n')}\n`
+    : '';
   const user = `PROJEKT BRIEF:
 - Kunde: ${brief.client || 'N/A'}
 - Projekt: ${brief.project || 'N/A'}
@@ -513,7 +520,7 @@ export function buildBigIdea(brief: Brief, strategy?: StrategyFoundation | null)
 - Kanaler: ${(brief.channels || []).join(', ') || 'N/A'}
 - Ekstra noter: ${brief.notes || 'N/A'}
 ${intake ? `\n${intake}\n` : ''}${foundation ? `\n${foundation}\n` : ''}
-Udvikl nu TRE konkurrerende kreative ruter (kampagne-platforme) for dette projekt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-navne må gerne være på engelsk hvis det er mest naturligt).`;
+Udvikl nu TRE konkurrerende kreative ruter (kampagne-platforme) for dette projekt. Aflever via værktøjet. Skriv på ${brief.language || 'Dansk'} (kanal-navne må gerne være på engelsk hvis det er mest naturligt).${revisionBlock}`;
 
   return { system, user };
 }
