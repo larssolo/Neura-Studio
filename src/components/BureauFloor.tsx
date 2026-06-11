@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import type { ReactNode } from 'react';
 import { Building2, CheckCircle2, AlertCircle, Clock, Loader2, MessageSquare, RefreshCw, SkipForward } from 'lucide-react';
 import type { BureauStageState, BureauStageStatus } from '../types';
 
@@ -13,7 +14,7 @@ interface BureauFloorProps {
   onAbort: () => void;
 }
 
-const STATUS_CONFIG: Record<BureauStageStatus, { label: string; color: string; icon: React.ReactNode }> = {
+const STATUS_CONFIG: Record<BureauStageStatus, { label: string; color: string; icon: ReactNode }> = {
   idle:       { label: 'Venter',     color: 'text-slate-500 border-slate-700 bg-slate-900',               icon: <Clock className="w-3.5 h-3.5" /> },
   working:    { label: 'Arbejder',   color: 'text-blue-400 border-blue-500/40 bg-blue-500/10',            icon: <Loader2 className="w-3.5 h-3.5 animate-spin" /> },
   critiquing: { label: 'Kritiserer', color: 'text-amber-400 border-amber-500/40 bg-amber-500/10',         icon: <MessageSquare className="w-3.5 h-3.5" /> },
@@ -23,7 +24,7 @@ const STATUS_CONFIG: Record<BureauStageStatus, { label: string; color: string; i
   skipped:    { label: 'Sprunget',   color: 'text-slate-600 border-slate-800 bg-slate-900/50',            icon: <SkipForward className="w-3.5 h-3.5" /> },
 };
 
-function StageCard({ stage }: { stage: BureauStageState }) {
+function StageCard({ stage }: { stage: BureauStageState; key?: string | number | null }) {
   const cfg = STATUS_CONFIG[stage.status];
   return (
     <div className={`rounded-xl border p-4 transition-all duration-300 ${cfg.color}`}>

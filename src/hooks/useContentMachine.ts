@@ -395,6 +395,7 @@ export function useContentMachine() {
         channelMatrix,
         effectiveness,
         output,
+        pitch: bureau.pitchResult,
         logoSrc: logoResult?.imageUrl,
         logoSvg: logoResult?.svg,
         images: {

@@ -10,6 +10,7 @@ import type {
   EffectivenessFramework,
   ProjectBrief,
   StrategyFoundation,
+  PitchResult,
 } from '../types';
 import { slugify } from './exportMarkdown';
 
@@ -30,6 +31,7 @@ export interface DeckInput {
   logoSvg?: string | null;
   /** Resolved billed-srcs (data-URI eller URL). */
   images?: { hero?: string | null; detail?: string | null; abstract?: string | null };
+  pitch?: PitchResult | null;
 }
 
 function esc(s: string): string {
@@ -244,6 +246,30 @@ export function buildDeckHtml(input: DeckInput): string {
       'closing',
     ),
   );
+
+  // Pitch-narrativ slide
+  if (input.pitch?.narrative) {
+    slides.push(
+      slide(
+        'Anbefalingen',
+        `<h1 class="deck-h1">Vores anbefaling</h1>
+         <div class="deck-body" style="white-space:pre-line;font-size:0.85em;line-height:1.7;">${esc(input.pitch.narrative)}</div>`,
+      ),
+    );
+  }
+
+  // Indvendingshåndtering slide
+  if (input.pitch?.objections?.length) {
+    const objHtml = input.pitch.objections
+      .map(o => `<div style="margin:0.6em 0;"><p style="font-weight:600;color:var(--primary);font-size:0.85em;margin-bottom:0.2em;">${esc(o.question)}</p><p style="font-size:0.8em;color:#e2e8f0;line-height:1.5;">${esc(o.answer)}</p></div>`)
+      .join('');
+    slides.push(
+      slide(
+        'Q&A',
+        `<h1 class="deck-h1">Forventede spørgsmål</h1><div class="deck-body">${objHtml}</div>`,
+      ),
+    );
+  }
 
   const css = `
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}

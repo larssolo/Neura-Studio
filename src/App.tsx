@@ -17,6 +17,7 @@ import { VideoPanel } from './components/VideoPanel';
 import { AvatarPanel } from './components/AvatarPanel';
 import { FunnelPanels } from './components/FunnelPanels';
 import { BureauFloor } from './components/BureauFloor';
+import { PitchPanel } from './components/PitchPanel';
 import { BlankState } from './components/BlankState';
 import { OutputWorkspace } from './components/OutputWorkspace';
 import { useContentMachine, PRESETS } from './hooks/useContentMachine';
@@ -269,6 +270,14 @@ export default function App() {
               generatedImages={generatedImages}
               onAspectChange={handleAspectChange}
               onGenerateImage={handleGenerateImage}
+            />
+
+            {/* PITCH-AFDELING */}
+            <PitchPanel
+              pitchResult={pitchResult}
+              isGenerating={isGeneratingPitch}
+              canGenerate={!!(selectedTerritory || output)}
+              onGenerate={handleGeneratePitch}
             />
 
             {/* BLANK STATE OR LOADED OUTPUT WORKSPACE */}
