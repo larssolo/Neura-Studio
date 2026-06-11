@@ -55,6 +55,10 @@ interface BriefFormProps {
   isGeneratingEffectiveness: boolean;
   isSharpening: boolean;
   onSharpenIdea: () => void;
+  bureauModeActive: boolean;
+  onToggleBureauMode: () => void;
+  onRunBureau: () => void;
+  isBureauRunning: boolean;
   errorMsg: string | null;
   generationStep: string;
 }
@@ -74,6 +78,7 @@ export function BriefForm({
   handleGenerateChannelMatrix, isGeneratingMatrix,
   handleGenerateEffectiveness, isGeneratingEffectiveness,
   isSharpening, onSharpenIdea,
+  bureauModeActive, onToggleBureauMode, onRunBureau, isBureauRunning,
   errorMsg, generationStep,
 }: BriefFormProps) {
   return (
@@ -531,6 +536,10 @@ export function BriefForm({
               onGenerateEffectiveness={handleGenerateEffectiveness}
               isSharpening={isSharpening}
               onSharpenIdea={onSharpenIdea}
+              bureauModeActive={bureauModeActive}
+              onToggleBureauMode={onToggleBureauMode}
+              onRunBureau={onRunBureau}
+              isBureauRunning={isBureauRunning}
               onGenerateAll={handleGenerateAll}
             />
 

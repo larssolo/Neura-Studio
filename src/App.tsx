@@ -198,6 +198,10 @@ export default function App() {
             isGeneratingEffectiveness={isGeneratingEffectiveness}
             isSharpening={isSharpening}
             onSharpenIdea={() => { if (selectedTerritory) handleSharpenIdea(selectedTerritory); }}
+            bureauModeActive={bureauModeActive}
+            onToggleBureauMode={() => setBureauModeActive(!bureauModeActive)}
+            onRunBureau={runBureau}
+            isBureauRunning={isBureauRunning}
             errorMsg={errorMsg}
             generationStep={generationStep}
           />
@@ -226,8 +230,6 @@ export default function App() {
               terminalCommand={terminalCommand}
               setTerminalCommand={setTerminalCommand}
               handleExecuteTerminalCommand={handleExecuteTerminalCommand}
-              bureauModeActive={bureauModeActive}
-              setBureauModeActive={setBureauModeActive}
             />
 
             {/* CREATIVE FUNNEL RESULT PANELS */}

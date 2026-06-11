@@ -12,6 +12,7 @@ const baseProps = {
   isSharpening: false, onSharpenIdea: () => {},
   onCulturalScan: () => {}, onGenerateStrategy: () => {}, onGenerateBigIdea: () => {},
   onGenerateChannelMatrix: () => {}, onGenerateEffectiveness: () => {}, onGenerateAll: () => {},
+  bureauModeActive: false, onToggleBureauMode: () => {}, onRunBureau: () => {}, isBureauRunning: false,
 };
 
 describe('ProcessStepper', () => {

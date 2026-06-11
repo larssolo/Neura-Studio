@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Compass, Gauge, Layers, Loader2, Radio, Rocket, Sparkles, Swords, Users } from 'lucide-react';
+import { Building2, Compass, Gauge, Layers, Loader2, Radio, Rocket, Sparkles, Swords, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 type StepStatus = 'done' | 'ready' | 'locked';
@@ -32,6 +32,10 @@ interface ProcessStepperProps {
   onGenerateChannelMatrix: () => void;
   onGenerateEffectiveness: () => void;
   onGenerateAll: () => void;
+  bureauModeActive: boolean;
+  onToggleBureauMode: () => void;
+  onRunBureau: () => void;
+  isBureauRunning: boolean;
 }
 
 interface Step {
@@ -94,6 +98,7 @@ export function ProcessStepper(props: ProcessStepperProps) {
     isSharpening, onSharpenIdea,
     onCulturalScan, onGenerateStrategy, onGenerateBigIdea,
     onGenerateChannelMatrix, onGenerateEffectiveness, onGenerateAll,
+    bureauModeActive, onToggleBureauMode, onRunBureau, isBureauRunning,
   } = props;
 
   const territoryStatus = (done: boolean): StepStatus =>
@@ -151,6 +156,53 @@ export function ProcessStepper(props: ProcessStepperProps) {
           </>
         )}
       </button>
+
+      <div className="flex items-center gap-2 pt-1 pb-0.5" aria-hidden="true">
+        <span className="h-px flex-1 bg-slate-800" />
+        <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-slate-400">Bureau</span>
+        <span className="h-px flex-1 bg-slate-800" />
+      </div>
+
+      <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3 space-y-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <span className="block text-xs font-display font-semibold text-violet-300">Bureau-mode</span>
+            <span className="block text-[11px] text-slate-500 leading-snug mt-0.5">Fuld bureau-orkestrering med analyse, kritik-loop og pitch</span>
+          </div>
+          <button
+            type="button"
+            onClick={onToggleBureauMode}
+            className={`shrink-0 relative w-9 h-5 rounded-full transition-colors ${bureauModeActive ? 'bg-violet-600' : 'bg-slate-700'}`}
+            aria-pressed={bureauModeActive}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${bureauModeActive ? 'translate-x-4' : ''}`} />
+          </button>
+        </div>
+        {bureauModeActive && (
+          <button
+            type="button"
+            onClick={onRunBureau}
+            disabled={isBureauRunning || isGenerating}
+            className={`w-full py-2.5 px-4 rounded-lg font-display font-bold text-sm flex items-center justify-center gap-2 transition-all select-none active:scale-[0.98] ${
+              isBureauRunning || isGenerating
+                ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
+                : 'bg-violet-700 hover:bg-violet-600 text-white cursor-pointer'
+            }`}
+          >
+            {isBureauRunning ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Bureau arbejder…</span>
+              </>
+            ) : (
+              <>
+                <Building2 className="w-4 h-4" />
+                <span>Kør bureau-session</span>
+              </>
+            )}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

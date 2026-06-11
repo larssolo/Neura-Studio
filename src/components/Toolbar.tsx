@@ -4,7 +4,7 @@
  */
 
 import { Dispatch, SetStateAction, FormEvent } from 'react';
-import { Sliders, Building2 } from 'lucide-react';
+import { Sliders } from 'lucide-react';
 import { BrandSurfaceOutput } from '../types';
 
 interface ToolbarProps {
@@ -15,14 +15,11 @@ interface ToolbarProps {
   terminalCommand: string;
   setTerminalCommand: Dispatch<SetStateAction<string>>;
   handleExecuteTerminalCommand: (e: FormEvent) => void;
-  bureauModeActive: boolean;
-  setBureauModeActive: (v: boolean) => void;
 }
 
 export function Toolbar({
   output, activeTab, setActiveTab, setErrorMsg,
   terminalCommand, setTerminalCommand, handleExecuteTerminalCommand,
-  bureauModeActive, setBureauModeActive,
 }: ToolbarProps) {
   return (
           <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-sm">
@@ -31,19 +28,7 @@ export function Toolbar({
                 <Sliders className="w-4 h-4 text-slate-500" />
                 <span>Værktøjslinje</span>
               </span>
-              <span className="text-[11px] text-slate-500" title="Skriv en kommando eller navigér mellem faner">Navigér & forfin</span>
-              <button
-                type="button"
-                onClick={() => setBureauModeActive(!bureauModeActive)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono rounded-lg border transition-all ${
-                  bureauModeActive
-                    ? 'border-orange-500/50 text-orange-400 bg-orange-500/10'
-                    : 'border-slate-700 text-slate-400 hover:text-slate-200 bg-slate-900'
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                Bureau
-              </button>
+              <span className="text-[11px] text-slate-500">Navigér & forfin</span>
             </div>
             
             <form onSubmit={handleExecuteTerminalCommand} className="flex items-center p-2 bg-slate-900">
