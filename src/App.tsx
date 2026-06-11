@@ -16,6 +16,7 @@ import { ImagePanel } from './components/ImagePanel';
 import { VideoPanel } from './components/VideoPanel';
 import { AvatarPanel } from './components/AvatarPanel';
 import { FunnelPanels } from './components/FunnelPanels';
+import { BureauFloor } from './components/BureauFloor';
 import { BlankState } from './components/BlankState';
 import { OutputWorkspace } from './components/OutputWorkspace';
 import { useContentMachine, PRESETS } from './hooks/useContentMachine';
@@ -56,6 +57,13 @@ export default function App() {
     isGeneratingStrategy, handleGenerateStrategy, handleClearStrategy,
     campaignPlatform, setCampaignPlatform,
     isGeneratingCampaign, handleGenerateBigIdea,
+    bureauModeActive, setBureauModeActive,
+    bureauStages,
+    isBureauRunning,
+    runBureau, abortBureau,
+    pitchResult,
+    isGeneratingPitch,
+    handleGeneratePitch,
     selectedTerritory, handleSelectTerritory, handleClearTerritory,
     pressureTest, isSharpening, sharpeningTarget,
     handleSharpenIdea, handleAdoptSharpened, handleClearPressureTest,
@@ -192,6 +200,18 @@ export default function App() {
             generationStep={generationStep}
           />
 
+          {/* BUREAU-MODE FLOOR */}
+          {bureauModeActive && (
+            <div className="lg:col-span-12">
+              <BureauFloor
+                stages={bureauStages}
+                isRunning={isBureauRunning}
+                onRun={runBureau}
+                onAbort={abortBureau}
+              />
+            </div>
+          )}
+
           {/* RIGHT COLUMN: PREVIEW & OUTPUT INTERACTION WORKSPACE (7 cols) */}
           <div className="lg:col-span-7 flex flex-col space-y-5">
 
@@ -204,6 +224,8 @@ export default function App() {
               terminalCommand={terminalCommand}
               setTerminalCommand={setTerminalCommand}
               handleExecuteTerminalCommand={handleExecuteTerminalCommand}
+              bureauModeActive={bureauModeActive}
+              setBureauModeActive={setBureauModeActive}
             />
 
             {/* CREATIVE FUNNEL RESULT PANELS */}
@@ -379,7 +401,7 @@ export default function App() {
               <span>
                 Neura Studio by{' '}
                 <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.22.3
+                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.23.0
               </span>
               <div className="flex items-center space-x-4">
                 {lastUsage && <UsageBadge usage={lastUsage} />}
