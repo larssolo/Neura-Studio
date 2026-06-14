@@ -126,9 +126,11 @@ export default function App() {
             isAnalyzingCvi || isBrainstorming || isScanning || isGeneratingStrategy ||
             isGeneratingCampaign || isSharpening || isGeneratingMatrix ||
             isGeneratingEffectiveness || isGeneratingLogo || isOptimizingLogoPrompt ||
-            isOptimizingImagePrompt || videoResult.loading || speechResult.loading || avatarResult.loading
+            isOptimizingImagePrompt || isGeneratingPitch ||
+            videoResult.loading || speechResult.loading || avatarResult.loading
           }
           title={
+            isGeneratingPitch ? 'Pitch-producent' :
             isVisualDeveloping ? 'Visuel udvikling' :
             isHumanizing ? 'Humaniserer' :
             isAnalyzingCvi ? 'Analyserer CVI' :
@@ -149,7 +151,11 @@ export default function App() {
             isAnalyzing ? 'Analyserer' :
             deepMode ? 'Redaktionsmøde' : 'Genererer'
           }
-          step={isHumanizing ? 'Omformulerer og gør teksten mere menneskelig …' : generationStep}
+          step={
+            isHumanizing ? 'Omformulerer og gør teksten mere menneskelig …' :
+            isGeneratingPitch ? 'Bygger anbefalings-narrativ, talenoter og indvendingshåndtering …' :
+            generationStep
+          }
           error={errorMsg}
           onDismissError={() => setErrorMsg(null)}
         />
@@ -436,7 +442,7 @@ export default function App() {
               <span>
                 Neura Studio by{' '}
                 <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.24.1
+                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.24.2
               </span>
               <div className="flex items-center space-x-4">
                 {lastUsage && <UsageBadge usage={lastUsage} />}

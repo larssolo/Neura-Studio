@@ -108,9 +108,29 @@ export function CodeDepartmentPanel({
         </div>
       )}
 
-      {(codePrompt || isGenerating) && (
+      {isGenerating && !codePrompt && (
+        <div className="px-5 py-10 flex flex-col items-center text-center gap-4">
+          <div className="relative flex items-center justify-center">
+            <span className="absolute inline-flex h-14 w-14 rounded-full bg-emerald-500/20 blur-md animate-pulse" />
+            <div className="relative flex h-12 w-12 items-center justify-center rounded-full border border-emerald-500/40 bg-emerald-600/15">
+              <Loader2 className="h-6 w-6 text-emerald-300 animate-spin" />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="font-display text-sm font-semibold text-emerald-100">Code Department arbejder …</p>
+            <p className="text-[13px] leading-relaxed text-slate-400">Skriver art direction, design system og motion-spec — prompten streamer ind om et øjeblik.</p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/80 animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/60 animate-pulse [animation-delay:150ms]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400/40 animate-pulse [animation-delay:300ms]" />
+          </div>
+        </div>
+      )}
+
+      {codePrompt && (
         <div className="relative">
-          {codePrompt && !isGenerating && (
+          {!isGenerating && (
             <button
               onClick={handleCopy}
               className="absolute top-3 right-3 z-10 px-2.5 py-1.5 text-[11px] font-mono rounded-md border border-slate-700 bg-slate-900/90 text-slate-300 hover:text-white hover:border-slate-600 transition-colors flex items-center gap-1.5"
