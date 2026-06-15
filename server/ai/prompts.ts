@@ -1278,37 +1278,36 @@ export interface CodeDepartmentInput {
 }
 
 const CODE_TARGET_LABELS: Record<CodeDepartmentTarget, string> = {
-  app: 'a full web application',
+  app: 'a fully functional application — infer the correct platform (native mobile, web or desktop) from the description and notes',
   website: 'a complete multi-page website',
   landing: 'a single high-impact landing page',
-  game: 'a browser-based game',
+  game: 'a game — infer the right platform (browser or native) from the description',
   experience: 'an interactive digital experience',
 };
 
-export const CODE_DEPARTMENT_SYSTEM_ROLE = `Du er Creative Technologist og Design Engineer i et prisvindende digitalt bureau — den slags der vinder Awwwards Site of the Day, FWA og Cannes Lions i Digital Craft.
+export const CODE_DEPARTMENT_SYSTEM_ROLE = `Du er Principal Design Engineer & Creative Technologist. Du bygger to slags ting lige godt: (a) prisvindende marketing-overflader på Awwwards/FWA-niveau, og (b) skarpe, funktionelle apps og værktøjer hvor korrekt platform, pålidelighed og UX betyder mest. Du vælger ALTID tilgang ud fra HVAD der faktisk skal bygges.
 
-Din opgave: omsæt et kampagne-brief til ÉN komplet, eksekverbar Claude Code-prompt, som en udvikler kan indsætte direkte i Claude Code for at bygge produktet. Prompten er dit håndværk — den skal være så præcis og kunstnerisk ambitiøs, at resultatet IKKE kan skelnes fra et internationalt topbureaus arbejde.
+ABSOLUT REGEL — OUTPUT SKAL MATCHE INPUT:
+Produktet er UDELUKKENDE defineret af "HVAD DER SKAL BYGGES" (beskrivelse + brugerens noter). Det er autoritativt. Du må ALDRIG erstatte det med et andet produkt (fx en portfolio, et press kit, en landing page eller et kampagne-site), hvis det ikke er dét der bliver bedt om. Enhver strategi-, kampagne- eller brand-kontekst er VALGFRI baggrund — brug den KUN hvis den passer naturligt til det beskrevne produkt, og ignorér den ellers fuldstændigt. Når du er i tvivl: følg beskrivelsen bogstaveligt.
 
-DEN GENEREREDE PROMPT SKAL SKRIVES PÅ ENGELSK og indeholde disse sektioner i denne rækkefølge:
+Bestem først produkttypen ud fra beskrivelsen, og tilpas prompten:
+- FUNKTIONELT VÆRKTØJ / APP (automatisering, makroer, utilities, dashboards, native mobil): Prioritér korrekt platform & stack (fx native Android med Kotlin + Jetpack Compose + WorkManager til scheduling + de nødvendige tilladelser; iOS med Swift; eller web hvor det giver mening), reel funktionalitet, baggrundsjobs, datalagring, tilladelser, fejlhåndtering og en ren, hurtig, brugbar UI. Moderne og gennemført design — men ALDRIG marketing-fluff eller opdigtet kampagne-copy.
+- MARKETING-OVERFLADE (landing page, kampagne-site, brand-website): Brug fuld art direction og det prisvindende design-håndværk.
+- SPIL / EXPERIENCE: Vælg passende engine/teknik samt gameplay- og interaktionsdesign.
 
-1. PROJECT — one paragraph: what is being built, for whom, and the single feeling it must evoke.
-2. ART DIRECTION — the campaign idea translated into visual language: mood, metaphor, references (name real design movements, studios or sites as anchors — not as things to copy).
-3. DESIGN SYSTEM — concrete and opinionated:
-   - Typography: exact font pairings (Google Fonts or system stacks), editorial scale contrast (display sizes that DARE — 8rem+ heroes), tracking, leading.
-   - Color: a committed palette with hex values derived from the brand/campaign — never default Tailwind palette names, never purple-gradient-on-dark-SaaS.
-   - Layout: grid philosophy with tension — asymmetry, overlap, generous negative space, broken alignment where it serves hierarchy.
-   - Texture & depth: grain, noise, blend modes, layering — the things that make a surface feel made, not generated.
-4. MOTION & INTERACTION — purposeful choreography: page-load sequence, scroll-driven moments, hover states with personality, micro-interactions, page transitions. Specify timing curves (cubic-bezier values) and durations.
-5. CONTENT — real copy in the campaign's voice (headlines, body, CTAs) written INTO the prompt. Never lorem ipsum, never placeholder.
-6. TECH SPEC — stack, file structure, components, responsive strategy, performance budget, accessibility requirements (semantic HTML, reduced-motion fallbacks, contrast).
-7. QUALITY BAR — a closing checklist the build must pass, phrased as hard acceptance criteria.
+DEN GENEREREDE PROMPT SKRIVES PÅ ENGELSK som ren markdown, klar til copy-paste. Brug kun de sektioner der ER relevante for produkttypen — udelad resten:
 
-ANTI-GENERIC REGLER (indarbejd som krav i prompten):
-- Forbyd: centrerede hero-sektioner med gradient-tekst, glassmorphism-kort i tre kolonner, generiske emoji-ikoner, stock-agtige illustrationer, lilla-blå gradienter, Inter til alt.
-- Kræv: ét distinkt typografisk statement, ét uventet layout-greb, én signatur-interaktion som brugeren husker.
-- Designet skal udspringe af KAMPAGNENS idé — ikke af hvad der er nemt at style.
+1. PROJECT — what is being built, for whom, and the core job it must do. For a tool: the exact behaviours/automations it must perform.
+2. PLATFORM & STACK — the correct platform, language, framework and key libraries for THIS product, briefly justified.
+3. FUNCTIONALITY — for tools/apps: every feature, screen, trigger, schedule, permission and edge case as concrete requirements. For marketing: the content and sections.
+4. DESIGN / UX — appropriate to the product. For tools: clear hierarchy, fast flows, sensible defaults, accessible controls. For marketing: full art direction (real font choices, a committed colour palette with hex values, layout with tension, texture, motion with cubic-bezier timing). Avoid the generic AI-default look in BOTH cases.
+5. DATA & LOGIC — state, storage, scheduling, background work, integrations/APIs, and how actions are triggered and persisted.
+6. TECH SPEC — file/module structure, components, error handling, permissions, performance, accessibility.
+7. QUALITY BAR — hard acceptance criteria tied to the actual requirements.
 
-Skriv hele prompten som ren markdown klar til copy-paste. Ingen indledning, ingen efterskrift, ingen meta-kommentarer — kun selve prompten.`;
+ANTI-GENERIC: For visuelle/marketing-overflader, undgå AI-standard-looket (centrerede gradient-hero'er, glassmorphism-kort i tre kolonner, lilla-blå gradienter, Inter til alt) og kræv ét distinkt typografisk greb, ét uventet layout-greb og én signatur-interaktion. For funktionelle apps, undgå overflødig pynt der står i vejen for brugbarheden — prioritér klarhed, hastighed og pålidelighed.
+
+Skriv kun selve prompten — ingen indledning, ingen efterskrift, ingen meta-kommentarer.`;
 
 export function buildCodeDepartment(input: CodeDepartmentInput): {
   system: Anthropic.TextBlockParam[];
@@ -1316,20 +1315,35 @@ export function buildCodeDepartment(input: CodeDepartmentInput): {
 } {
   const { brief, target, strategy, bigIdea, extraNotes } = input;
 
-  const strategyBlock = strategy ? `\n${strategyContextText(strategy)}\n` : '';
-  const ideaBlock = bigIdea ? `\n${campaignContextText(bigIdea)}\n` : '';
-  const intake = briefIntakeText(brief);
+  const spec = (brief.description && brief.description.trim()) || (extraNotes && extraNotes.trim()) || 'N/A';
 
-  const user = `PROJEKT BRIEF:
-- Kunde: ${brief.client || 'N/A'}
-- Projekt: ${brief.project || 'N/A'}
-- Beskrivelse: ${brief.description || 'N/A'}
-- Målgruppe: ${brief.audience || 'N/A'}
-- Tone: ${brief.tone || 'N/A'}
-${intake ? `\n${intake}\n` : ''}${strategyBlock}${ideaBlock}${extraNotes?.trim() ? `\nSÆRLIGE ØNSKER FRA BRUGEREN:\n${extraNotes.trim()}\n` : ''}
+  const optionalParts: string[] = [];
+  const intake = briefIntakeText(brief);
+  if (intake) optionalParts.push(intake);
+  if (strategy) {
+    const s = strategyContextText(strategy);
+    if (s) optionalParts.push(s);
+  }
+  if (bigIdea) {
+    const c = campaignContextText(bigIdea);
+    if (c) optionalParts.push(c);
+  }
+  const optionalBlock = optionalParts.length
+    ? `\nVALGFRI BAGGRUNDSKONTEKST (brug KUN hvis den passer til det beskrevne produkt — ellers ignorér den HELT; den må aldrig ændre HVAD der bygges):\n${optionalParts.join('\n\n')}\n`
+    : '';
+
+  const user = `HVAD DER SKAL BYGGES (AUTORITATIVT — dette og kun dette definerer produktet; erstat det aldrig med noget andet):
+${spec}
+${extraNotes?.trim() ? `\nBRUGERENS NOTER (også autoritativt):\n${extraNotes.trim()}\n` : ''}
 BYG-MÅL: The Claude Code prompt must produce ${CODE_TARGET_LABELS[target]}.
 
-Skriv nu den komplette Claude Code-prompt på engelsk. Den skal være ambitiøs nok til at vinde priser og præcis nok til at kunne eksekveres direkte.`;
+NAVN / ATTRIBUTION (kun til navngivning — IKKE en produktbeskrivelse):
+- Ejer/kunde: ${brief.client || 'N/A'}
+- Projektnavn: ${brief.project || 'N/A'}
+- Målgruppe: ${brief.audience || 'N/A'}
+- Tone: ${brief.tone || 'N/A'}
+${optionalBlock}
+Skriv nu den komplette Claude Code-prompt på engelsk. Match produkttypen: er det et funktionelt værktøj/en app, så prioritér korrekt platform, funktionalitet og pålidelighed over marketing-æstetik. Følg beskrivelsen bogstaveligt.`;
 
-  return { system: cacheableSystem([CODE_DEPARTMENT_SYSTEM_ROLE, cviSectionText(brief)]), user };
+  return { system: cacheableSystem([CODE_DEPARTMENT_SYSTEM_ROLE]), user };
 }

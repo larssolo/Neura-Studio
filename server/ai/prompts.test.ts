@@ -522,7 +522,18 @@ describe('buildCodeDepartment', () => {
 
   it('maps target type into the user prompt', () => {
     const { user } = buildCodeDepartment({ brief: { client: 'Acme' } as any, target: 'game' });
-    expect(user).toContain('browser-based game');
+    expect(user).toContain('a game');
+  });
+
+  it('treats the brief description as the authoritative product spec', () => {
+    const { user } = buildCodeDepartment({
+      brief: { client: 'Acme', project: 'Press Kit', description: 'Android app der sender SMS automatisk kl 09 og 15:30' } as any,
+      target: 'app',
+    });
+    expect(user).toContain('AUTORITATIVT');
+    expect(user).toContain('Android app der sender SMS automatisk kl 09 og 15:30');
+    // projektnavn må kun optræde som attribution, ikke som produktdefinition
+    expect(user).toContain('NAVN / ATTRIBUTION');
   });
 
   it('includes brief client and extra notes in user prompt', () => {
@@ -535,20 +546,31 @@ describe('buildCodeDepartment', () => {
     expect(user).toContain('mørk og filmisk');
   });
 
-  it('injects strategy and big idea context when provided', () => {
+  it('marks strategy and big idea as optional, ignorable background context', () => {
     const { user } = buildCodeDepartment({
-      brief: { client: 'Acme' } as any,
+      brief: { client: 'Acme', description: 'En simpel todo-app' } as any,
       target: 'app',
       strategy: { singleMindedProposition: 'Vi gør det enkelt.', audienceTruth: 'De er overset.' },
       bigIdea: { name: 'Ruten', bigIdea: 'Den store tanke', tagline: 'Kort og godt' } as any,
     });
+    expect(user).toContain('VALGFRI BAGGRUNDSKONTEKST');
     expect(user).toContain('Vi gør det enkelt.');
     expect(user).toContain('Den store tanke');
   });
 
-  it('system role demands an English markdown prompt with design system sections', () => {
+  it('does not force a CVI design manual into the system prompt', () => {
+    const { system } = buildCodeDepartment({
+      brief: { client: 'Acme', cviManual: { brandColors: ['#123456'] } } as any,
+      target: 'app',
+    });
+    const systemText = system.map((b) => b.text).join('\n');
+    expect(systemText).not.toContain('SKAL OVERHOLDES STRENGT');
+  });
+
+  it('system role makes the description authoritative and supports functional apps', () => {
     expect(CODE_DEPARTMENT_SYSTEM_ROLE).toContain('ENGELSK');
-    expect(CODE_DEPARTMENT_SYSTEM_ROLE).toContain('DESIGN SYSTEM');
-    expect(CODE_DEPARTMENT_SYSTEM_ROLE).toContain('MOTION');
+    expect(CODE_DEPARTMENT_SYSTEM_ROLE).toContain('OUTPUT SKAL MATCHE INPUT');
+    expect(CODE_DEPARTMENT_SYSTEM_ROLE).toContain('FUNKTIONELT VÆRKTØJ');
+    expect(CODE_DEPARTMENT_SYSTEM_ROLE).toContain('PLATFORM & STACK');
   });
 });

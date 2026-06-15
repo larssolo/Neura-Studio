@@ -97,14 +97,14 @@ export function CodeDepartmentPanel({
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           disabled={isGenerating}
-          placeholder="Særlige ønsker (valgfrit) — fx 'mørk og filmisk', '3D-elementer', 'inspireret af brutalisme'…"
+          placeholder="Særlige ønsker (valgfrit) — fx 'native Android i Kotlin', 'kør offline', 'mørk og filmisk'…"
           className="w-full bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-white placeholder:text-slate-600 px-3 py-2 focus:outline-none focus:border-emerald-500/50 disabled:opacity-60"
         />
       </div>
 
       {!codePrompt && !isGenerating && (
         <div className="px-5 py-8 text-center text-slate-500 text-sm">
-          Vælg byg-mål og klik "Generér prompt" — jo mere funnel du har kørt (strategi, Den Store Idé), jo skarpere bliver prompten.
+          Prompten bygges ud fra projekt-beskrivelsen i briefet — beskriv præcist hvad der skal bygges. Strategi og Den Store Idé bruges kun som valgfri baggrund, hvis de passer. Vælg byg-mål og klik "Generér prompt".
         </div>
       )}
 
