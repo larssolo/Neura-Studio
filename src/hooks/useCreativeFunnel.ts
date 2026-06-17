@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, Dispatch, SetStateAction } from 'react';
+import { useState, useEffect, useRef, Dispatch, SetStateAction } from 'react';
 import {
   ProjectBrief, UsageInfo, CulturalScanResult, StrategyFoundation,
   CampaignPlatform, CampaignTerritory, IdeaDeliberationResult, ChannelMatrix,
@@ -11,6 +11,24 @@ import {
 } from '../types';
 import { loadSession } from '../lib/session';
 import { httpErrorMessage } from './httpError';
+
+function makeBriefKey(client: string, project: string): string {
+  return `${client}|${project}`;
+}
+
+/** Indlæs session men ryd funnel-state hvis den er genereret for et andet brief. */
+function loadSessionWithFunnelGuard() {
+  const s = loadSession();
+  if (!s) return null;
+  const savedKey = s.funnelBriefKey ?? null;
+  if (!savedKey) return s; // Gammel session uden fingerprint — lad den være
+  const briefKey = makeBriefKey(s.brief?.client ?? '', s.brief?.project ?? '');
+  if (savedKey !== briefKey) {
+    // Funnel-data er fra et andet brief — returnér uden funnel-state
+    return { ...s, selectedTerritory: null, strategy: null, channelMatrix: null, effectiveness: null, campaignPlatform: null, culturalIntel: null, funnelBriefKey: null };
+  }
+  return s;
+}
 
 interface CreativeFunnelDeps {
   brief: ProjectBrief;
@@ -26,26 +44,45 @@ interface CreativeFunnelDeps {
  * Initial state hydreres fra den gemte session, præcis som før.
  */
 export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: CreativeFunnelDeps) {
-  const [culturalIntel, setCulturalIntel] = useState<CulturalScanResult | null>(() => loadSession()?.culturalIntel ?? null);
+  const session = useRef(loadSessionWithFunnelGuard()).current;
+
+  const [funnelBriefKey, setFunnelBriefKey] = useState<string | null>(() => session?.funnelBriefKey ?? null);
+
+  const [culturalIntel, setCulturalIntel] = useState<CulturalScanResult | null>(() => session?.culturalIntel ?? null);
   const [isScanning, setIsScanning] = useState<boolean>(false);
 
-  const [strategy, setStrategy] = useState<StrategyFoundation | null>(() => loadSession()?.strategy ?? null);
+  const [strategy, setStrategy] = useState<StrategyFoundation | null>(() => session?.strategy ?? null);
   const [isGeneratingStrategy, setIsGeneratingStrategy] = useState<boolean>(false);
 
-  const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(() => loadSession()?.campaignPlatform ?? null);
+  const [campaignPlatform, setCampaignPlatform] = useState<CampaignPlatform | null>(() => session?.campaignPlatform ?? null);
   const [isGeneratingCampaign, setIsGeneratingCampaign] = useState<boolean>(false);
-  const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => loadSession()?.selectedTerritory ?? null);
+  const [selectedTerritory, setSelectedTerritory] = useState<CampaignTerritory | null>(() => session?.selectedTerritory ?? null);
 
   // ECD pres-test (transient — gemmes ikke i session)
   const [pressureTest, setPressureTest] = useState<{ original: CampaignTerritory; result: IdeaDeliberationResult } | null>(null);
   const [isSharpening, setIsSharpening] = useState<boolean>(false);
   const [sharpeningTarget, setSharpeningTarget] = useState<string | null>(null);
 
-  const [channelMatrix, setChannelMatrix] = useState<ChannelMatrix | null>(() => loadSession()?.channelMatrix ?? null);
+  const [channelMatrix, setChannelMatrix] = useState<ChannelMatrix | null>(() => session?.channelMatrix ?? null);
   const [isGeneratingMatrix, setIsGeneratingMatrix] = useState<boolean>(false);
 
-  const [effectiveness, setEffectiveness] = useState<EffectivenessFramework | null>(() => loadSession()?.effectiveness ?? null);
+  const [effectiveness, setEffectiveness] = useState<EffectivenessFramework | null>(() => session?.effectiveness ?? null);
   const [isGeneratingEffectiveness, setIsGeneratingEffectiveness] = useState<boolean>(false);
+
+  // Ryd stale funnel-data hvis brief.client eller brief.project skifter fra hvad de var ved generering
+  useEffect(() => {
+    if (!funnelBriefKey) return;
+    const currentKey = makeBriefKey(brief.client, brief.project);
+    if (funnelBriefKey !== currentKey && (strategy || selectedTerritory || channelMatrix || effectiveness)) {
+      setStrategy(null);
+      setCampaignPlatform(null);
+      setSelectedTerritory(null);
+      setChannelMatrix(null);
+      setEffectiveness(null);
+      setFunnelBriefKey(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brief.client, brief.project]);
 
   const handleCulturalScan = async () => {
     if (!brief.client || !brief.description) {
@@ -99,6 +136,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
       const { _usage, ...foundation } = raw as any;
       if (_usage) setLastUsage(_usage);
       setStrategy(foundation as StrategyFoundation);
+      setFunnelBriefKey(makeBriefKey(brief.client, brief.project));
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Kunne ikke bygge det strategiske fundament.');
@@ -132,6 +170,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
       const { _usage, ...platform } = raw as any;
       if (_usage) setLastUsage(_usage);
       setCampaignPlatform(platform as CampaignPlatform);
+      setFunnelBriefKey(makeBriefKey(brief.client, brief.project));
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Kunne ikke udvikle kampagne-platforme.');
@@ -286,6 +325,16 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
     setEffectiveness(null);
   };
 
+  const handleClearAllFunnel = () => {
+    setCulturalIntel(null);
+    setStrategy(null);
+    setCampaignPlatform(null);
+    setSelectedTerritory(null);
+    setChannelMatrix(null);
+    setEffectiveness(null);
+    setFunnelBriefKey(null);
+  };
+
   return {
     // Kulturel antenne
     culturalIntel, setCulturalIntel, isScanning, handleCulturalScan, handleClearCulturalIntel,
@@ -305,5 +354,8 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
     // Effekt-lag
     effectiveness, setEffectiveness, isGeneratingEffectiveness,
     handleGenerateEffectiveness, handleClearEffectiveness,
+    // Funnel-nulstilling
+    funnelBriefKey,
+    handleClearAllFunnel,
   };
 }

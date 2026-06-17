@@ -1278,7 +1278,7 @@ export interface CodeDepartmentInput {
 }
 
 const CODE_TARGET_LABELS: Record<CodeDepartmentTarget, string> = {
-  app: 'a fully functional application — infer the correct platform (native mobile, web or desktop) from the description and notes',
+  app: 'a fully functional application — infer the correct platform (native mobile, web or desktop) from the description and notes. The finished app must score on TWO equally important dimensions: (1) DESIGN & UX — polished, beautiful, premium-feeling UI that gives users the best possible experience and visual impression; (2) TECHNICAL INTEGRITY — builds without errors, installs on the target device without warnings (correct signing, targetSdk, compileSdk, manifest/Info.plist), phone fully accepts it, every required permission is declared, requested at the right moment in-app with a clear user-facing rationale, and gracefully handled if denied. Sideloaded APKs must include clear installation instructions. Both dimensions are non-negotiable.',
   website: 'a complete multi-page website',
   landing: 'a single high-impact landing page',
   game: 'a game — infer the right platform (browser or native) from the description',
@@ -1291,21 +1291,25 @@ ABSOLUT REGEL — OUTPUT SKAL MATCHE INPUT:
 Produktet er UDELUKKENDE defineret af "HVAD DER SKAL BYGGES" (beskrivelse + brugerens noter). Det er autoritativt. Du må ALDRIG erstatte det med et andet produkt (fx en portfolio, et press kit, en landing page eller et kampagne-site), hvis det ikke er dét der bliver bedt om. Enhver strategi-, kampagne- eller brand-kontekst er VALGFRI baggrund — brug den KUN hvis den passer naturligt til det beskrevne produkt, og ignorér den ellers fuldstændigt. Når du er i tvivl: følg beskrivelsen bogstaveligt.
 
 Bestem først produkttypen ud fra beskrivelsen, og tilpas prompten:
-- FUNKTIONELT VÆRKTØJ / APP (automatisering, makroer, utilities, dashboards, native mobil): Prioritér korrekt platform & stack (fx native Android med Kotlin + Jetpack Compose + WorkManager til scheduling + de nødvendige tilladelser; iOS med Swift; eller web hvor det giver mening), reel funktionalitet, baggrundsjobs, datalagring, tilladelser, fejlhåndtering og en ren, hurtig, brugbar UI. Moderne og gennemført design — men ALDRIG marketing-fluff eller opdigtet kampagne-copy.
+- FUNKTIONELT VÆRKTØJ / APP (automatisering, makroer, utilities, dashboards, native mobil): Kræv BEGGE disse dimensioner med samme vægt:
+  • DESIGN & UX: Poleret, smukt, premium-fornemmende UI der giver den bedste oplevelse og det bedste udtryk. Tænkt layout, gennemtænkte touch-targets, konsistent typografi og farvepalette, meningsfulde animationer — ikke generisk Material You-standardlook, men et bevidst og gennemført visuelt udtryk.
+  • TEKNISK INTEGRITET: Korrekt platform & stack (fx native Android med Kotlin + Jetpack Compose + WorkManager til scheduling; iOS med Swift/SwiftUI). Appen bygger fejlfrit, installeres gnidningsfrit på målenheden uden advarsler (korrekt signering, targetSdk, compileSdk, build.gradle/Info.plist), og telefonen accepterer den fuldt ud. Alle nødvendige tilladelser deklareres i manifest/Info.plist, anmodes om på det rigtige tidspunkt in-app med en klar forklaring til brugeren, og håndteres gracefuldt hvis afvist. Sideloaded APKs inkluderer klare installationsvejledninger.
+  Moderne og gennemført på begge fronter — ALDRIG marketing-fluff eller opdigtet kampagne-copy.
 - MARKETING-OVERFLADE (landing page, kampagne-site, brand-website): Brug fuld art direction og det prisvindende design-håndværk.
 - SPIL / EXPERIENCE: Vælg passende engine/teknik samt gameplay- og interaktionsdesign.
 
 DEN GENEREREDE PROMPT SKRIVES PÅ ENGELSK som ren markdown, klar til copy-paste. Brug kun de sektioner der ER relevante for produkttypen — udelad resten:
 
 1. PROJECT — what is being built, for whom, and the core job it must do. For a tool: the exact behaviours/automations it must perform.
-2. PLATFORM & STACK — the correct platform, language, framework and key libraries for THIS product, briefly justified.
+2. PLATFORM & STACK — the correct platform, language, framework and key libraries for THIS product, briefly justified. For mobile apps: include targetSdk, compileSdk, minSdk and key Gradle/CocoaPods/SPM dependencies.
 3. FUNCTIONALITY — for tools/apps: every feature, screen, trigger, schedule, permission and edge case as concrete requirements. For marketing: the content and sections.
-4. DESIGN / UX — appropriate to the product. For tools: clear hierarchy, fast flows, sensible defaults, accessible controls. For marketing: full art direction (real font choices, a committed colour palette with hex values, layout with tension, texture, motion with cubic-bezier timing). Avoid the generic AI-default look in BOTH cases.
+4. DESIGN / UX — appropriate to the product. For apps: a committed visual identity (typography, colour palette with hex values, spacing system, icon style, motion principles) that feels premium and intentional — NOT generic platform defaults. For marketing: full art direction (real font choices, a committed colour palette with hex values, layout with tension, texture, motion with cubic-bezier timing). Avoid the generic AI-default look in BOTH cases.
 5. DATA & LOGIC — state, storage, scheduling, background work, integrations/APIs, and how actions are triggered and persisted.
-6. TECH SPEC — file/module structure, components, error handling, permissions, performance, accessibility.
-7. QUALITY BAR — hard acceptance criteria tied to the actual requirements.
+6. TECH SPEC — file/module structure, components, error handling, permissions (declared in manifest/Info.plist + runtime-requested with user-facing rationale + denial-handling), build config, performance, accessibility.
+7. INSTALL & DISTRIBUTION (mobile apps only) — how to build the APK/IPA, sign it, sideload or distribute it, and verify it installs cleanly with all permissions granted on a real device.
+8. QUALITY BAR — hard acceptance criteria tied to the actual requirements. For apps must include: "installs without warnings on [platform]", "all declared permissions granted and gracefully handled if denied", and "UI matches the committed design spec".
 
-ANTI-GENERIC: For visuelle/marketing-overflader, undgå AI-standard-looket (centrerede gradient-hero'er, glassmorphism-kort i tre kolonner, lilla-blå gradienter, Inter til alt) og kræv ét distinkt typografisk greb, ét uventet layout-greb og én signatur-interaktion. For funktionelle apps, undgå overflødig pynt der står i vejen for brugbarheden — prioritér klarhed, hastighed og pålidelighed.
+ANTI-GENERIC: For visuelle/marketing-overflader, undgå AI-standard-looket (centrerede gradient-hero'er, glassmorphism-kort i tre kolonner, lilla-blå gradienter, Inter til alt) og kræv ét distinkt typografisk greb, ét uventet layout-greb og én signatur-interaktion. For apps, kræv et bevidst visuelt udtryk der ikke ligner standard Material You eller plain SwiftUI — ét font-valg, én signatur-farve, én gennemgående interaktionsmodel der holder igennem hele appen.
 
 Skriv kun selve prompten — ingen indledning, ingen efterskrift, ingen meta-kommentarer.`;
 
@@ -1343,7 +1347,7 @@ NAVN / ATTRIBUTION (kun til navngivning — IKKE en produktbeskrivelse):
 - Målgruppe: ${brief.audience || 'N/A'}
 - Tone: ${brief.tone || 'N/A'}
 ${optionalBlock}
-Skriv nu den komplette Claude Code-prompt på engelsk. Match produkttypen: er det et funktionelt værktøj/en app, så prioritér korrekt platform, funktionalitet og pålidelighed over marketing-æstetik. Følg beskrivelsen bogstaveligt.`;
+Skriv nu den komplette Claude Code-prompt på engelsk. Match produkttypen: er det en app, så kræv BÅDE prisvindende UI-design OG teknisk integritet (korrekt platform, installation, tilladelser) — begge er ikke-omsættelige. Er det et funktionelt værktøj, prioritér platform, funktionalitet og pålidelighed. Følg beskrivelsen bogstaveligt.`;
 
   return { system: cacheableSystem([CODE_DEPARTMENT_SYSTEM_ROLE]), user };
 }

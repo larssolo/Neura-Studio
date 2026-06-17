@@ -351,10 +351,13 @@ export function useBureauMode(deps: BureauModeDeps) {
     }
   }, [brief, strategy, selectedTerritory, channelMatrix, effectiveness, setLastUsage, setErrorMsg]);
 
+  const clearPitch = () => setPitchResult(null);
+
   return {
     bureauModeActive, setBureauModeActive,
     stages, isRunning,
     runBureau, abortBureau,
     pitchResult, isGeneratingPitch, handleGeneratePitch,
+    clearPitch,
   };
 }

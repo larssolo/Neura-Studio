@@ -47,9 +47,35 @@
 .light-mode .text-slate-350 {
   color: #475569 !important;
 }
+
+/* text-white is invisible on remapped light backgrounds — force near-black */
 .light-mode .text-white {
-  /* Guard text-white inside buttons which have white text on brand colored background */
+  color: #0f172a !important;
 }
+
+/* hover:text-white also becomes invisible in light mode — override to dark */
+.light-mode .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+/* Restore white text on solid colored backgrounds that are NOT remapped in light mode */
+.light-mode .bg-brand-orange-600.text-white,
+.light-mode .bg-brand-orange-600 .text-white,
+.light-mode .bg-brand-orange-500.text-white,
+.light-mode .bg-brand-orange-500 .text-white,
+.light-mode .bg-violet-700.text-white,
+.light-mode .bg-violet-700 .text-white,
+.light-mode .bg-violet-600.text-white,
+.light-mode .bg-violet-600 .text-white,
+.light-mode .bg-violet-500.text-white,
+.light-mode .bg-violet-500 .text-white,
+.light-mode .bg-emerald-600.text-white,
+.light-mode .bg-emerald-600 .text-white,
+.light-mode .bg-zinc-900.text-white,
+.light-mode .bg-zinc-900 .text-white {
+  color: #ffffff !important;
+}
+
 /* Form fields use text-white for the dark theme; force dark ink in light mode so
    typed text is legible against the near-white field background. */
 .light-mode input,

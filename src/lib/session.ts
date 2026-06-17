@@ -22,6 +22,8 @@ export interface SavedSession {
   channelMatrix?: ChannelMatrix | null;
   culturalIntel?: CulturalScanResult | null;
   effectiveness?: EffectivenessFramework | null;
+  /** "client|project" fingerprint fra det brief funnel-data blev genereret for — bruges til stale-detektion. */
+  funnelBriefKey?: string | null;
 }
 
 /** Persistér den aktuelle arbejds-session (så intet går tabt ved refresh). */

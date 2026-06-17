@@ -164,6 +164,7 @@ export function useContentMachine() {
     handleSharpenIdea, handleAdoptSharpened, handleClearPressureTest,
     channelMatrix, setChannelMatrix, isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,
     effectiveness, setEffectiveness, isGeneratingEffectiveness, handleGenerateEffectiveness, handleClearEffectiveness,
+    funnelBriefKey, handleClearAllFunnel,
   } = useCreativeFunnel({ brief, setLastUsage, setErrorMsg });
 
   const bureau = useBureauMode({
@@ -235,8 +236,8 @@ export function useContentMachine() {
 
   useEffect(() => {
     if (!output && !brief.client) return;
-    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, campaignPlatform, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness });
-  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, campaignPlatform, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness]);
+    saveSession({ brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, campaignPlatform, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness, funnelBriefKey });
+  }, [brief, output, revisions, activeCompareIndex, generatedImages, cviFileName, activeTab, lockedSections, campaignPlatform, selectedTerritory, strategy, channelMatrix, culturalIntel, effectiveness, funnelBriefKey]);
 
   const handleClearPresets = () => {
     setCustomPresets([]);
@@ -400,6 +401,10 @@ export function useContentMachine() {
 
   const handleExportDeck = async () => {
     if (!selectedTerritory) return;
+    // Guard: Inkludér kun pitch hvis den er genereret i denne session (pitchResult er in-memory)
+    // og funnel-data tilhører det aktuelle brief (undgår nyt+gammelt-blanding)
+    const currentBriefKey = `${brief.client}|${brief.project}`;
+    const pitchBelongsToBrief = bureau.pitchResult !== null && (funnelBriefKey === currentBriefKey || funnelBriefKey === null);
     try {
       await downloadDeckFile({
         brief,
@@ -408,7 +413,7 @@ export function useContentMachine() {
         channelMatrix,
         effectiveness,
         output,
-        pitch: bureau.pitchResult,
+        pitch: pitchBelongsToBrief ? bureau.pitchResult : null,
         logoSrc: logoResult?.imageUrl,
         logoSvg: logoResult?.svg,
         images: {
@@ -420,6 +425,17 @@ export function useContentMachine() {
     } catch (e: any) {
       setErrorMsg(e.message || 'Kunne ikke generere pitch-deck.');
     }
+  };
+
+  const handleResetProject = () => {
+    setBrief({ client: '', project: '', description: '', details: '', audience: '', tone: '', language: 'Dansk', channels: [], notes: '', cviManual: null });
+    setOutput(null);
+    setRevisions({});
+    setActiveCompareIndex({});
+    handleClearAllFunnel();
+    bureau.clearPitch();
+    setErrorMsg(null);
+    setActiveTab('case');
   };
 
   const handleLoadHistory = (item: HistoryItem) => {
@@ -1159,6 +1175,7 @@ export function useContentMachine() {
     handleExportHtml,
     handleExportDocx,
     handleExportDeck,
+    handleResetProject,
     handleLoadHistory,
     handleClearHistory,
     handleGenerateVariants,

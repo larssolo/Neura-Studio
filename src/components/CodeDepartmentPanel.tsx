@@ -92,13 +92,13 @@ export function CodeDepartmentPanel({
             </button>
           ))}
         </div>
-        <input
-          type="text"
+        <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           disabled={isGenerating}
-          placeholder="Særlige ønsker (valgfrit) — fx 'native Android i Kotlin', 'kør offline', 'mørk og filmisk'…"
-          className="w-full bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-white placeholder:text-slate-600 px-3 py-2 focus:outline-none focus:border-emerald-500/50 disabled:opacity-60"
+          rows={3}
+          placeholder="Særlige ønsker (valgfrit) — fx 'native Android i Kotlin', 'kør offline', 'mørk og filmisk', platform, design-stil…"
+          className="w-full bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono text-white placeholder:text-slate-600 px-3 py-2 focus:outline-none focus:border-emerald-500/50 disabled:opacity-60 resize-y min-h-[72px] leading-relaxed"
         />
       </div>
 
