@@ -52,6 +52,7 @@ export interface IdeaDeliberateOptions {
   goodEnoughThreshold?: number;
   signal?: AbortSignal;
   onUsage?: (u: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number }) => void;
+  onProgress?: (stage: 'critiquing' | 'sharpening' | 'evaluating') => void;
 }
 
 export interface IdeaDeliberateResult {
@@ -93,12 +94,13 @@ async function critique(
 export async function runIdeaDeliberation(
   opts: IdeaDeliberateOptions,
 ): Promise<IdeaDeliberateResult> {
-  const { brief, territory, strategy, signal, onUsage } = opts;
+  const { brief, territory, strategy, signal, onUsage, onProgress } = opts;
   const threshold = opts.goodEnoughThreshold ?? DEFAULT_THRESHOLD;
 
   ensureNotAborted(signal);
 
   // 1. Pres-test (CSO)
+  onProgress?.('critiquing');
   const critiqueBefore = await critique(brief, territory, strategy, onUsage, signal);
 
   // Early-stop: ruten er allerede usædvanligt stærk.
@@ -108,6 +110,7 @@ export async function runIdeaDeliberation(
 
   // 2. Skærpning (ECD)
   ensureNotAborted(signal);
+  onProgress?.('sharpening');
   const s = buildTerritorySharpen(brief, territory, critiqueBefore, strategy);
   const sharpened = await generateStructured<SharpenedTerritory>({
     system: s.system,
@@ -121,6 +124,7 @@ export async function runIdeaDeliberation(
 
   // 3. Re-vurdér den skærpede rute (før/efter)
   ensureNotAborted(signal);
+  onProgress?.('evaluating');
   const critiqueAfter = await critique(brief, sharpened as unknown as Territory, strategy, onUsage, signal);
 
   return { critiqueBefore, sharpened, critiqueAfter, earlyStopped: false };

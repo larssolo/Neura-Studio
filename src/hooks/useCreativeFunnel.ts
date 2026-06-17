@@ -63,6 +63,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg, onClearPit
   const [pressureTest, setPressureTest] = useState<{ original: CampaignTerritory; result: IdeaDeliberationResult } | null>(null);
   const [isSharpening, setIsSharpening] = useState<boolean>(false);
   const [sharpeningTarget, setSharpeningTarget] = useState<string | null>(null);
+  const [sharpeningStage, setSharpeningStage] = useState<string | null>(null);
 
   const [channelMatrix, setChannelMatrix] = useState<ChannelMatrix | null>(() => session?.channelMatrix ?? null);
   const [isGeneratingMatrix, setIsGeneratingMatrix] = useState<boolean>(false);
@@ -199,9 +200,16 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg, onClearPit
     onClearPitch?.();
   };
 
+  const SHARPENING_STAGE_LABELS: Record<string, string> = {
+    critiquing: 'Pres-tester idéen…',
+    sharpening: 'ECD skærper…',
+    evaluating: 'Revurderer…',
+  };
+
   const handleSharpenIdea = async (territory: CampaignTerritory) => {
     setIsSharpening(true);
     setSharpeningTarget(territory.name);
+    setSharpeningStage('Pres-tester idéen…');
     setErrorMsg(null);
     try {
       const response = await fetch('/api/sharpen-idea', {
@@ -213,8 +221,31 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg, onClearPit
         const errData = await response.json().catch(() => ({}));
         throw new Error(httpErrorMessage(response.status, errData.error));
       }
-      const raw = await response.json();
-      const { _usage, ...result } = raw as any;
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalResult: any = null;
+
+      outer: while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop()!;
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]') break outer;
+          let parsed: any;
+          try { parsed = JSON.parse(payload); } catch { continue; }
+          if (parsed.stage) setSharpeningStage(SHARPENING_STAGE_LABELS[parsed.stage] ?? parsed.stage);
+          if (parsed.done) finalResult = parsed;
+        }
+      }
+
+      if (!finalResult) throw new Error('Ingen data modtaget fra serveren.');
+      const { done: _done, _usage, ...result } = finalResult;
       if (_usage) setLastUsage(_usage);
       setPressureTest({ original: territory, result: result as IdeaDeliberationResult });
     } catch (err: any) {
@@ -223,6 +254,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg, onClearPit
     } finally {
       setIsSharpening(false);
       setSharpeningTarget(null);
+      setSharpeningStage(null);
     }
   };
 
@@ -350,7 +382,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg, onClearPit
     isGeneratingCampaign, handleGenerateBigIdea,
     selectedTerritory, handleSelectTerritory, handleClearTerritory,
     // ECD pres-test af Idéen
-    pressureTest, isSharpening, sharpeningTarget,
+    pressureTest, isSharpening, sharpeningTarget, sharpeningStage,
     handleSharpenIdea, handleAdoptSharpened, handleClearPressureTest,
     // Omni-channel matrix
     channelMatrix, setChannelMatrix,

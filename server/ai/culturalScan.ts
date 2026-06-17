@@ -219,7 +219,7 @@ Brug web_search til at finde konkrete, aktuelle eksempler. Afslut med submit_cul
   const tools = [webSearchTool, culturalScanTool] as Anthropic.Tool[];
 
   let lastTextContent = '';
-  let maxTurns = 10;
+  let maxTurns = 9;
 
   while (maxTurns-- > 0) {
     let response: Anthropic.Message;

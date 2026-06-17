@@ -439,15 +439,26 @@ async function startServer() {
 
   // ECD pres-test: pres-test og skærp én valgt kreativ rute
   app.post('/api/sharpen-idea', async (req, res) => {
-    try {
-      const { brief, territory, strategy } = req.body;
-      if (!brief) {
-        return res.status(400).json({ error: 'Brief er påkrævet.' });
-      }
-      if (!territory || !territory.bigIdea) {
-        return res.status(400).json({ error: 'En kreativ rute (med en stor idé) er påkrævet.' });
-      }
+    const { brief, territory, strategy } = req.body;
+    if (!brief) {
+      return res.status(400).json({ error: 'Brief er påkrævet.' });
+    }
+    if (!territory || !territory.bigIdea) {
+      return res.status(400).json({ error: 'En kreativ rute (med en stor idé) er påkrævet.' });
+    }
 
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+    res.flushHeaders?.();
+    res.write(': connected\n\n');
+
+    const heartbeat = setInterval(() => {
+      if (!res.writableEnded) res.write(': keep-alive\n\n');
+    }, 15000);
+
+    try {
       let totalUsage: any = null;
       const result = await runIdeaDeliberation({
         brief,
@@ -462,12 +473,23 @@ async function startServer() {
             }
           }
         },
+        onProgress: (stage) => {
+          if (!res.writableEnded) res.write(`data: ${JSON.stringify({ stage })}\n\n`);
+        },
       });
 
-      res.json({ ...result, _usage: totalUsage });
+      res.write(`data: ${JSON.stringify({ done: true, ...result, _usage: totalUsage })}\n\n`);
+      res.write('data: [DONE]\n\n');
     } catch (error: any) {
       console.error('Fejl under ECD pres-test:', error);
-      res.status(500).json({ error: error.message || 'Kunne ikke pres-teste ruten.' });
+      if (!res.headersSent) {
+        res.status(500).json({ error: error.message || 'Kunne ikke pres-teste ruten.' });
+      } else if (!res.writableEnded) {
+        res.write(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+      }
+    } finally {
+      clearInterval(heartbeat);
+      if (!res.writableEnded) res.end();
     }
   });
 
@@ -884,9 +906,12 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const httpServer = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server lytter på port ${PORT}`);
   });
+  // SSE-endpoints holder forbindelsen i live via heartbeats. Ikke-streaming endpoints
+  // bør aldrig tage mere end ~120 sek; 240 sek er et konservativt safety net.
+  httpServer.setTimeout(240_000);
 }
 
 startServer();
