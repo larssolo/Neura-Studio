@@ -34,6 +34,7 @@ interface CreativeFunnelDeps {
   brief: ProjectBrief;
   setLastUsage: Dispatch<SetStateAction<UsageInfo | null>>;
   setErrorMsg: Dispatch<SetStateAction<string | null>>;
+  onClearPitch?: () => void;
 }
 
 /**
@@ -43,7 +44,7 @@ interface CreativeFunnelDeps {
  * alle interne clear-kaskader selv (skift af rute rydder forældet matrix/effekt).
  * Initial state hydreres fra den gemte session, præcis som før.
  */
-export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: CreativeFunnelDeps) {
+export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg, onClearPitch }: CreativeFunnelDeps) {
   const session = useRef(loadSessionWithFunnelGuard()).current;
 
   const [funnelBriefKey, setFunnelBriefKey] = useState<string | null>(() => session?.funnelBriefKey ?? null);
@@ -181,10 +182,11 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
 
   const handleSelectTerritory = (territory: CampaignTerritory) => {
     setSelectedTerritory(prev => {
-      // Skift af rute gør en eksisterende matrix/effekt-lag forældet (forkert idé) — ryd dem.
+      // Skift af rute gør matrix/effekt-lag og pitch forældet — ryd dem.
       if (!prev || prev.name !== territory.name || prev.bigIdea !== territory.bigIdea) {
         setChannelMatrix(null);
         setEffectiveness(null);
+        onClearPitch?.();
       }
       return territory;
     });
@@ -194,6 +196,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
     setSelectedTerritory(null);
     setChannelMatrix(null);
     setEffectiveness(null);
+    onClearPitch?.();
   };
 
   const handleSharpenIdea = async (territory: CampaignTerritory) => {
@@ -333,6 +336,7 @@ export function useCreativeFunnel({ brief, setLastUsage, setErrorMsg }: Creative
     setChannelMatrix(null);
     setEffectiveness(null);
     setFunnelBriefKey(null);
+    onClearPitch?.();
   };
 
   return {

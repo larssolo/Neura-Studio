@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, useRef, useCallback, ChangeEvent, FormEvent } from 'react';
 import { ProjectBrief, BrandSurfaceOutput, PresetBrief, ToneAnalysis, VisualDevResult, UsageInfo, BrainstormResult, PitchResult } from '../types';
 import { buildMarkdown, downloadTextFile, slugify } from '../lib/exportMarkdown';
 import { downloadHtmlFile } from '../lib/exportHtml';
@@ -155,6 +155,10 @@ export function useContentMachine() {
     logoResult, setLogoResult, isGeneratingLogo, handleGenerateLogo,
     isOptimizingLogoPrompt, handleOptimizeLogoPrompt,
   } = useLogo({ brief, setErrorMsg });
+  // Stable ref så useCreativeFunnel kan kalde bureau.clearPitch selvom bureau initialiseres efter funnel
+  const clearPitchRef = useRef<(() => void) | undefined>(undefined);
+  const onClearPitch = useCallback(() => clearPitchRef.current?.(), []);
+
   const {
     culturalIntel, setCulturalIntel, isScanning, handleCulturalScan, handleClearCulturalIntel,
     strategy, setStrategy, isGeneratingStrategy, handleGenerateStrategy, handleClearStrategy,
@@ -165,7 +169,7 @@ export function useContentMachine() {
     channelMatrix, setChannelMatrix, isGeneratingMatrix, handleGenerateChannelMatrix, handleClearChannelMatrix,
     effectiveness, setEffectiveness, isGeneratingEffectiveness, handleGenerateEffectiveness, handleClearEffectiveness,
     funnelBriefKey, handleClearAllFunnel,
-  } = useCreativeFunnel({ brief, setLastUsage, setErrorMsg });
+  } = useCreativeFunnel({ brief, setLastUsage, setErrorMsg, onClearPitch });
 
   const bureau = useBureauMode({
     brief,
@@ -183,6 +187,9 @@ export function useContentMachine() {
     effectiveness,
     setOutput,
   });
+
+  // Hold ref opdateret — gør det muligt for funnel at rydde pitch uden cirkulær afhængighed
+  clearPitchRef.current = bureau.clearPitch;
 
   const codeDept = useCodeDepartment({
     brief,
