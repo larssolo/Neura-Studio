@@ -4,7 +4,7 @@
  */
 
 import { Fragment } from 'react';
-import { Palette, Sparkles, X, AlertTriangle } from 'lucide-react';
+import { Palette, Sparkles, X, AlertTriangle, Maximize2 } from 'lucide-react';
 import { ImageGenCard, type ImageGenState } from './ImageGenCard';
 import type { VisualDevResult } from '../types';
 
@@ -19,6 +19,7 @@ interface Props {
   onAspectChange: (key: ImgKey, ratio: string) => void;
   onGenerateImage: (key: ImgKey, promptText: string) => void;
   onClose?: () => void;
+  onExpand?: () => void;
 }
 
 const METRICS: { key: keyof VisualDevResult['critiqueBefore']; label: string }[] = [
@@ -49,6 +50,7 @@ export function VisualDevPanel({
   onAspectChange,
   onGenerateImage,
   onClose,
+  onExpand,
 }: Props) {
   const { concept, critiqueBefore, critiqueAfter, earlyStopped, synthesisTruncated } = result;
   const review = critiqueAfter?.overallReview || critiqueBefore.overallReview;
@@ -72,15 +74,26 @@ export function VisualDevPanel({
             </span>
           </div>
         </div>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="text-slate-500 hover:text-slate-200 transition-colors"
-            title="Luk"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
+        <div className="flex items-center space-x-3">
+          {onExpand && (
+            <button
+              onClick={onExpand}
+              className="text-slate-500 hover:text-slate-200 transition-colors"
+              title="Forstør & arkivér"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="text-slate-500 hover:text-slate-200 transition-colors"
+              title="Luk"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="p-5 space-y-5">

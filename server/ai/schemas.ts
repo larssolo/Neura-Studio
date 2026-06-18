@@ -1138,6 +1138,24 @@ export const critiqueTool: Anthropic.Tool = {
   } as any,
 };
 
+// --- /api/summarize ----------------------------------------------------------
+
+export const panelSummaryTool: Anthropic.Tool = {
+  name: 'submit_summary',
+  description: 'Aflever et skarpt resumé af et arbejdsdokument som 3-5 punkter.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      summary: {
+        type: 'array',
+        items: { type: 'string' },
+        description: '3-5 præcise, handlingsorienterede punkter med det vigtigste fra dokumentet.',
+      },
+    },
+    required: ['summary'],
+  } as any,
+};
+
 // --- /api/pitch --------------------------------------------------------------
 
 export const pitchTool: Anthropic.Tool = {

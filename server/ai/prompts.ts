@@ -329,6 +329,34 @@ ${text}
 }
 
 // ---------------------------------------------------------------------------
+// /api/summarize (resumé af et funnel-panel)
+// ---------------------------------------------------------------------------
+
+export const PANEL_SUMMARY_SYSTEM_ROLE = `Du er en skarp dansk strateg i et verdensklasse-reklamebureau.
+Du får indholdet af ét arbejdsdokument og skal destillere det vigtigste til 3-5 præcise punkter.
+
+Principper:
+- Hvert punkt er én klar, konkret indsigt eller konklusion — ikke en overskrift.
+- Fang det der faktisk betyder noget for det videre arbejde; drop fyld og gentagelser.
+- Skriv på dansk, kort og handlingsorienteret. Ingen floskler.
+Aflever via det angivne værktøj.`;
+
+export function buildPanelSummary(title: string, content: string): {
+  system: Anthropic.TextBlockParam[];
+  user: string;
+} {
+  return {
+    system: cacheableSystem([PANEL_SUMMARY_SYSTEM_ROLE]),
+    user: `DOKUMENT: ${title}
+"""
+${content}
+"""
+
+Lav et skarpt resumé på 3-5 punkter af det vigtigste i dokumentet ovenfor. Aflever via værktøjet.`,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // /api/regenerate-section — frisk enkelt-sektion fra bunden
 // ---------------------------------------------------------------------------
 

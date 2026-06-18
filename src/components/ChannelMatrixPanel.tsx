@@ -13,6 +13,7 @@ import {
   Image as ImageIcon,
   Layers,
   Loader2,
+  Maximize2,
   Megaphone,
   Newspaper,
   Radio,
@@ -26,6 +27,7 @@ import { ChannelAsset, ChannelMatrix } from '../types';
 interface ChannelMatrixPanelProps {
   matrix: ChannelMatrix;
   onClose: () => void;
+  onExpand: () => void;
   onRegenerate: () => void;
   isGenerating: boolean;
   copiedKey: string | null;
@@ -53,6 +55,7 @@ function assetToText(a: ChannelAsset): string {
 export function ChannelMatrixPanel({
   matrix,
   onClose,
+  onExpand,
   onRegenerate,
   isGenerating,
   copiedKey,
@@ -79,6 +82,13 @@ export function ChannelMatrixPanel({
           </div>
         </div>
         <div className="flex items-center space-x-1">
+          <button
+            onClick={onExpand}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Forstør & arkivér"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
           <button
             onClick={onRegenerate}
             disabled={isGenerating}

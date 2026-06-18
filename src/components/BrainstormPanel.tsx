@@ -11,6 +11,7 @@ import {
   Copy,
   HelpCircle,
   Lightbulb,
+  Maximize2,
   MessageSquare,
   Sparkles,
   Target,
@@ -22,6 +23,7 @@ import { BrainstormResult } from '../types';
 interface BrainstormPanelProps {
   result: BrainstormResult;
   onClose: () => void;
+  onExpand: () => void;
   onAddNote: (text: string) => void;
   copiedKey: string | null;
   onCopy: (text: string, key: string) => void;
@@ -30,6 +32,7 @@ interface BrainstormPanelProps {
 export function BrainstormPanel({
   result,
   onClose,
+  onExpand,
   onAddNote,
   copiedKey,
   onCopy,
@@ -67,13 +70,22 @@ export function BrainstormPanel({
             </p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
-          title="Luk brainstorm"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onExpand}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Forstør & arkivér"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Luk brainstorm"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="p-5 space-y-5">

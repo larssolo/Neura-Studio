@@ -11,6 +11,7 @@ import {
   Copy,
   Gauge,
   Layers,
+  Maximize2,
   Scale,
   Target,
   TrendingUp,
@@ -22,6 +23,7 @@ import { EffectivenessFramework } from '../types';
 interface EffectivenessPanelProps {
   framework: EffectivenessFramework;
   onClose: () => void;
+  onExpand: () => void;
   onRegenerate: () => void;
   isGenerating: boolean;
   copiedKey: string | null;
@@ -38,6 +40,7 @@ function levelColor(level: string): string {
 export function EffectivenessPanel({
   framework,
   onClose,
+  onExpand,
   onRegenerate,
   isGenerating,
   copiedKey,
@@ -70,6 +73,13 @@ export function EffectivenessPanel({
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          <button
+            onClick={onExpand}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Forstør & arkivér"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
           <button
             onClick={() => onCopy(allText, 'effectiveness_all')}
             className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"

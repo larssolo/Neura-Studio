@@ -4,6 +4,7 @@
  */
 
 import { ComponentProps, Dispatch, SetStateAction } from 'react';
+import { Archive } from 'lucide-react';
 import {
   CulturalScanResult,
   StrategyFoundation,
@@ -24,6 +25,11 @@ import { ChannelMatrixPanel } from './ChannelMatrixPanel';
 import { EffectivenessPanel } from './EffectivenessPanel';
 import { BrainstormPanel } from './BrainstormPanel';
 import { VisualDevPanel } from './VisualDevPanel';
+import {
+  type FunnelDoc,
+  culturalToDoc, strategyToDoc, bigIdeaToDoc, pressureTestToDoc,
+  channelMatrixToDoc, effectivenessToDoc, brainstormToDoc, visualToDoc,
+} from '../lib/funnelDoc';
 
 /**
  * Den kreative funnel: kæden af betingede resultat-paneler i højre kolonne
@@ -35,6 +41,12 @@ interface FunnelPanelsProps {
   // Pres-test/copy fælles
   copiedKey: ComponentProps<typeof CampaignPanel>['copiedKey'];
   onCopy: ComponentProps<typeof CampaignPanel>['onCopy'];
+
+  // Forstør & arkivér — åbner et panel i FocusModal
+  onExpandFunnel: (doc: FunnelDoc) => void;
+  // Arkivér hele forløbet som ét dokument
+  funnelDocCount: number;
+  onArchiveAllFunnel: () => void;
 
   // Kulturel antenne
   culturalIntel: CulturalScanResult | null;
@@ -92,6 +104,8 @@ interface FunnelPanelsProps {
 
 export function FunnelPanels({
   copiedKey, onCopy,
+  onExpandFunnel,
+  funnelDocCount, onArchiveAllFunnel,
   culturalIntel, onClearCulturalIntel,
   strategy, onClearStrategy, isGeneratingStrategy, onGenerateStrategy,
   campaignPlatform, setCampaignPlatform, selectedTerritory, onSelectTerritory,
@@ -105,11 +119,26 @@ export function FunnelPanels({
 }: FunnelPanelsProps) {
   return (
     <>
+      {/* ARKIVÉR HELE FORLØBET */}
+      {funnelDocCount >= 2 && (
+        <div className="flex justify-end">
+          <button
+            onClick={onArchiveAllFunnel}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white text-[11px] font-semibold transition-all cursor-pointer active:scale-95"
+            title="Saml alle genererede paneler i ét dokument og arkivér"
+          >
+            <Archive className="w-3.5 h-3.5 text-brand-orange-400" />
+            <span>Arkivér hele forløbet · {funnelDocCount}</span>
+          </button>
+        </div>
+      )}
+
       {/* CULTURAL ANTENNA PANEL */}
       {culturalIntel && (
         <CulturalAntennaPanel
           intel={culturalIntel}
           onClose={onClearCulturalIntel}
+          onExpand={() => onExpandFunnel(culturalToDoc(culturalIntel))}
           onGenerateStrategy={onGenerateStrategy}
           isGeneratingStrategy={isGeneratingStrategy}
           copiedKey={copiedKey}
@@ -122,6 +151,7 @@ export function FunnelPanels({
         <StrategyPanel
           strategy={strategy}
           onClose={onClearStrategy}
+          onExpand={() => onExpandFunnel(strategyToDoc(strategy))}
           onGenerateBigIdea={onGenerateBigIdea}
           isGeneratingCampaign={isGeneratingCampaign}
           copiedKey={copiedKey}
@@ -136,6 +166,7 @@ export function FunnelPanels({
           selectedTerritory={selectedTerritory}
           onSelectTerritory={onSelectTerritory}
           onClearTerritory={onClearTerritory}
+          onExpand={() => onExpandFunnel(bigIdeaToDoc(campaignPlatform))}
           onExportDeck={onExportDeck}
           onPressureTest={onPressureTest}
           isSharpening={isSharpening}
@@ -153,6 +184,7 @@ export function FunnelPanels({
           result={pressureTest.result}
           onAdopt={onAdoptSharpened}
           onClose={onClearPressureTest}
+          onExpand={() => onExpandFunnel(pressureTestToDoc(pressureTest.original, pressureTest.result))}
           copiedKey={copiedKey}
           onCopy={onCopy}
         />
@@ -163,6 +195,7 @@ export function FunnelPanels({
         <ChannelMatrixPanel
           matrix={channelMatrix}
           onClose={onClearChannelMatrix}
+          onExpand={() => onExpandFunnel(channelMatrixToDoc(channelMatrix))}
           onRegenerate={onGenerateChannelMatrix}
           isGenerating={isGeneratingMatrix}
           copiedKey={copiedKey}
@@ -175,6 +208,7 @@ export function FunnelPanels({
         <EffectivenessPanel
           framework={effectiveness}
           onClose={onClearEffectiveness}
+          onExpand={() => onExpandFunnel(effectivenessToDoc(effectiveness))}
           onRegenerate={onGenerateEffectiveness}
           isGenerating={isGeneratingEffectiveness}
           copiedKey={copiedKey}
@@ -187,6 +221,7 @@ export function FunnelPanels({
         <BrainstormPanel
           result={brainstormResult}
           onClose={() => setBrainstormResult(null)}
+          onExpand={() => onExpandFunnel(brainstormToDoc(brainstormResult))}
           onAddNote={(text) => {
             const sep = brief.notes.trim() ? '\n\n' : '';
             setBrief(prev => ({ ...prev, notes: prev.notes.trim() + sep + text }));
@@ -207,6 +242,7 @@ export function FunnelPanels({
           onAspectChange={onAspectChange}
           onGenerateImage={onGenerateImage}
           onClose={() => setVisualResult(null)}
+          onExpand={() => onExpandFunnel(visualToDoc(visualResult))}
         />
       )}
     </>

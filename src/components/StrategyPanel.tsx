@@ -9,6 +9,7 @@ import {
   Copy,
   Lightbulb,
   Loader2,
+  Maximize2,
   Quote,
   Radar,
   Rocket,
@@ -23,6 +24,7 @@ import { StrategyFoundation } from '../types';
 interface StrategyPanelProps {
   strategy: StrategyFoundation;
   onClose: () => void;
+  onExpand: () => void;
   onGenerateBigIdea: () => void;
   isGeneratingCampaign: boolean;
   copiedKey: string | null;
@@ -32,6 +34,7 @@ interface StrategyPanelProps {
 export function StrategyPanel({
   strategy,
   onClose,
+  onExpand,
   onGenerateBigIdea,
   isGeneratingCampaign,
   copiedKey,
@@ -55,13 +58,22 @@ export function StrategyPanel({
             </p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
-          title="Luk strategi-fundament"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onExpand}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Forstør & arkivér"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Luk strategi-fundament"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="p-4 space-y-3">

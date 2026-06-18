@@ -16,6 +16,7 @@ import { ImagePanel } from './components/ImagePanel';
 import { VideoPanel } from './components/VideoPanel';
 import { AvatarPanel } from './components/AvatarPanel';
 import { FunnelPanels } from './components/FunnelPanels';
+import { FocusModal } from './components/FocusModal';
 import { BureauFloor } from './components/BureauFloor';
 import { PitchPanel } from './components/PitchPanel';
 import { CodeDepartmentPanel } from './components/CodeDepartmentPanel';
@@ -112,6 +113,9 @@ export default function App() {
     videoResult, handleGenerateVideo,
     speechResult, avatarResult, handleGenerateSpeech, handleGenerateAvatar,
     handleExecuteTerminalCommand,
+    expandedDoc, onExpandFunnel, onCloseFunnelDoc,
+    funnelSummaryFor, isGeneratingFunnelSummary, onGenerateFunnelSummary, onArchiveFunnelDoc,
+    funnelDocCount, onArchiveAllFunnel,
   } = useContentMachine();
 
   return (
@@ -159,6 +163,18 @@ export default function App() {
           error={errorMsg}
           onDismissError={() => setErrorMsg(null)}
         />
+
+        {/* FORSTØRRET FUNNEL-PANEL (arkivér + resumé) */}
+        {expandedDoc && (
+          <FocusModal
+            doc={expandedDoc}
+            summary={funnelSummaryFor(expandedDoc)}
+            isGeneratingSummary={isGeneratingFunnelSummary}
+            onGenerateSummary={onGenerateFunnelSummary}
+            onArchive={onArchiveFunnelDoc}
+            onClose={onCloseFunnelDoc}
+          />
+        )}
 
         {/* BRAND HEADER */}
         <AppHeader theme={theme} setTheme={setTheme} />
@@ -265,6 +281,9 @@ export default function App() {
             <FunnelPanels
               copiedKey={copiedKey}
               onCopy={handleCopyToClipboard}
+              onExpandFunnel={onExpandFunnel}
+              funnelDocCount={funnelDocCount}
+              onArchiveAllFunnel={onArchiveAllFunnel}
               culturalIntel={culturalIntel}
               onClearCulturalIntel={handleClearCulturalIntel}
               strategy={strategy}
@@ -442,7 +461,7 @@ export default function App() {
               <span>
                 Neura Studio by{' '}
                 <a href="https://www.larssohl.dk" target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:text-orange-300 transition-colors">larssohl.dk</a>
-                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.24.8
+                {' '}&amp; Claude Anthropic &copy; 2026 &middot; v1.25.0
               </span>
               <div className="flex items-center space-x-4">
                 {lastUsage && <UsageBadge usage={lastUsage} />}

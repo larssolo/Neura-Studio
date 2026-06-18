@@ -12,6 +12,7 @@ import {
   Gavel,
   Lightbulb,
   Loader2,
+  Maximize2,
   Megaphone,
   Presentation,
   Quote,
@@ -32,6 +33,7 @@ interface CampaignPanelProps {
   isSharpening?: boolean;
   sharpeningTarget?: string | null;
   onClose: () => void;
+  onExpand: () => void;
   copiedKey: string | null;
   onCopy: (text: string, key: string) => void;
 }
@@ -46,6 +48,7 @@ export function CampaignPanel({
   isSharpening,
   sharpeningTarget,
   onClose,
+  onExpand,
   copiedKey,
   onCopy,
 }: CampaignPanelProps) {
@@ -72,13 +75,22 @@ export function CampaignPanel({
             </p>
           </div>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
-          title="Luk kampagne-platform"
-        >
-          <X className="w-4 h-4" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={onExpand}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Forstør & arkivér"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Luk kampagne-platform"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       {/* ACTIVE PLATFORM BANNER */}

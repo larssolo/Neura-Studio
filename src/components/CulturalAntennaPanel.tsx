@@ -11,6 +11,7 @@ import {
   Copy,
   Globe,
   HelpCircle,
+  Maximize2,
   Newspaper,
   Radio,
   TrendingUp,
@@ -23,6 +24,7 @@ import { CulturalScanResult } from '../types';
 interface CulturalAntennaPanelProps {
   intel: CulturalScanResult;
   onClose: () => void;
+  onExpand: () => void;
   onGenerateStrategy: () => void;
   isGeneratingStrategy: boolean;
   copiedKey: string | null;
@@ -43,6 +45,7 @@ function formatDate(iso: string): string {
 export function CulturalAntennaPanel({
   intel,
   onClose,
+  onExpand,
   onGenerateStrategy,
   isGeneratingStrategy,
   copiedKey,
@@ -86,6 +89,13 @@ export function CulturalAntennaPanel({
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          <button
+            onClick={onExpand}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"
+            title="Forstør & arkivér"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
           <button
             onClick={() => onCopy(allText, 'cultural_scan_all')}
             className="p-1.5 rounded-lg text-slate-500 hover:text-slate-300 hover:bg-slate-800 transition-all"

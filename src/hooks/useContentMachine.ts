@@ -22,6 +22,12 @@ import { useLogo } from './useLogo';
 import { useCreativeFunnel } from './useCreativeFunnel';
 import { useBureauMode } from './useBureauMode';
 import { useCodeDepartment } from './useCodeDepartment';
+import { useFunnelArchive } from './useFunnelArchive';
+import {
+  type FunnelDoc, bundleFunnelDocs,
+  culturalToDoc, strategyToDoc, bigIdeaToDoc, pressureTestToDoc,
+  channelMatrixToDoc, effectivenessToDoc, brainstormToDoc, visualToDoc,
+} from '../lib/funnelDoc';
 
 export const PRESETS: PresetBrief[] = [
   {
@@ -198,6 +204,30 @@ export function useContentMachine() {
     setLastUsage,
     setErrorMsg,
   });
+
+  const funnelArchive = useFunnelArchive({ brief, setErrorMsg });
+
+  // Saml alle genererede funnel-paneler til ét dokument ("hele forløbet").
+  const collectFunnelDocs = useCallback((): FunnelDoc[] => {
+    const docs: FunnelDoc[] = [];
+    if (culturalIntel) docs.push(culturalToDoc(culturalIntel));
+    if (strategy) docs.push(strategyToDoc(strategy));
+    if (campaignPlatform) docs.push(bigIdeaToDoc(campaignPlatform));
+    if (pressureTest) docs.push(pressureTestToDoc(pressureTest.original, pressureTest.result));
+    if (channelMatrix) docs.push(channelMatrixToDoc(channelMatrix));
+    if (effectiveness) docs.push(effectivenessToDoc(effectiveness));
+    if (brainstormResult) docs.push(brainstormToDoc(brainstormResult));
+    if (visualResult) docs.push(visualToDoc(visualResult));
+    return docs;
+  }, [culturalIntel, strategy, campaignPlatform, pressureTest, channelMatrix, effectiveness, brainstormResult, visualResult]);
+
+  const funnelDocCount = collectFunnelDocs().length;
+
+  const handleArchiveAllFunnel = useCallback(() => {
+    const docs = collectFunnelDocs();
+    if (docs.length === 0) return;
+    funnelArchive.openDoc(bundleFunnelDocs(docs, `Hele forløbet — ${brief.client || 'Neura Studio'}`));
+  }, [collectFunnelDocs, funnelArchive, brief.client]);
 
   const [customPresets, setCustomPresets] = useState<PresetBrief[]>(() => {
     const local = localStorage.getItem('brand_surface_presets');
@@ -1118,6 +1148,16 @@ export function useContentMachine() {
     // Effekt-lag
     effectiveness, isGeneratingEffectiveness,
     handleGenerateEffectiveness, handleClearEffectiveness,
+    // Forstør & arkivér funnel-paneler
+    expandedDoc: funnelArchive.expandedDoc,
+    onExpandFunnel: funnelArchive.openDoc,
+    onCloseFunnelDoc: funnelArchive.closeDoc,
+    funnelSummaryFor: funnelArchive.summaryFor,
+    isGeneratingFunnelSummary: funnelArchive.isGeneratingSummary,
+    onGenerateFunnelSummary: funnelArchive.handleGenerateSummary,
+    onArchiveFunnelDoc: funnelArchive.handleArchive,
+    funnelDocCount,
+    onArchiveAllFunnel: handleArchiveAllFunnel,
     // Bureau-mode
     bureauModeActive: bureau.bureauModeActive,
     setBureauModeActive: bureau.setBureauModeActive,

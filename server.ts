@@ -27,6 +27,7 @@ import {
   buildImagePrompt,
   buildCritique,
   buildPitch,
+  buildPanelSummary,
   buildCodeDepartment,
   ANALYZE_CVI_SYSTEM_ROLE,
   cacheableSystem,
@@ -46,6 +47,7 @@ import {
   imagePromptTool,
   critiqueTool,
   pitchTool,
+  panelSummaryTool,
 } from './server/ai/schemas';
 import { runDeliberation } from './server/ai/deliberate';
 import { runVisualDeliberation } from './server/ai/deliberateVisual';
@@ -514,6 +516,30 @@ async function startServer() {
     } catch (error: any) {
       console.error('Fejl under bureau-kritik:', error);
       res.status(500).json({ error: error.message || 'Kunne ikke gennemføre bureau-kritikken.' });
+    }
+  });
+
+  // Resumé af et funnel-panel: destillér indholdet til 3-5 punkter (hurtig model)
+  app.post('/api/summarize', async (req, res) => {
+    try {
+      const { title, content } = req.body;
+      if (!content || !String(content).trim()) {
+        return res.status(400).json({ error: 'Indhold er påkrævet.' });
+      }
+
+      const { system, user } = buildPanelSummary(String(title || 'Dokument'), String(content));
+      const parsed = await generateStructured<{ summary: string[] }>({
+        system,
+        userContent: [{ type: 'text', text: user }],
+        tool: panelSummaryTool,
+        model: config.fastModel,
+        maxTokens: 1024,
+      });
+
+      res.json({ summary: parsed.summary || [] });
+    } catch (error: any) {
+      console.error('Fejl under resumé:', error);
+      res.status(500).json({ error: error.message || 'Kunne ikke lave resumé.' });
     }
   });
 
