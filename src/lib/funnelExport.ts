@@ -55,9 +55,9 @@ export function funnelDocToHtml(doc: FunnelDoc, brief?: ProjectBrief): string {
     ul { list-style: none; padding: 0; margin-bottom: 0.6rem; }
     ul li { padding: 0.3rem 0 0.3rem 1.2rem; position: relative; font-size: 0.9rem; color: #cbd5e1; }
     ul li::before { content: '—'; position: absolute; left: 0; color: #f97316; }
-    dl { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1.2rem; margin-bottom: 0.8rem; }
-    dt { font-family: monospace; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding-top: 0.25rem; }
-    dd { color: #cbd5e1; font-size: 0.9rem; }
+    dl { display: grid; grid-template-columns: minmax(5rem, 11rem) 1fr; gap: 0.5rem 1.2rem; margin-bottom: 0.8rem; }
+    dt { font-family: monospace; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.06em; padding-top: 0.25rem; overflow-wrap: break-word; }
+    dd { color: #cbd5e1; font-size: 0.9rem; min-width: 0; overflow-wrap: break-word; }
     @media print { body { background: #fff; color: #1e293b; } p, dd, ul li { color: #334155; } }
     @media (max-width: 600px) { dl { grid-template-columns: 1fr; } dt { padding-top: 0.75rem; } }
   `.trim();

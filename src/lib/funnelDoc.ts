@@ -79,7 +79,8 @@ export function culturalToDoc(intel: CulturalScanResult): FunnelDoc {
       heading: `Aktuelle trends · ${intel.trends.length}`,
       blocks: intel.trends.map((t) =>
         kv([
-          { key: t.trend, value: t.relevance },
+          { key: 'Trend', value: t.trend },
+          { key: 'Relevans', value: t.relevance },
           { key: 'Mulighed', value: t.actionableAngle },
         ]),
       ),
@@ -90,7 +91,8 @@ export function culturalToDoc(intel: CulturalScanResult): FunnelDoc {
       heading: `Konkurrent-signaler · ${intel.competitorSignals.length}`,
       blocks: intel.competitorSignals.map((c) =>
         kv([
-          { key: c.brand, value: c.signal },
+          { key: 'Brand', value: c.brand },
+          { key: 'Signal', value: c.signal },
           { key: 'Takeaway', value: c.takeaway },
         ]),
       ),
@@ -101,7 +103,8 @@ export function culturalToDoc(intel: CulturalScanResult): FunnelDoc {
       heading: `Kulturelle øjeblikke · ${intel.culturalMoments.length}`,
       blocks: intel.culturalMoments.map((m) =>
         kv([
-          { key: m.moment, value: m.opportunity },
+          { key: 'Øjeblik', value: m.moment },
+          { key: 'Mulighed', value: m.opportunity },
         ]),
       ),
     });

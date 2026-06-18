@@ -168,11 +168,11 @@ export function FocusModal({
                     );
                   }
                   return (
-                    <dl key={bi} className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5">
+                    <dl key={bi} className="grid grid-cols-[minmax(5rem,11rem)_1fr] gap-x-4 gap-y-1.5">
                       {block.pairs.map((pr, pi) => (
                         <div key={pi} className="contents">
-                          <dt className="text-[10px] font-mono text-slate-500 uppercase tracking-wide pt-1 whitespace-nowrap">{pr.key}</dt>
-                          <dd className="text-sm text-slate-200 leading-relaxed">{pr.value}</dd>
+                          <dt className="text-[10px] font-mono text-slate-500 uppercase tracking-wide pt-1 break-words">{pr.key}</dt>
+                          <dd className="text-sm text-slate-200 leading-relaxed break-words min-w-0">{pr.value}</dd>
                         </div>
                       ))}
                     </dl>
